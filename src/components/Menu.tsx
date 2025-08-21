@@ -11,68 +11,51 @@ type MenuGroup = { title: string; items: MenuItem[] };
 
 const MENU_RAW: MenuGroup[] = [
   {
-    title: "MENU",
+    title: "Tiket",
     items: [
-      { icon: "/home.png", label: "Beranda", href: "/", visible: ["sysadmin", "admin", "teknisi"] },
-      { icon: "/notifications.png", label: "Notifikasi", href: "/notifications", visible: ["sysadmin", "admin", "teknisi"] },
-      { icon: "/dot.png", label: "Logout", href: "/", visible: ["sysadmin", "admin", "teknisi"] },
+      { icon: "/icons/ticket.png", label: "Daftar Tiket", href: "/", visible: ["sysadmin", "admin", "teknisi"] },
+      { icon: "/icons/history.png", label: "Riwayat Tiket", href: "/", visible: ["sysadmin", "admin", "teknisi"] },
     ],
   },
   {
-    title: "INVENTORI",
+    title: "Pustaka",
     items: [
-      { icon: "/products.png", label: "Gudang", href: "/inventory/products", visible: ["sysadmin", "admin"] },
-      { icon: "/dot.png", label: "", href: "/", visible: ["sysadmin", "admin", "teknisi"] },
-      { icon: "/dot.png", label: "", href: "/", visible: ["sysadmin", "admin", "teknisi"] },
-
+      { icon: "/icons/audit.png", label: "Audit Pengetahuan", href: "/", visible: ["sysadmin", "admin", "teknisi"] },
+      { icon: "/icons/knowledge.png", label: "Basis Pengetahuan", href: "/", visible: ["sysadmin", "admin", "teknisi"] },
+      { icon: "/icons/person.png", label: "Daftar Teknisi", href: "/", visible: ["sysadmin", "admin", "teknisi"] },
     ],
   },
   {
-    title: "SERVIS",
+    title: "Katalog",
     items: [
-      { icon: "/repairs.png", label: "Antrian Servis", href: "/service/queue", visible: ["sysadmin", "teknisi", "admin"] },
-      { icon: "/diagnostics.png", label: "Diagnostik", href: "/service/diagnostics", visible: ["sysadmin", "teknisi"] },
-      { icon: "/workorder.png", label: "Work Orders", href: "/service/work-orders", visible: ["sysadmin", "teknisi", "admin"] },
-      { icon: "/spareparts.png", label: "Spare Part", href: "/service/spare-parts", visible: ["sysadmin", "teknisi", "admin"] },
-      { icon: "/warranty.png", label: "Garansi / RMA", href: "/service/warranty", visible: ["sysadmin", "teknisi", "admin"] },
+      { icon: "/icons/gudang.png", label: "Gudang", href: "/", visible: ["sysadmin", "admin", "teknisi"] },
+      { icon: "/icons/market.png", label: "Market", href: "/", visible: ["sysadmin", "admin", "teknisi"] },
     ],
   },
   {
-    title: "TRANSAKSI",
+    title: "Laporan",
     items: [
-      { icon: "/invoices.png", label: "Invoice", href: "/sales/invoices", visible: ["sysadmin", "admin"] },
-      { icon: "/returns.png", label: "Retur", href: "/sales/returns", visible: ["sysadmin", "admin"] },
-      { icon: "/discounts.png", label: "Diskon & Promo", href: "/sales/discounts", visible: ["sysadmin", "admin"] },
+      { icon: "/icons/report.png", label: "Inventory", href: "/", visible: ["sysadmin", "admin", "teknisi"] },
+      { icon: "/icons/report.png", label: "Layanan", href: "/", visible: ["sysadmin", "admin", "teknisi"] },
     ],
   },
   {
-    title: "PENGGUNA & AKSES",
+    title: "RBAC",
     items: [
-      { icon: "/users.png", label: "Pengguna", href: "/admin/users", visible: ["sysadmin", "admin"] },
-      { icon: "/role.png", label: "Roles & Permissions", href: "/admin/roles", visible: ["sysadmin"] },
-      { icon: "/audit.png", label: "Audit Log", href: "/admin/audit-log", visible: ["sysadmin"] },
+      { icon: "/icons/member.png", label: "Staff", href: "/", visible: ["sysadmin", "admin", "teknisi"] },
+      { icon: "/icons/access.png", label: "Kontrol Pengguna", href: "/", visible: ["sysadmin", "admin", "teknisi"] },
     ],
   },
   {
-    title: "LAPORAN",
+    title: "Lain-Lain",
     items: [
-      { icon: "/reports.png", label: "Laporan Penjualan", href: "/reports/sales", visible: ["sysadmin", "admin"] },
-      { icon: "/reports.png", label: "Laporan Servis", href: "/reports/service", visible: ["sysadmin", "admin", "teknisi"] },
-      { icon: "/reports.png", label: "Laporan Stok", href: "/reports/stock", visible: ["sysadmin", "admin"] },
-      { icon: "/reports.png", label: "Laporan Keuangan", href: "/reports/finance", visible: ["sysadmin", "admin"] },
-    ],
-  },
-  {
-    title: "PENGATURAN",
-    items: [
-      { icon: "/settings.png", label: "Pengaturan Sistem", href: "/settings", visible: ["sysadmin"] },
-      { icon: "/integrations.png", label: "Integrasi", href: "/settings/integrations", visible: ["sysadmin"] },
-      { icon: "/log.png", label: "Log Aktivitas", href: "/settings/activity-log", visible: ["sysadmin"] },
+      { icon: "/icons/settings.png", label: "Pengaturan", href: "/", visible: ["sysadmin", "admin", "teknisi"] },
+      { icon: "/icons/logout.png", label: "Logout", href: "/", visible: ["sysadmin", "admin", "teknisi"] },
     ],
   },
 ];
 
-const LS_KEY = "menu-collapsed-state";
+const LS_KEY = "menu-active-title"; // hanya simpan judul section yang aktif
 
 const Menu: React.FC = () => {
   // Filter sesuai role; sembunyikan section tanpa item
@@ -83,37 +66,35 @@ const Menu: React.FC = () => {
     []
   );
 
-  // Default SSR: semua section terbuka (hindari hydration mismatch)
-  const defaultOpen = React.useMemo(
-    () => Object.fromEntries(groups.map(g => [g.title, true])) as Record<string, boolean>,
-    [groups]
-  );
+  // Default SSR: buka section pertama untuk konsistensi markup server-client (hindari hydration error)
+  const defaultActive = React.useMemo(() => groups[0]?.title ?? "", [groups]);
+  const [active, setActive] = React.useState<string>(defaultActive);
 
-  const [openMap, setOpenMap] = React.useState<Record<string, boolean>>(defaultOpen);
-
-  // Setelah mount, merge preferensi dari localStorage
+  // Setelah mount, sync preferensi dari localStorage
   React.useEffect(() => {
-    setOpenMap(defaultOpen);
+    setActive(defaultActive);
     try {
-      const saved = JSON.parse(localStorage.getItem(LS_KEY) || "{}") as Record<string, boolean>;
-      setOpenMap(prev => ({ ...prev, ...saved }));
+      const saved = localStorage.getItem(LS_KEY);
+      if (saved && groups.some(g => g.title === saved)) setActive(saved);
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [defaultOpen]);
+  }, [defaultActive]);
 
-  const toggle = (title: string) =>
-    setOpenMap(prev => {
-      const next = { ...prev, [title]: !(prev[title] ?? true) };
+  // Klik judul: kalau beda → buka yang baru & tutup lainnya; kalau sama → collapse semua
+  const toggle = (title: string) => {
+    setActive(prev => {
+      const next = prev === title ? "" : title;
       try {
-        localStorage.setItem(LS_KEY, JSON.stringify(next));
+        localStorage.setItem(LS_KEY, next);
       } catch {}
       return next;
     });
+  };
 
   return (
-    <nav className="mt-4 text-sm bg-white text-black p-2 rounded-md">
+    <nav className="mt-4 text-sm bg-black text-white">
       {groups.map(g => {
-        const isOpen = openMap[g.title] ?? true;
+        const isOpen = active === g.title;
         return (
           <section key={g.title} className="flex flex-col">
             {/* Header / Toggle */}
@@ -122,7 +103,7 @@ const Menu: React.FC = () => {
               onClick={() => toggle(g.title)}
               aria-expanded={isOpen}
               aria-controls={`panel-${g.title}`}
-              className="flex items-center justify-between px-1 py-2 bg-white text-black hover:bg-black hover:text-white transition-colors"
+              className="flex items-center justify-between px-1 py-2 text-neutral-300 hover:bg-neutral-900 transition-colors"
             >
               <span className="font-light">{g.title}</span>
               <svg
@@ -137,23 +118,22 @@ const Menu: React.FC = () => {
               </svg>
             </button>
 
-            {/* Items */}
+            {/* Items (hanya render saat open) */}
             {isOpen && (
               <div id={`panel-${g.title}`} className="flex flex-col gap-1">
                 {g.items.map(item => (
                   <Link
                     href={item.href}
                     key={item.label}
-                    className="flex items-center justify-center lg:justify-start gap-3 py-2 md:px-2
-                               text-black bg-white transition-colors hover:invert"
+                    className="group flex items-center justify-center lg:justify-start gap-3 py-2 md:px-2
+                               text-neutral-200 hover:text-white hover:bg-neutral-900 transition-colors"
                   >
                     <Image
                       src={item.icon}
                       alt=""
                       width={18}
                       height={18}
-                      className="dark-invert"
-                      
+                      className="invert opacity-70 transition group-hover:opacity-100 group-hover:brightness-125"
                     />
                     <span className="hidden lg:block">{item.label}</span>
                   </Link>
