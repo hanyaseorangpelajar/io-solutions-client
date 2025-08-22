@@ -13,11 +13,19 @@ export default function DashboardLayout({
       {/* LEFT */}
       <div className="w-[14%] md:w-[8%] lg:w-[16%] xl:w-[14%] p-4 bg-black">
         <Link
-          href="/"
+          href="/sysadmin"
           className="flex items-center justify-center lg:justify-start gap-2"
         >
-          <Image src="/logo.png" alt="logo" width={32} height={32} className="invert" />
-          <span className="hidden lg:block font-bold text-white">I/O Solution</span>
+          <Image
+            src="/logo.png"
+            alt="logo"
+            width={32}
+            height={32}
+            className="invert"
+          />
+          <span className="hidden lg:block font-bold text-white">
+            I/O SOLUTIONS
+          </span>
         </Link>
         <Menu />
       </div>

@@ -1,9 +1,8 @@
 import Announcements from "@/components/Announcements";
-import BigCalendar from "@/components/BigCalender";
-import EventCalendar from "@/components/EventCalendar";
+import Log from "@/components/Log";
 import UserCard from "@/components/UserCard";
 import CountChart from "@/components/CountChart";
-import AttendanceChart from "@/components/AttendanceChart";
+import StockChart from "@/components/StockChart";
 import FinanceChart from "@/components/FinanceChart";
 
 const SysAdminView = () => {
@@ -13,7 +12,7 @@ const SysAdminView = () => {
       <div className="w-full lg:w-2/3 flex flex-col gap-8">
         {/* USER CARDS */}
         <div className="flex gap-4 justify-between flex-wrap">
-          <UserCard type="student" />
+          <UserCard type="ticket" />
           <UserCard type="teacher" />
           <UserCard type="parent" />
           <UserCard type="staff" />
@@ -26,7 +25,7 @@ const SysAdminView = () => {
           </div>
           {/* ATTENDANCE CHART */}
           <div className="w-full lg:w-2/3 h-[450px]">
-            <AttendanceChart />
+            <StockChart />
           </div>
         </div>
         {/* BOTTOM CHART */}
@@ -36,8 +35,8 @@ const SysAdminView = () => {
       </div>
       {/* RIGHT */}
       <div className="w-full lg:w-1/3 flex flex-col gap-8">
-        <EventCalendar />
-        <Announcements/>
+        <Log />
+        <Announcements />
       </div>
     </div>
   );

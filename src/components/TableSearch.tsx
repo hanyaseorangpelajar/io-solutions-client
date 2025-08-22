@@ -1,20 +1,16 @@
-import Image from "next/image";
+"use client";
+
+import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 
 const TableSearch = () => {
   return (
     <div
-      className="w-full md:w-auto flex items-center gap-2 text-xs
-                 rounded-none border border-gray-300 px-2 py-1 bg-white
-                 focus-within:border-gray-400
-                 dark:bg-neutral-900 dark:border-neutral-800 dark:focus-within:border-neutral-600"
+      className="
+        w-full md:w-auto inline-flex items-center gap-2
+        h-8 px-2 rounded-none border border-black bg-white text-xs
+      "
     >
-      <Image
-        src="/search.png"
-        alt="Search"
-        width={14}
-        height={14}
-        className="opacity-60 grayscale dark:invert"
-      />
+      <MagnifyingGlassIcon className="w-4 h-4 text-black/60" />
       <label htmlFor="table-search" className="sr-only">
         Search
       </label>
@@ -22,9 +18,10 @@ const TableSearch = () => {
         id="table-search"
         type="search"
         placeholder="Search..."
-        className="w-[200px] p-2 bg-transparent outline-none
-                   placeholder:text-gray-400 text-gray-900
-                   dark:placeholder:text-neutral-500 dark:text-neutral-100"
+        className="
+          w-[200px] h-full bg-transparent outline-none
+          placeholder:text-gray-400 text-black
+        "
       />
     </div>
   );
