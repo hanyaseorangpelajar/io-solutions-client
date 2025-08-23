@@ -1,188 +1,152 @@
+// src/components/FormModal.tsx
 "use client";
-import { useEffect, useState } from "react";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+
+import * as React from "react";
 
 type CrudType = "create" | "read" | "update" | "delete";
-type Variant = "mono" | "brand";
+type NonDeleteType = Exclude<CrudType, "delete">;
 
-type InjectedFormProps = {
-  type: Exclude<CrudType, "delete">;
+type FormComponentProps = {
+  type: NonDeleteType; // komponen form hanya menerima create/read/update
   data?: any;
+  id?: number | string;
   onClose: () => void;
 };
+type FormComponent = (props: FormComponentProps) => JSX.Element;
 
-type FormModalProps = {
-  /** Judul di header modal (opsional, akan fallback: "Create/Read/Update <title>") */
-  title?: string;
-  /** Title entity, contoh: "Tiket" ⇒ dipakai untuk fallback judul */
-  entityTitle?: string;
-  /** Mode CRUD */
+type Props = {
   type: CrudType;
-  /** Komponen form yang akan di-render (untuk create/read/update) */
-  component?: React.ComponentType<InjectedFormProps>;
-  /** Data yang diteruskan ke component */
+  title?: string;
+  entityTitle?: string;
+  component?: FormComponent; // tidak dipanggil saat type === "delete"
   data?: any;
-  /** ID untuk delete confirm */
   id?: number | string;
-  /** Konten kustom untuk delete confirm, kalau ingin override */
-  renderDeleteBody?: (close: () => void) => React.ReactNode;
-  /** Kontrol tampilan trigger */
   icon?: React.ReactNode;
-  triggerAriaLabel?: string;
-  triggerClassName?: string;
-  /** Variant style (default mono/hitam-putih) */
-  variant?: Variant;
-  /** (opsional) kontrol eksternal open state */
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
+  triggerClassName?: string; // kontrol ukuran/shape tombol trigger
+  contentClassName?: string; // kelas tambahan untuk body wrapper (opsional)
 };
 
-const baseTriggerMono =
-  "group flex items-center justify-center w-7 h-7 rounded-none border border-black bg-black hover:bg-white transition";
-const baseTriggerBrand =
-  "group flex items-center justify-center w-7 h-7 rounded-full bg-black";
+const triggerBase =
+  "group inline-flex items-center justify-center rounded-none " +
+  "border border-black bg-black hover:bg-white transition";
 
-const FormModal = ({
+export default function FormModal({
+  type,
   title,
   entityTitle,
-  type,
-  component: FormComponent,
+  component: Comp,
   data,
   id,
-  renderDeleteBody,
   icon,
-  triggerAriaLabel,
   triggerClassName,
-  variant = "mono",
-  open: openControlled,
-  onOpenChange,
-}: FormModalProps) => {
-  const isControlled = typeof openControlled === "boolean";
-  const [openUncontrolled, setOpenUncontrolled] = useState(false);
-  const open = isControlled ? (openControlled as boolean) : openUncontrolled;
+  contentClassName,
+}: Props) {
+  const [open, setOpen] = React.useState(false);
 
-  const setOpen = (v: boolean) => {
-    if (isControlled) onOpenChange?.(v);
-    else setOpenUncontrolled(v);
-  };
+  const modalTitle =
+    title ??
+    (type === "delete"
+      ? `Hapus ${entityTitle ?? "Item"}`
+      : type === "create"
+      ? `Buat ${entityTitle ?? "Item"}`
+      : type === "update"
+      ? `Ubah ${entityTitle ?? "Item"}`
+      : `Detail ${entityTitle ?? "Item"}`);
 
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+  const close = () => setOpen(false);
 
-  const computedTitle =
-    title ||
-    `${
-      type === "create"
-        ? "Create"
-        : type === "read"
-        ? "Read"
-        : type === "update"
-        ? "Update"
-        : "Delete"
-    }${entityTitle ? ` ${entityTitle}` : ""}`;
-
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) setOpen(false);
-  };
-
-  const TriggerButton = (
-    <button
-      type="button"
-      aria-label={triggerAriaLabel || computedTitle}
-      className={[
-        variant === "mono" ? baseTriggerMono : baseTriggerBrand,
-        triggerClassName || "",
-      ].join(" ")}
-      onClick={() => setOpen(true)}
-    >
-      {icon || (
-        <span className="block w-1.5 h-1.5 bg-white group-hover:bg-black" />
-      )}
-    </button>
-  );
-
-  const DeleteDefault = () => (
-    <form className="p-4 flex flex-col gap-4">
-      <span className="text-center font-medium">
-        All data will be lost. Are you sure you want to delete
-        {entityTitle ? ` ${entityTitle}` : " this item"}
-        {id !== undefined ? ` (${id})` : ""}?
-      </span>
-      <div className="flex items-center justify-center gap-2">
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          className="px-4 py-2 border border-black bg-white hover:bg-black hover:text-white transition"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className="px-4 py-2 border border-black bg-black text-white hover:bg-red-600 hover:text-white transition"
-        >
-          Delete
-        </button>
-      </div>
-    </form>
-  );
-
-  const Body = () => {
+  const renderBody = () => {
     if (type === "delete") {
-      if (renderDeleteBody)
-        return <>{renderDeleteBody(() => setOpen(false))}</>;
-      return <DeleteDefault />;
-    }
-    if (!FormComponent) {
+      // Built-in delete confirmation
       return (
-        <div className="p-4">
-          <p className="mb-2 font-semibold">Form not provided</p>
-          <p className="text-sm">
-            Berikan prop <code>component</code> ke FormModal untuk{" "}
-            {computedTitle}.
+        <form className="flex flex-col gap-4">
+          <p className="text-center">
+            Semua data akan dihapus. Yakin menghapus {entityTitle ?? "item"}
+            {id !== undefined ? ` (${id})` : ""}?
           </p>
-        </div>
+          <div className="flex items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={close}
+              className="px-4 py-2 border border-black bg-white hover:bg-black hover:text-white transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 border border-black bg-black text-white hover:bg-white hover:text-black transition"
+            >
+              Delete
+            </button>
+          </div>
+        </form>
       );
     }
-    return (
-      <FormComponent type={type} data={data} onClose={() => setOpen(false)} />
-    );
+
+    if (Comp) {
+      // create/read/update → panggil komponen form
+      return (
+        <Comp
+          type={type as NonDeleteType}
+          data={data}
+          id={id}
+          onClose={close}
+        />
+      );
+    }
+
+    return <div>Form not found.</div>;
   };
 
   return (
     <>
-      {TriggerButton}
+      {/* Trigger */}
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={`${triggerBase} ${
+          triggerClassName || (type === "create" ? "w-8 h-8" : "w-7 h-7")
+        }`}
+        aria-label={modalTitle}
+        title={modalTitle}
+      >
+        {icon || (
+          <span className="text-xs text-white group-hover:text-black capitalize">
+            {type}
+          </span>
+        )}
+      </button>
 
+      {/* Modal */}
       {open && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-          onMouseDown={handleBackdropClick}
-        >
-          <div className="relative bg-white text-black p-4 rounded-none border border-black w-[90%] md:w-[70%] lg:w-[60%] xl:w-[50%] 2xl:w-[40%]">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-lg font-semibold">{computedTitle}</h2>
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4">
+          <div className="relative w-full max-w-3xl bg-white text-black border border-black">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-black">
+              <h2 className="text-sm font-semibold uppercase tracking-wider">
+                {modalTitle}
+              </h2>
               <button
                 type="button"
-                aria-label="Close"
-                className="p-1 border border-black bg-white hover:bg-black hover:text-white transition"
-                onClick={() => setOpen(false)}
+                onClick={close}
+                className="px-2 py-1 border border-black bg-white hover:bg-black hover:text-white transition"
+                aria-label="Tutup modal"
               >
-                <XMarkIcon className="w-4 h-4" />
+                ✕
               </button>
             </div>
-            <Body />
+
+            {/* Body wrapper: padding + scroll agar form rapi */}
+            <div
+              className={`px-4 py-3 max-h-[75vh] overflow-y-auto ${
+                contentClassName || ""
+              }`}
+            >
+              {renderBody()}
+            </div>
           </div>
         </div>
       )}
     </>
   );
-};
-
-export default FormModal;
+}

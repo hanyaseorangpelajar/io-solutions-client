@@ -1,4 +1,3 @@
-// src/components/Pagination.tsx
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 
 const Pagination = () => {
@@ -18,13 +17,11 @@ const Pagination = () => {
       aria-label="Pagination Navigation"
     >
       <div className="p-4 flex items-center justify-between">
-        {/* Prev */}
         <button className={btnBase} aria-label="Previous page" disabled>
           <ChevronLeftIcon className="w-4 h-4" />
           <span className="text-xs font-medium">Prev</span>
         </button>
 
-        {/* Pages */}
         <div className="flex items-center gap-1 text-sm select-none">
           <button className={`${pageBase} ${pageActive}`} aria-current="page">
             1
@@ -35,7 +32,6 @@ const Pagination = () => {
           <button className={pageBase}>10</button>
         </div>
 
-        {/* Next */}
         <button className={btnBase} aria-label="Next page">
           <span className="text-xs font-medium">Next</span>
           <ChevronRightIcon className="w-4 h-4" />

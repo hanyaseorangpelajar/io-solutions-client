@@ -1,3 +1,4 @@
+// src/app/(dashboard)/pages/daftar-tiket/page.tsx
 "use client";
 
 import FormModal from "@/components/FormModal";
@@ -5,14 +6,12 @@ import TiketForm from "@/components/forms/TicketForm";
 import TutupTiketForm from "@/components/forms/TutupTiketForm";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
-import TableSearch from "@/components/TableSearch";
+import TableToolbar from "@/components/TableToolbar";
 import {
   PlusIcon,
   EyeIcon,
   PencilSquareIcon,
   TrashIcon,
-  FunnelIcon,
-  ArrowsUpDownIcon,
   CheckCircleIcon,
 } from "@heroicons/react/24/outline";
 
@@ -36,54 +35,56 @@ const daftarTiketData: DaftarTicket[] = [
   { id: 3, title: "Ganti keyboard", class: "Urgent", date: "2025-08-05" },
 ];
 
-const TicketPage = () => {
+export default function TicketPage() {
   const renderRow = (item: DaftarTicket) => (
-    <tr key={item.id} className="text-sm hover:bg-black hover:text-white">
+    // jadikan baris group agar tombol aksi bisa ikut invert saat hover
+    <tr key={item.id} className="group text-sm hover:bg-black hover:text-white">
       <td className="p-4">{item.title}</td>
       <td className="hidden md:table-cell">{item.class}</td>
       <td className="hidden md:table-cell">{item.date}</td>
       <td>
         <div className="flex items-center gap-2">
-          <FormModal
-            type="create"
-            entityTitle="Tiket"
-            component={TiketForm}
-            icon={
-              <PlusIcon className="w-4 h-4 text-white group-hover:text-black" />
-            }
-          />
+          {/* READ */}
           <FormModal
             type="read"
             entityTitle="Tiket"
             component={TiketForm}
             data={item}
+            // sinkron hover: tombol jadi putih saat row di-hover
+            triggerClassName="w-8 h-8 group-hover:bg-white group-hover:text-black"
             icon={
               <EyeIcon className="w-4 h-4 text-white group-hover:text-black" />
             }
           />
+          {/* UPDATE */}
           <FormModal
             type="update"
             entityTitle="Tiket"
             component={TiketForm}
             data={item}
+            triggerClassName="w-8 h-8 group-hover:bg-white group-hover:text-black"
             icon={
               <PencilSquareIcon className="w-4 h-4 text-white group-hover:text-black" />
             }
           />
+          {/* CLOSE (Tutup Tiket) */}
           <FormModal
             type="update"
             title="Tutup Tiket"
             entityTitle="Tiket"
             component={TutupTiketForm}
             data={item}
+            triggerClassName="w-8 h-8 group-hover:bg-white group-hover:text-black"
             icon={
               <CheckCircleIcon className="w-4 h-4 text-white group-hover:text-black" />
             }
           />
+          {/* DELETE */}
           <FormModal
             type="delete"
             entityTitle="Tiket"
             id={item.id}
+            triggerClassName="w-8 h-8 group-hover:bg-white group-hover:text-black"
             icon={
               <TrashIcon className="w-4 h-4 text-white group-hover:text-black" />
             }
@@ -95,32 +96,33 @@ const TicketPage = () => {
 
   return (
     <div className="bg-white text-black p-4 rounded-none border border-black flex-1 m-4 mt-6">
+      {/* TOP */}
       <div className="flex items-center justify-between">
         <h1 className="hidden md:block text-lg font-semibold">Daftar Tiket</h1>
-        <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-          <TableSearch />
-          <div className="flex items-center gap-4 self-end">
-            <button
-              className="group w-8 h-8 flex items-center justify-center rounded-none border border-black bg-black hover:bg-white transition"
-              aria-label="Filter"
-            >
-              <FunnelIcon className="w-4 h-4 text-white group-hover:text-black" />
-            </button>
-            <button
-              className="group w-8 h-8 flex items-center justify-center rounded-none border border-black bg-black hover:bg-white transition"
-              aria-label="Sort"
-            >
-              <ArrowsUpDownIcon className="w-4 h-4 text-white group-hover:text-black" />
-            </button>
-          </div>
-        </div>
+
+        <TableToolbar
+          searchPlaceholder="Cari tiket…"
+          // tombol Create diletakkan di header
+          createButton={
+            <FormModal
+              type="create"
+              entityTitle="Tiket"
+              component={TiketForm}
+              // di header tidak perlu sinkron hover row
+              triggerClassName="w-8 h-8"
+              icon={
+                <PlusIcon className="w-4 h-4 text-white group-hover:text-black" />
+              }
+            />
+          }
+        />
       </div>
 
+      {/* LIST */}
       <Table columns={columns} renderRow={renderRow} data={daftarTiketData} />
 
+      {/* PAGINATION */}
       <Pagination />
     </div>
   );
-};
-
-export default TicketPage;
+}

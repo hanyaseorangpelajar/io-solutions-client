@@ -3,15 +3,13 @@
 
 import FormModal from "@/components/FormModal";
 import Table from "@/components/Table";
-import TableSearch from "@/components/TableSearch";
+import TableToolbar from "@/components/TableToolbar";
 import Pagination from "@/components/Pagination";
 import {
   PlusIcon,
   EyeIcon,
   PencilSquareIcon,
   TrashIcon,
-  FunnelIcon,
-  ArrowsUpDownIcon,
 } from "@heroicons/react/24/outline";
 import TeknisiForm from "@/components/forms/TeknisiForm";
 
@@ -74,7 +72,8 @@ const technicians: Technician[] = [
 
 export default function DaftarTeknisiPage() {
   const renderRow = (item: Technician) => (
-    <tr key={item.id} className="text-sm hover:bg-black hover:text-white">
+    // jadikan tr sebuah group
+    <tr key={item.id} className="group text-sm hover:bg-black hover:text-white">
       <td className="p-4">
         <div className="flex flex-col">
           <span className="font-medium">{item.name}</span>
@@ -83,7 +82,6 @@ export default function DaftarTeknisiPage() {
       </td>
 
       <td className="hidden md:table-cell">{item.skills.join(", ")}</td>
-
       <td className="hidden md:table-cell">{item.phone}</td>
       <td className="hidden lg:table-cell">{item.email}</td>
       <td className="hidden lg:table-cell">{item.activeSince}</td>
@@ -91,40 +89,35 @@ export default function DaftarTeknisiPage() {
 
       <td>
         <div className="flex items-center gap-2">
-          {/* CREATE — per row (mengikuti pola sebelumnya) */}
-          <FormModal
-            type="create"
-            entityTitle="Teknisi"
-            component={TeknisiForm}
-            icon={
-              <PlusIcon className="w-4 h-4 text-white group-hover:text-black" />
-            }
-          />
-          {/* READ — modal */}
+          {/* READ */}
           <FormModal
             type="read"
             entityTitle="Teknisi"
             component={TeknisiForm}
             data={item}
+            // sinkron hover baris → tombol ikut invert putih
+            triggerClassName="w-8 h-8 group-hover:bg-white group-hover:text-black"
             icon={
               <EyeIcon className="w-4 h-4 text-white group-hover:text-black" />
             }
           />
-          {/* UPDATE — modal */}
+          {/* UPDATE */}
           <FormModal
             type="update"
             entityTitle="Teknisi"
             component={TeknisiForm}
             data={item}
+            triggerClassName="w-8 h-8 group-hover:bg-white group-hover:text-black"
             icon={
               <PencilSquareIcon className="w-4 h-4 text-white group-hover:text-black" />
             }
           />
-          {/* DELETE — confirm bawaan */}
+          {/* DELETE */}
           <FormModal
             type="delete"
             entityTitle="Teknisi"
             id={item.id}
+            triggerClassName="w-8 h-8 group-hover:bg-white group-hover:text-black"
             icon={
               <TrashIcon className="w-4 h-4 text-white group-hover:text-black" />
             }
@@ -141,24 +134,22 @@ export default function DaftarTeknisiPage() {
         <h1 className="hidden md:block text-lg font-semibold">
           Daftar Teknisi
         </h1>
-        <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-          <TableSearch />
-          <div className="flex items-center gap-4 self-end">
-            <button
-              className="group w-8 h-8 flex items-center justify-center rounded-none border border-black bg-black hover:bg-white transition"
-              aria-label="Filter"
-            >
-              <FunnelIcon className="w-4 h-4 text-white group-hover:text-black" />
-            </button>
-            <button
-              className="group w-8 h-8 flex items-center justify-center rounded-none border border-black bg-black hover:bg-white transition"
-              aria-label="Sort"
-            >
-              <ArrowsUpDownIcon className="w-4 h-4 text-white group-hover:text-black" />
-            </button>
-            {/* Tidak ada Create di header (mengikuti pola sebelumnya) */}
-          </div>
-        </div>
+
+        <TableToolbar
+          searchPlaceholder="Cari teknisi…"
+          createButton={
+            <FormModal
+              type="create"
+              entityTitle="Teknisi"
+              component={TeknisiForm}
+              // di header tidak perlu group-hover sync (boleh tetap sama juga)
+              triggerClassName="w-8 h-8"
+              icon={
+                <PlusIcon className="w-4 h-4 text-white group-hover:text-black" />
+              }
+            />
+          }
+        />
       </div>
 
       {/* LIST */}

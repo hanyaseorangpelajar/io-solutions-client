@@ -1,5 +1,11 @@
+// src/components/forms/TicketForm.tsx
 "use client";
-import { useMemo, useState } from "react";
+
+import * as React from "react";
+import InputLabelField from "@/components/InputLabelField";
+import SelectLabelField from "@/components/SelectLabelField";
+import FormRow from "@/components/FormRow";
+import FormActions from "@/components/FormActions";
 
 export type Tiket = {
   id?: number | string;
@@ -8,89 +14,82 @@ export type Tiket = {
   date?: string; // YYYY-MM-DD
 };
 
+type Mode = "create" | "read" | "update";
+
 type TiketFormProps = {
-  type: "create" | "read" | "update";
+  type: Mode;
   data?: Tiket;
   onClose: () => void;
 };
 
-const TiketForm = ({ type, data, onClose }: TiketFormProps) => {
-  const initial = useMemo<Tiket>(
-    () => ({
+export default function TiketForm({ type, data, onClose }: TiketFormProps) {
+  const isRead = type === "read";
+
+  const [form, setForm] = React.useState<Tiket>({
+    title: data?.title ?? "",
+    class: data?.class ?? "",
+    date: data?.date ?? "",
+  });
+
+  React.useEffect(() => {
+    setForm({
       title: data?.title ?? "",
       class: data?.class ?? "",
       date: data?.date ?? "",
-    }),
-    [data]
-  );
-
-  const [form, setForm] = useState<Tiket>(initial);
-  const readOnly = type === "read";
-
-  const onChange =
-    (k: keyof Tiket) => (e: React.ChangeEvent<HTMLInputElement>) =>
-      setForm((s) => ({ ...s, [k]: e.target.value }));
+    });
+  }, [data]);
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: submit logic (API call)
+    // TODO: call API create/update
     onClose();
   };
 
   return (
     <form onSubmit={onSubmit} className="mt-2 flex flex-col gap-3">
-      <label className="text-sm">
-        <div className="mb-1">Title</div>
-        <input
-          value={form.title ?? ""}
-          onChange={onChange("title")}
-          className="w-full border border-black px-3 py-2 rounded-none bg-white disabled:bg-white/60"
-          placeholder="Title..."
-          disabled={readOnly}
-        />
-      </label>
+      {/* Judul */}
+      <InputLabelField
+        id="ticket-title"
+        label="Judul"
+        value={form.title ?? ""}
+        onChange={(e) => setForm((s) => ({ ...s, title: e.target.value }))}
+        placeholder="Contoh: Laptop tidak menyala"
+        autoComplete="off"
+        disabled={isRead}
+        required
+      />
 
-      <label className="text-sm">
-        <div className="mb-1">Class</div>
-        <input
+      {/* Kelas & Tanggal */}
+      <FormRow>
+        {/* Versi SELECT (disarankan) */}
+        <SelectLabelField
+          id="ticket-class"
+          label="Kelas"
           value={form.class ?? ""}
-          onChange={onChange("class")}
-          className="w-full border border-black px-3 py-2 rounded-none bg-white disabled:bg-white/60"
-          placeholder="Class..."
-          disabled={readOnly}
+          onChange={(e) => setForm((s) => ({ ...s, class: e.target.value }))}
+          options={[
+            { value: "VIP", label: "VIP" },
+            { value: "Regular", label: "Regular" },
+            { value: "Urgent", label: "Urgent" },
+          ]}
+          disabled={isRead}
+          // kalau tetap mau input bebas, ganti ke InputLabelField seperti sebelumnya
         />
-      </label>
 
-      <label className="text-sm">
-        <div className="mb-1">Date</div>
-        <input
+        <InputLabelField
+          id="ticket-date"
+          label="Tanggal"
+          type="date"
           value={form.date ?? ""}
-          onChange={onChange("date")}
-          className="w-full border border-black px-3 py-2 rounded-none bg-white disabled:bg-white/60"
-          placeholder="YYYY-MM-DD"
-          disabled={readOnly}
+          onChange={(e) => setForm((s) => ({ ...s, date: e.target.value }))}
+          autoComplete="off"
+          disabled={isRead}
+          required
         />
-      </label>
+      </FormRow>
 
-      <div className="mt-2 flex justify-end gap-2">
-        <button
-          type="button"
-          onClick={onClose}
-          className="px-4 py-2 border border-black bg-white hover:bg-black hover:text-white transition"
-        >
-          {readOnly ? "Close" : "Cancel"}
-        </button>
-        {!readOnly && (
-          <button
-            type="submit"
-            className="px-4 py-2 border border-black bg-black text-white hover:bg-white hover:text-black transition"
-          >
-            {type === "create" ? "Create" : "Update"}
-          </button>
-        )}
-      </div>
+      {/* Actions (seragam di semua form) */}
+      <FormActions mode={type} onCancel={onClose} />
     </form>
   );
-};
-
-export default TiketForm;
+}

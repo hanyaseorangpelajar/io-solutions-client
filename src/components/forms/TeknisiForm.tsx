@@ -1,174 +1,155 @@
-// src/components/form/TeknisiForm.tsx
 "use client";
 
-import { useMemo, useState } from "react";
+import * as React from "react";
+import InputLabelField from "@/components/InputLabelField";
+import SelectLabelField from "@/components/SelectLabelField";
+import LabeledTagInput from "@/components/LabeledTagInput";
+import FormRow from "@/components/FormRow";
+import FormActions from "@/components/FormActions";
 
-export type TechnicianStatus = "ACTIVE" | "INACTIVE" | "ON_LEAVE";
-
-export type Technician = {
-  id?: string | number; // e.g. TCN-2025-0001
-  name?: string;
-  email?: string;
-  phone?: string;
-  skills?: string[]; // e.g. ["Hardware", "Windows", "MacOS"]
+// harus sama dengan halaman
+type TechnicianStatus = "ACTIVE" | "INACTIVE" | "ON_LEAVE";
+type Technician = {
+  id?: string;
+  name: string;
+  email: string;
+  phone: string;
+  skills: string[];
   activeSince?: string; // YYYY-MM-DD
-  status?: TechnicianStatus;
+  status: TechnicianStatus;
 };
 
-type TeknisiFormProps = {
-  type: "create" | "read" | "update";
+type Mode = "create" | "read" | "update";
+export type TeknisiFormProps = {
+  type: Mode;
   data?: Technician;
+  id?: number | string;
   onClose: () => void;
 };
 
-const statusOptions: TechnicianStatus[] = ["ACTIVE", "INACTIVE", "ON_LEAVE"];
+export default function TeknisiForm({ type, data, onClose }: TeknisiFormProps) {
+  const isRead = type === "read";
 
-const TeknisiForm = ({ type, data, onClose }: TeknisiFormProps) => {
-  const readOnly = type === "read";
+  const [form, setForm] = React.useState<Technician>({
+    name: data?.name ?? "",
+    email: data?.email ?? "",
+    phone: data?.phone ?? "",
+    skills: data?.skills ?? [],
+    activeSince: data?.activeSince ?? "",
+    status: data?.status ?? "ACTIVE",
+  });
 
-  const initial = useMemo(
-    () => ({
+  // sinkron saat data berubah (buka item lain)
+  React.useEffect(() => {
+    setForm({
       name: data?.name ?? "",
       email: data?.email ?? "",
       phone: data?.phone ?? "",
-      skillsText: (data?.skills ?? []).join(", "),
+      skills: data?.skills ?? [],
       activeSince: data?.activeSince ?? "",
-      status: (data?.status as TechnicianStatus) ?? "ACTIVE",
-    }),
-    [data]
-  );
+      status: data?.status ?? "ACTIVE",
+    });
+  }, [data]);
 
-  const [form, setForm] = useState(initial);
+  const set =
+    <K extends keyof Technician>(k: K) =>
+    (v: Technician[K]) =>
+      setForm((s) => ({ ...s, [k]: v }));
 
-  const onChange =
-    (key: keyof typeof initial) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-      setForm((s) => ({ ...s, [key]: e.target.value }));
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Transformasi skillsText -> string[]
-    const payload: Technician = {
-      ...data,
-      name: form.name.trim(),
-      email: form.email.trim(),
-      phone: form.phone.trim(),
-      skills: form.skillsText
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean),
-      activeSince: form.activeSince,
-      status: form.status as TechnicianStatus,
-    };
-
-    // TODO: Integrasi API di sini (create/update)
-    // console.log({ type, payload });
-
+    // TODO: integrasi submit ke backend
     onClose();
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mt-2 flex flex-col gap-3">
-      {/* Optional: tampilkan ID bila ada */}
+    <form onSubmit={onSubmit} className="flex flex-col gap-3">
+      {/* ID (hanya tampil kalau ada) */}
       {data?.id && (
-        <div className="text-xs border border-black px-2 py-1 rounded-none self-start">
-          ID: {String(data.id)}
-        </div>
+        <InputLabelField
+          id="tech-id"
+          label="ID Teknisi"
+          value={data.id}
+          onChange={() => {}}
+          disabled
+          controlClassName="bg-black/5"
+        />
       )}
 
-      <label className="text-sm">
-        <div className="mb-1">Name</div>
-        <input
-          value={form.name}
-          onChange={onChange("name")}
-          className="w-full border border-black px-3 py-2 rounded-none bg-white disabled:bg-white/60"
-          placeholder="Nama teknisi..."
-          disabled={readOnly}
-        />
-      </label>
+      <InputLabelField
+        id="name"
+        label="Nama"
+        value={form.name}
+        onChange={(e) => set("name")(e.target.value)}
+        placeholder="Nama teknisi"
+        disabled={isRead}
+        required
+      />
 
-      <label className="text-sm">
-        <div className="mb-1">Email</div>
-        <input
+      <FormRow>
+        <InputLabelField
+          id="email"
+          label="Email"
           type="email"
           value={form.email}
-          onChange={onChange("email")}
-          className="w-full border border-black px-3 py-2 rounded-none bg-white disabled:bg-white/60"
-          placeholder="email@domain.com"
-          disabled={readOnly}
+          onChange={(e) => set("email")(e.target.value)}
+          placeholder="nama@domain.com"
+          autoComplete="email"
+          disabled={isRead}
+          required
         />
-      </label>
-
-      <label className="text-sm">
-        <div className="mb-1">Phone</div>
-        <input
+        <InputLabelField
+          id="phone"
+          label="Telepon"
           value={form.phone}
-          onChange={onChange("phone")}
-          className="w-full border border-black px-3 py-2 rounded-none bg-white disabled:bg-white/60"
+          onChange={(e) => set("phone")(e.target.value)}
           placeholder="08xx-xxxx-xxxx"
-          disabled={readOnly}
+          inputMode="tel"
+          autoComplete="tel"
+          disabled={isRead}
+          required
         />
-      </label>
+      </FormRow>
 
-      <label className="text-sm">
-        <div className="mb-1">Skills (comma separated)</div>
-        <input
-          value={form.skillsText}
-          onChange={onChange("skillsText")}
-          className="w-full border border-black px-3 py-2 rounded-none bg-white disabled:bg-white/60"
-          placeholder="Hardware, Windows, MacOS"
-          disabled={readOnly}
+      <LabeledTagInput
+        id="skills"
+        label="Keahlian"
+        value={form.skills}
+        onChange={set("skills")}
+        disabled={isRead}
+        placeholder="Tambah skill lalu tekan Enter…"
+        note="Contoh: Hardware, Windows, MacOS, Networking, Printer"
+      />
+
+      <FormRow>
+        <InputLabelField
+          id="activeSince"
+          label="Aktif Sejak"
+          type="date"
+          value={form.activeSince ?? ""}
+          onChange={(e) => set("activeSince")(e.target.value)}
+          disabled={isRead}
         />
-      </label>
+        <SelectLabelField
+          id="status"
+          label="Status"
+          value={form.status}
+          onChange={(e) => set("status")(e.target.value as TechnicianStatus)}
+          options={[
+            { value: "ACTIVE", label: "ACTIVE" },
+            { value: "INACTIVE", label: "INACTIVE" },
+            { value: "ON_LEAVE", label: "ON_LEAVE" },
+          ]}
+          disabled={isRead}
+        />
+      </FormRow>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <label className="text-sm">
-          <div className="mb-1">Active Since</div>
-          <input
-            type="date"
-            value={form.activeSince}
-            onChange={onChange("activeSince")}
-            className="w-full border border-black px-3 py-2 rounded-none bg-white disabled:bg-white/60"
-            disabled={readOnly}
-          />
-        </label>
-
-        <label className="text-sm">
-          <div className="mb-1">Status</div>
-          <select
-            value={form.status}
-            onChange={onChange("status")}
-            className="w-full border border-black px-3 py-2 rounded-none bg-white disabled:bg-white/60"
-            disabled={readOnly}
-          >
-            {statusOptions.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
-      <div className="mt-2 flex justify-end gap-2">
-        <button
-          type="button"
-          onClick={onClose}
-          className="px-4 py-2 border border-black bg-white hover:bg-black hover:text-white transition"
-        >
-          {readOnly ? "Close" : "Cancel"}
-        </button>
-        {!readOnly && (
-          <button
-            type="submit"
-            className="px-4 py-2 border border-black bg-black text-white hover:bg-white hover:text-black transition"
-          >
-            {type === "create" ? "Create" : "Update"}
-          </button>
-        )}
-      </div>
+      <FormActions
+        mode={type}
+        onCancel={onClose}
+        cancelText="Close"
+        submitText={type === "create" ? "Save" : "Save Changes"}
+      />
     </form>
   );
-};
-
-export default TeknisiForm;
+}

@@ -32,7 +32,7 @@ const MENU_RAW: MenuGroup[] = [
     items: [
       {
         icon: "/icons/ticket.png",
-        label: "Layanan Tiket",
+        label: "Daftar Tiket",
         href: "/pages/daftar-tiket",
         visible: ["sysadmin", "admin", "teknisi"],
       },
@@ -55,13 +55,13 @@ const MENU_RAW: MenuGroup[] = [
     items: [
       {
         icon: "/icons/audit.png",
-        label: "Audit Pengetahuan",
-        href: "/",
+        label: "Audit Tiket",
+        href: "/pages/audit-pengetahuan",
         visible: ["sysadmin", "admin", "teknisi"],
       },
       {
         icon: "/icons/knowledge.png",
-        label: "Basis Pengetahuan",
+        label: "Repository",
         href: "/",
         visible: ["sysadmin", "admin", "teknisi"],
       },

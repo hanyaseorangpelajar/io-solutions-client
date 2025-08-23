@@ -5,15 +5,8 @@ import FormModal from "@/components/FormModal";
 import TiketForm from "@/components/forms/TicketForm";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
-import TableSearch from "@/components/TableSearch";
-import {
-  PlusIcon,
-  EyeIcon,
-  PencilSquareIcon,
-  TrashIcon,
-  FunnelIcon,
-  ArrowsUpDownIcon,
-} from "@heroicons/react/24/outline";
+import TableToolbar from "@/components/TableToolbar";
+import { EyeIcon, TrashIcon } from "@heroicons/react/24/outline";
 
 type TicketStatus =
   | "OPEN"
@@ -92,7 +85,8 @@ const historyData: TicketHistory[] = [
 
 export default function TicketHistoryPage() {
   const renderRow = (item: TicketHistory) => (
-    <tr key={item.id} className="text-sm hover:bg-black hover:text-white">
+    // jadikan baris group agar tombol aksi bisa ikut invert saat hover
+    <tr key={item.id} className="group text-sm hover:bg-black hover:text-white">
       {/* Ticket (gabung title + id) */}
       <td className="p-4">
         <div className="flex flex-col">
@@ -113,36 +107,19 @@ export default function TicketHistoryPage() {
       {/* Closed */}
       <td className="hidden md:table-cell">{item.closedAt ?? "-"}</td>
 
-      {/* Actions */}
+      {/* Actions: hanya READ & DELETE */}
       <td>
         <div className="flex items-center gap-2">
-          {/* CREATE — per row */}
-          <FormModal
-            type="create"
-            entityTitle="Tiket"
-            component={TiketForm}
-            icon={
-              <PlusIcon className="w-4 h-4 text-white group-hover:text-black" />
-            }
-          />
           {/* READ — modal */}
           <FormModal
             type="read"
             entityTitle="Tiket"
             component={TiketForm}
             data={item}
+            // sinkron hover: tombol jadi putih saat row di-hover
+            triggerClassName="w-8 h-8 group-hover:bg-white group-hover:text-black"
             icon={
               <EyeIcon className="w-4 h-4 text-white group-hover:text-black" />
-            }
-          />
-          {/* UPDATE — modal */}
-          <FormModal
-            type="update"
-            entityTitle="Tiket"
-            component={TiketForm}
-            data={item}
-            icon={
-              <PencilSquareIcon className="w-4 h-4 text-white group-hover:text-black" />
             }
           />
           {/* DELETE — confirm bawaan */}
@@ -150,6 +127,7 @@ export default function TicketHistoryPage() {
             type="delete"
             entityTitle="Tiket"
             id={item.id}
+            triggerClassName="w-8 h-8 group-hover:bg-white group-hover:text-black"
             icon={
               <TrashIcon className="w-4 h-4 text-white group-hover:text-black" />
             }
@@ -164,23 +142,11 @@ export default function TicketHistoryPage() {
       {/* TOP */}
       <div className="flex items-center justify-between">
         <h1 className="hidden md:block text-lg font-semibold">Riwayat Tiket</h1>
-        <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-          <TableSearch />
-          <div className="flex items-center gap-4 self-end">
-            <button
-              className="group w-8 h-8 flex items-center justify-center rounded-none border border-black bg-black hover:bg-white transition"
-              aria-label="Filter"
-            >
-              <FunnelIcon className="w-4 h-4 text-white group-hover:text-black" />
-            </button>
-            <button
-              className="group w-8 h-8 flex items-center justify-center rounded-none border border-black bg-black hover:bg-white transition"
-              aria-label="Sort"
-            >
-              <ArrowsUpDownIcon className="w-4 h-4 text-white group-hover:text-black" />
-            </button>
-          </div>
-        </div>
+
+        <TableToolbar
+          searchPlaceholder="Cari riwayat…"
+          // bisa tambahkan onFilterClick / onSortClick kalau sudah ada logic-nya
+        />
       </div>
 
       {/* LIST */}
