@@ -6,8 +6,8 @@ import TableToolbar from "@/components/data-display/table/TableToolbar";
 import FormModal from "@/components/overlays/FormModal";
 import PriceDeltaBadge from "@/components/ui/badges/PriceDeltaBadge";
 import Pagination from "@/components/data-display/table/Pagination";
-import { InventoryItem } from "@/components/features/inventory/InventoryItemForm";
-import InventoryItemForm from "@/components/form/InventoryItemForm";
+import { InventoryItem } from "@/components/features/inventory/forms/InventoryItemForm";
+import InventoryItemForm from "@/components/ui/form/InventoryItemForm";
 import {
   EyeIcon,
   PencilSquareIcon,

@@ -5,7 +5,7 @@ import Table from "@/components/data-display/table/Table";
 import TableToolbar from "@/components/data-display/table/TableToolbar";
 import Pagination from "@/components/data-display/table/Pagination";
 import FormModal from "@/components/overlays/FormModal";
-import SafetyChip from "@/components/data-display/chips/SafetyChip";
+import SafetyChip from "@/components/ui/chips/SafetyChip";
 import RoleForm, { RoleItem } from "@/components/features/rbac/forms/RoleForm";
 import {
   PlusIcon,

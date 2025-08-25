@@ -1,14 +1,14 @@
 "use client";
 
 import * as React from "react";
-import InputLabelField from "@/components/form/fields/InputLabelField";
-import SelectLabelField from "@/components/form/fields/SelectLabelField";
-import CheckboxLabel from "@/components/form/fields/CheckboxLabel";
 import CostSummary from "@/components/widgets/CostSummary";
-import PartsEditor from "@/components/widgets/PartsEditor";
-import { Part } from "@/components/widgets/PartsEditor";
-import TextAreaLabelField from "../../../form/fields/TextAreaLabelField";
-import FormActions from "../../../form/FormActions";
+import PartsEditor from "@/components/features/tickets/components/PartsEditor";
+import { Part } from "@/components/features/tickets/components/PartsEditor";
+import FormActions from "../../../ui/form/FormActions";
+import InputLabelField from "@/components/ui/fields/InputLabelField";
+import SelectLabelField from "@/components/ui/fields/SelectLabelField";
+import TextAreaLabelField from "@/components/ui/fields/TextAreaLabelField";
+import CheckboxLabel from "@/components/ui/fields/CheckboxLabel";
 
 type TicketStatus =
   | "OPEN"

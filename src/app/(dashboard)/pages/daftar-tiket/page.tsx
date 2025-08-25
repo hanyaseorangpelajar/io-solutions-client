@@ -1,4 +1,3 @@
-// src/app/(dashboard)/pages/daftar-tiket/page.tsx
 "use client";
 
 import FormModal from "@/components/overlays/FormModal";
@@ -37,8 +36,11 @@ const daftarTiketData: DaftarTicket[] = [
 
 export default function TicketPage() {
   const renderRow = (item: DaftarTicket) => (
-    // jadikan baris group agar tombol aksi bisa ikut invert saat hover
-    <tr key={item.id} className="group text-sm hover:bg-black hover:text-white">
+    // penting: pakai group/row agar tombol aksi ikut invert saat hover baris
+    <tr
+      key={item.id}
+      className="group/row text-sm hover:bg-black hover:text-white"
+    >
       <td className="p-4">{item.title}</td>
       <td className="hidden md:table-cell">{item.class}</td>
       <td className="hidden md:table-cell">{item.date}</td>
@@ -50,11 +52,8 @@ export default function TicketPage() {
             entityTitle="Tiket"
             component={TiketForm}
             data={item}
-            // sinkron hover: tombol jadi putih saat row di-hover
-            triggerClassName="w-8 h-8 group-hover:bg-white group-hover:text-black"
-            icon={
-              <EyeIcon className="w-4 h-4 text-white group-hover:text-black" />
-            }
+            triggerClassName="w-8 h-8"
+            icon={<EyeIcon className="w-4 h-4" />}
           />
           {/* UPDATE */}
           <FormModal
@@ -62,10 +61,8 @@ export default function TicketPage() {
             entityTitle="Tiket"
             component={TiketForm}
             data={item}
-            triggerClassName="w-8 h-8 group-hover:bg-white group-hover:text-black"
-            icon={
-              <PencilSquareIcon className="w-4 h-4 text-white group-hover:text-black" />
-            }
+            triggerClassName="w-8 h-8"
+            icon={<PencilSquareIcon className="w-4 h-4" />}
           />
           {/* CLOSE (Tutup Tiket) */}
           <FormModal
@@ -74,20 +71,16 @@ export default function TicketPage() {
             entityTitle="Tiket"
             component={TutupTiketForm}
             data={item}
-            triggerClassName="w-8 h-8 group-hover:bg-white group-hover:text-black"
-            icon={
-              <CheckCircleIcon className="w-4 h-4 text-white group-hover:text-black" />
-            }
+            triggerClassName="w-8 h-8"
+            icon={<CheckCircleIcon className="w-4 h-4" />}
           />
           {/* DELETE */}
           <FormModal
             type="delete"
             entityTitle="Tiket"
             id={item.id}
-            triggerClassName="w-8 h-8 group-hover:bg-white group-hover:text-black"
-            icon={
-              <TrashIcon className="w-4 h-4 text-white group-hover:text-black" />
-            }
+            triggerClassName="w-8 h-8"
+            icon={<TrashIcon className="w-4 h-4" />}
           />
         </div>
       </td>
@@ -102,17 +95,13 @@ export default function TicketPage() {
 
         <TableToolbar
           searchPlaceholder="Cari tiket…"
-          // tombol Create diletakkan di header
           createButton={
             <FormModal
               type="create"
               entityTitle="Tiket"
               component={TiketForm}
-              // di header tidak perlu sinkron hover row
               triggerClassName="w-8 h-8"
-              icon={
-                <PlusIcon className="w-4 h-4 text-white group-hover:text-black" />
-              }
+              icon={<PlusIcon className="w-4 h-4" />}
             />
           }
         />

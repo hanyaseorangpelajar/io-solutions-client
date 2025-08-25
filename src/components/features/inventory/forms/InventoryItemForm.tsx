@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import InputLabelField from "@/components/form/fields/InputLabelField";
-import SelectLabelField from "@/components/form/fields/SelectLabelField";
+import InputLabelField from "@/components/ui/fields/InputLabelField";
+import SelectLabelField from "@/components/ui/fields/SelectLabelField";
 import PriceDeltaBadge from "@/components/ui/badges/PriceDeltaBadge";
 
 export type InventoryItem = {

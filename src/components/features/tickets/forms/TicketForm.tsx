@@ -2,10 +2,10 @@
 "use client";
 
 import * as React from "react";
-import InputLabelField from "@/components/form/fields/InputLabelField";
-import SelectLabelField from "@/components/form/fields/SelectLabelField";
-import FormRow from "@/components/form/FormRow";
-import FormActions from "@/components/form/FormActions";
+import InputLabelField from "@/components/ui/fields/InputLabelField";
+import SelectLabelField from "@/components/ui/fields/SelectLabelField";
+import FormRow from "@/components/ui/form/FormRow";
+import FormActions from "@/components/ui/form/FormActions";
 
 export type Tiket = {
   id?: number | string;

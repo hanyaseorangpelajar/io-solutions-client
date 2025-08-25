@@ -1,7 +1,7 @@
 // src/components/PartsEditor.tsx
 "use client";
 import * as React from "react";
-import InputLabelField from "@/components/form/fields/InputLabelField";
+import InputLabelField from "@/components/ui/fields/InputLabelField";
 
 export type Part = { name: string; qty: number; unitCost?: number };
 

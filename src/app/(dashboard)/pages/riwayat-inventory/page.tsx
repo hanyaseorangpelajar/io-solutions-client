@@ -5,7 +5,7 @@ import Table from "@/components/data-display/table/Table";
 import TableToolbar from "@/components/data-display/table/TableToolbar";
 import InventoryHistoryDetailForm, {
   InventoryHistory,
-} from "@/components/features/inventory/InventoryHistoryDetailForm";
+} from "@/components/features/inventory/forms/InventoryHistoryDetailForm";
 import FormModal from "@/components/overlays/FormModal";
 import PriceDeltaBadge from "@/components/ui/badges/PriceDeltaBadge";
 import { EyeIcon, TrashIcon } from "@heroicons/react/24/outline";

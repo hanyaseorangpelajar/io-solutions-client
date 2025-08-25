@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import InputLabelField from "@/components/form/fields/InputLabelField";
-import TagInput from "@/components/form/fields/TagInput";
+import InputLabelField from "@/components/ui/fields/InputLabelField";
+import TagInput from "@/components/ui/fields/TagInput";
 
 export type RoleItem = {
   id: string;

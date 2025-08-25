@@ -1,4 +1,3 @@
-// src/components/FormModal.tsx
 "use client";
 
 import * as React from "react";
@@ -7,7 +6,7 @@ type CrudType = "create" | "read" | "update" | "delete";
 type NonDeleteType = Exclude<CrudType, "delete">;
 
 type FormComponentProps = {
-  type: NonDeleteType; // komponen form hanya menerima create/read/update
+  type: NonDeleteType; // form hanya untuk create/read/update
   data?: any;
   id?: number | string;
   onClose: () => void;
@@ -18,17 +17,22 @@ type Props = {
   type: CrudType;
   title?: string;
   entityTitle?: string;
-  component?: FormComponent; // tidak dipanggil saat type === "delete"
+  component?: FormComponent; // tidak dipakai saat type === "delete"
   data?: any;
   id?: number | string;
   icon?: React.ReactNode;
-  triggerClassName?: string; // kontrol ukuran/shape tombol trigger
-  contentClassName?: string; // kelas tambahan untuk body wrapper (opsional)
+  triggerClassName?: string; // kontrol ukuran/shape tombol
 };
 
 const triggerBase =
   "group inline-flex items-center justify-center rounded-none " +
-  "border border-black bg-black hover:bg-white transition";
+  "border border-black bg-black text-white transition " +
+  // hover tombol sendiri
+  "hover:bg-white hover:text-black " +
+  // saat baris tabel (parent) di-hover
+  "group-hover/row:bg-white group-hover/row:text-black " +
+  // paksa semua anak (ikon/teks di dalam tombol) ikut warna tombol
+  "[&_*]:!text-white hover:[&_*]:!text-black group-hover/row:[&_*]:!text-black";
 
 export default function FormModal({
   type,
@@ -39,7 +43,6 @@ export default function FormModal({
   id,
   icon,
   triggerClassName,
-  contentClassName,
 }: Props) {
   const [open, setOpen] = React.useState(false);
 
@@ -57,9 +60,9 @@ export default function FormModal({
 
   const renderBody = () => {
     if (type === "delete") {
-      // Built-in delete confirmation
+      // Built-in delete confirmation — komponen form tidak dipakai
       return (
-        <form className="flex flex-col gap-4">
+        <form className="p-4 flex flex-col gap-4">
           <p className="text-center">
             Semua data akan dihapus. Yakin menghapus {entityTitle ?? "item"}
             {id !== undefined ? ` (${id})` : ""}?
@@ -83,8 +86,8 @@ export default function FormModal({
       );
     }
 
+    // create/read/update → panggil komponen form
     if (Comp) {
-      // create/read/update → panggil komponen form
       return (
         <Comp
           type={type as NonDeleteType}
@@ -95,12 +98,11 @@ export default function FormModal({
       );
     }
 
-    return <div>Form not found.</div>;
+    return <div className="p-4">Form not found.</div>;
   };
 
   return (
     <>
-      {/* Trigger */}
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -110,17 +112,12 @@ export default function FormModal({
         aria-label={modalTitle}
         title={modalTitle}
       >
-        {icon || (
-          <span className="text-xs text-white group-hover:text-black capitalize">
-            {type}
-          </span>
-        )}
+        {icon || <span className="text-xs capitalize">{type}</span>}
       </button>
 
-      {/* Modal */}
       {open && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4">
-          <div className="relative w-full max-w-3xl bg-white text-black border border-black">
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60">
+          <div className="relative w-[90%] md:w-[70%] lg:w-[60%] xl:w-[50%] 2xl:w-[40%] bg-white border border-black">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-black">
               <h2 className="text-sm font-semibold uppercase tracking-wider">
@@ -136,14 +133,8 @@ export default function FormModal({
               </button>
             </div>
 
-            {/* Body wrapper: padding + scroll agar form rapi */}
-            <div
-              className={`px-4 py-3 max-h-[75vh] overflow-y-auto ${
-                contentClassName || ""
-              }`}
-            >
-              {renderBody()}
-            </div>
+            {/* Body */}
+            {renderBody()}
           </div>
         </div>
       )}

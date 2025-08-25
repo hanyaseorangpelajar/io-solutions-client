@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import InputLabelField from "./fields/InputLabelField";
-import SelectLabelField from "./fields/SelectLabelField";
+import InputLabelField from "../fields/InputLabelField";
+import SelectLabelField from "../fields/SelectLabelField";
 
 type Mode = "create" | "read" | "update";
 

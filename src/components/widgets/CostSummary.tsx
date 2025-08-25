@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import type { Part } from "@/components/widgets/PartsEditor";
+import type { Part } from "@/components/features/tickets/components/PartsEditor";
 
 export type CostSummaryProps = {
   parts?: Part[];

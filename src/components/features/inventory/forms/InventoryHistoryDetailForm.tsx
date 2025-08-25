@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import InputLabelField from "@/components/form/fields/InputLabelField";
 import PriceDeltaBadge from "@/components/ui/badges/PriceDeltaBadge";
+import InputLabelField from "@/components/ui/fields/InputLabelField";
 
 type Mode = "create" | "read" | "update";
 

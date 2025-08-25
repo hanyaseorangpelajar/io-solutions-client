@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import InputLabelField from "@/components/form/fields/InputLabelField";
-import FormActions from "../../../form/FormActions";
+import FormActions from "../../../ui/form/FormActions";
+import InputLabelField from "@/components/ui/fields/InputLabelField";
 
 type Mode = "create" | "read" | "update";
 export type AuditPengetahuanFormProps = {

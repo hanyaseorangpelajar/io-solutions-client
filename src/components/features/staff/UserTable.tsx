@@ -38,7 +38,7 @@ export default function UserTable({
     return (
       <tr
         key={item.id}
-        className="group text-sm hover:bg-black hover:text-white"
+        className="group/row text-sm hover:bg-black hover:text-white"
       >
         <td className="p-4">
           <div className="flex flex-col">
@@ -56,9 +56,7 @@ export default function UserTable({
               component={AssignRoleForm as any}
               data={{ ...item, roleName }}
               triggerClassName="w-8 h-8"
-              icon={
-                <EyeIcon className="w-4 h-4 text-white group-hover:text-black" />
-              }
+              icon={<EyeIcon className="w-4 h-4" />}
             />
             <FormModal
               type="update"
@@ -73,18 +71,14 @@ export default function UserTable({
               }
               data={{ ...item, roleName }}
               triggerClassName="w-8 h-8"
-              icon={
-                <PencilSquareIcon className="w-4 h-4 text-white group-hover:text-black" />
-              }
+              icon={<PencilSquareIcon className="w-4 h-4" />}
             />
             <FormModal
               type="delete"
               entityTitle="User"
               id={item.id}
               triggerClassName="w-8 h-8"
-              icon={
-                <TrashIcon className="w-4 h-4 text-white group-hover:text-black" />
-              }
+              icon={<TrashIcon className="w-4 h-4" />}
             />
           </div>
         </td>

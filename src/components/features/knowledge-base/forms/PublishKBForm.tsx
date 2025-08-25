@@ -2,9 +2,9 @@
 "use client";
 
 import * as React from "react";
-import InputLabelField from "@/components/form/fields/InputLabelField";
-import SelectLabelField from "@/components/form/fields/SelectLabelField";
-import FormActions from "@/components/form/FormActions"; // ⟵ tambah
+import InputLabelField from "@/components/ui/fields/InputLabelField";
+import SelectLabelField from "@/components/ui/fields/SelectLabelField";
+import FormActions from "@/components/ui/form/FormActions"; // ⟵ tambah
 
 type Mode = "create" | "read" | "update";
 export type PublishKBFormProps = {
