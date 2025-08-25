@@ -1,12 +1,12 @@
 // src/app/(dashboard)/pages/audit-pengetahuan/page.tsx
 "use client";
 
-import FormModal from "@/components/FormModal";
-import Pagination from "@/components/Pagination";
-import Table from "@/components/Table";
-import TableToolbar from "@/components/TableToolbar";
-import AuditPengetahuanForm from "@/components/forms/AuditPengetahuanForm";
-import PublishKBForm from "@/components/forms/PublishKBForm";
+import FormModal from "@/components/overlays/FormModal";
+import Pagination from "@/components/data-display/table/Pagination";
+import Table from "@/components/data-display/table/Table";
+import TableToolbar from "@/components/data-display/table/TableToolbar";
+import AuditPengetahuanForm from "@/components/features/knowledge-base/forms/AuditPengetahuanForm";
+import PublishKBForm from "@/components/features/knowledge-base/forms/PublishKBForm";
 import {
   EyeIcon,
   PencilSquareIcon,

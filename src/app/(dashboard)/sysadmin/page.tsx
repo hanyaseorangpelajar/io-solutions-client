@@ -1,39 +1,32 @@
-import Announcements from "@/components/Announcements";
-import Log from "@/components/Log";
-import UserCard from "@/components/UserCard";
-import CountChart from "@/components/CountChart";
-import StockChart from "@/components/StockChart";
-import FinanceChart from "@/components/FinanceChart";
+import CountChart from "@/components/charts/CountChart";
+import FinanceChart from "@/components/charts/FinanceChart";
+import StockChart from "@/components/charts/StockChart";
+import Announcements from "@/components/data-display/Announcements";
+import Log from "@/components/data-display/cards/Log";
+import UserCard from "@/components/data-display/cards/UserCard";
 
 const SysAdminView = () => {
   return (
     <div className="p-4 flex gap-4 flex-col md:flex-row">
-      {/* LEFT */}
       <div className="w-full lg:w-2/3 flex flex-col gap-8">
-        {/* USER CARDS */}
         <div className="flex gap-4 justify-between flex-wrap">
           <UserCard type="ticket" />
           <UserCard type="teacher" />
           <UserCard type="parent" />
           <UserCard type="staff" />
         </div>
-        {/* MIDDLE CHARTS */}
         <div className="flex gap-4 flex-col lg:flex-row">
-          {/* COUNT CHART */}
           <div className="w-full lg:w-1/3 h-[450px]">
             <CountChart />
           </div>
-          {/* ATTENDANCE CHART */}
           <div className="w-full lg:w-2/3 h-[450px]">
             <StockChart />
           </div>
         </div>
-        {/* BOTTOM CHART */}
         <div className="w-full h-[500px]">
           <FinanceChart />
         </div>
       </div>
-      {/* RIGHT */}
       <div className="w-full lg:w-1/3 flex flex-col gap-8">
         <Log />
         <Announcements />

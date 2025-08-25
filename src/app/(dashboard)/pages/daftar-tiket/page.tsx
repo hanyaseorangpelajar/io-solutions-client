@@ -1,12 +1,12 @@
 // src/app/(dashboard)/pages/daftar-tiket/page.tsx
 "use client";
 
-import FormModal from "@/components/FormModal";
-import TiketForm from "@/components/forms/TicketForm";
-import TutupTiketForm from "@/components/forms/TutupTiketForm";
-import Pagination from "@/components/Pagination";
-import Table from "@/components/Table";
-import TableToolbar from "@/components/TableToolbar";
+import FormModal from "@/components/overlays/FormModal";
+import TiketForm from "@/components/features/tickets/forms/TicketForm";
+import TutupTiketForm from "@/components/features/tickets/forms/TutupTiketForm";
+import Pagination from "@/components/data-display/table/Pagination";
+import Table from "@/components/data-display/table/Table";
+import TableToolbar from "@/components/data-display/table/TableToolbar";
 import {
   PlusIcon,
   EyeIcon,

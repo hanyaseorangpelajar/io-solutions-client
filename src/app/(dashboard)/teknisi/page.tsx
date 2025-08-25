@@ -1,5 +1,5 @@
-import Announcements from "@/components/Announcements";
-import BigCalendar from "@/components/BigCalender";
+import Announcements from "@/components/data-display/Announcements";
+import BigCalendar from "@/components/charts/BigCalender";
 
 const TeknisiView = () => {
   return (

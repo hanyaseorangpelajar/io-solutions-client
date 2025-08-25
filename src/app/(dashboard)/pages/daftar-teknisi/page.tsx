@@ -1,17 +1,17 @@
 // src/app/(dashboard)/pages/daftar-teknisi/page.tsx
 "use client";
 
-import FormModal from "@/components/FormModal";
-import Table from "@/components/Table";
-import TableToolbar from "@/components/TableToolbar";
-import Pagination from "@/components/Pagination";
+import FormModal from "@/components/overlays/FormModal";
+import Table from "@/components/data-display/table/Table";
+import TableToolbar from "@/components/data-display/table/TableToolbar";
+import Pagination from "@/components/data-display/table/Pagination";
 import {
   PlusIcon,
   EyeIcon,
   PencilSquareIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
-import TeknisiForm from "@/components/forms/TeknisiForm";
+import TeknisiForm from "@/components/features/technicians/forms/TeknisiForm";
 
 type TechnicianStatus = "ACTIVE" | "INACTIVE" | "ON_LEAVE";
 

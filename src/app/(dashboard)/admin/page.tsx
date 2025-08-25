@@ -1,9 +1,9 @@
-import Announcements from "@/components/Announcements";
-import AttendanceChart from "@/components/StockChart";
-import CountChart from "@/components/CountChart";
-import EventCalendar from "@/components/Log";
-import FinanceChart from "@/components/FinanceChart";
-import UserCard from "@/components/UserCard";
+import Announcements from "@/components/data-display/Announcements";
+import AttendanceChart from "@/components/charts/StockChart";
+import CountChart from "@/components/charts/CountChart";
+import EventCalendar from "@/components/data-display/cards/Log";
+import FinanceChart from "@/components/charts/FinanceChart";
+import UserCard from "@/components/data-display/cards/UserCard";
 
 const AdminView = () => {
   return (
