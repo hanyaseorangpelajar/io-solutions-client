@@ -1,16 +1,15 @@
-// src/app/(dashboard)/pages/repository/page.tsx
 "use client";
 
-import * as React from "react";
-import FormModal from "@/components/overlays/FormModal";
-import TableToolbar from "@/components/data-display/table/TableToolbar";
-import Pagination from "@/components/data-display/table/Pagination";
-import PublishKBForm from "@/components/features/knowledge-base/forms/PublishKBForm";
+import FormModal from "@/components/molecules/FormModal";
+import Pagination from "@/components/molecules/Pagination";
+import PublishKBForm from "@/components/organisms/PublishKBForm";
+import TableToolbar from "@/components/organisms/TableToolbar";
 import {
   EyeIcon,
   PencilSquareIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
+import * as React from "react";
 
 type Visibility = "internal" | "public";
 type Category = "hardware" | "software" | "network" | "printer" | "other";
@@ -22,11 +21,10 @@ type Article = {
   tags: string[];
   category: Category;
   visibility: Visibility;
-  updatedAt: string; // YYYY-MM-DD
+  updatedAt: string;
   author?: string;
 };
 
-// NOTE: unikkan id agar tidak bentrok (React key warning)
 const demoArticles: Article[] = [
   {
     id: "KB-2025-0001",
@@ -181,12 +179,12 @@ export default function RepositoryPage() {
               </div>
             </div>
 
-            {/* Actions (pakai variant ghost; ikon mengikuti warna currentColor) */}
+            {/* Actions */}
             <div className="mt-auto px-3 py-2 border-t border-[var(--mono-border)] flex items-center justify-end gap-2">
               <FormModal
                 type="read"
                 entityTitle="Artikel"
-                component={PublishKBForm as any}
+                component={PublishKBForm}
                 data={a}
                 variant="ghost"
                 triggerClassName="w-8 h-8"
@@ -195,7 +193,7 @@ export default function RepositoryPage() {
               <FormModal
                 type="update"
                 entityTitle="Artikel"
-                component={PublishKBForm as any}
+                component={PublishKBForm}
                 data={a}
                 variant="ghost"
                 triggerClassName="w-8 h-8"

@@ -1,31 +1,30 @@
-// src/app/(dashboard)/pages/daftar-teknisi/page.tsx
 "use client";
-
-import FormModal from "@/components/overlays/FormModal";
-import Table from "@/components/data-display/table/Table";
-import TableToolbar from "@/components/data-display/table/TableToolbar";
-import Pagination from "@/components/data-display/table/Pagination";
+import FormModal from "@/components/molecules/FormModal";
+import Pagination from "@/components/molecules/Pagination";
+import Table, { type TableColumn } from "@/components/organisms/Table";
+import TableToolbar from "@/components/organisms/TableToolbar";
+import TechnicianForm from "@/components/organisms/TeknisiForm";
 import {
-  PlusIcon,
   EyeIcon,
   PencilSquareIcon,
+  PlusIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
-import TeknisiForm from "@/components/features/technicians/forms/TeknisiForm";
+import * as React from "react";
 
 type TechnicianStatus = "ACTIVE" | "INACTIVE" | "ON_LEAVE";
 
 type Technician = {
-  id: string; // e.g. TCN-2025-0001
+  id: string;
   name: string;
   email: string;
   phone: string;
-  skills: string[]; // e.g. ["Hardware", "Windows", "MacOS"]
-  activeSince: string; // YYYY-MM-DD
+  skills: string[];
+  activeSince: string;
   status: TechnicianStatus;
 };
 
-const columns = [
+const columns: TableColumn[] = [
   { header: "Name", accessor: "name" },
   { header: "Skills", accessor: "skills", className: "hidden md:table-cell" },
   { header: "Phone", accessor: "phone", className: "hidden md:table-cell" },
@@ -39,7 +38,6 @@ const columns = [
   { header: "Actions", accessor: "action" },
 ];
 
-// Demo data — ganti ke data asli saat integrasi backend
 const technicians: Technician[] = [
   {
     id: "TCN-2025-0001",
@@ -72,15 +70,13 @@ const technicians: Technician[] = [
 
 export default function DaftarTeknisiPage() {
   const renderRow = (item: Technician) => (
-    // pakai group/row agar tombol aksi bisa ikut invert saat hover
-    <tr
-      key={item.id}
-      className="group/row text-sm hover:bg-[var(--mono-fg)] hover:text-[var(--mono-bg)]"
-    >
+    <tr key={item.id} className="group/row text-sm row-hover">
       <td className="p-4">
         <div className="flex flex-col">
           <span className="font-medium">{item.name}</span>
-          <span className="text-xs">{item.id}</span>
+          <span className="text-xs text-[var(--mono-muted)] group-hover/row:text-[var(--mono-bg)]">
+            {item.id}
+          </span>
         </div>
       </td>
 
@@ -96,23 +92,23 @@ export default function DaftarTeknisiPage() {
           <FormModal
             type="read"
             entityTitle="Teknisi"
-            component={TeknisiForm}
+            component={TechnicianForm}
             data={item}
             variant="ghost"
-            hoverInvertFromRow
+            invertOnRowHover
             triggerClassName="w-8 h-8"
-            icon={<EyeIcon className="w-4 h-4" />}
+            icon={<EyeIcon className="w-4 h-4" aria-hidden="true" />}
           />
           {/* UPDATE */}
           <FormModal
             type="update"
             entityTitle="Teknisi"
-            component={TeknisiForm}
+            component={TechnicianForm}
             data={item}
             variant="ghost"
-            hoverInvertFromRow
+            invertOnRowHover
             triggerClassName="w-8 h-8"
-            icon={<PencilSquareIcon className="w-4 h-4" />}
+            icon={<PencilSquareIcon className="w-4 h-4" aria-hidden="true" />}
           />
           {/* DELETE */}
           <FormModal
@@ -120,9 +116,9 @@ export default function DaftarTeknisiPage() {
             entityTitle="Teknisi"
             id={item.id}
             variant="ghost"
-            hoverInvertFromRow
+            invertOnRowHover
             triggerClassName="w-8 h-8"
-            icon={<TrashIcon className="w-4 h-4" />}
+            icon={<TrashIcon className="w-4 h-4" aria-hidden="true" />}
           />
         </div>
       </td>
@@ -130,10 +126,10 @@ export default function DaftarTeknisiPage() {
   );
 
   return (
-    <div className="bg-[var(--mono-bg)] text-[var(--mono-fg)] p-4 rounded-none border border-[var(--mono-border)] flex-1 m-4 mt-6">
+    <section className="section space-y-4">
       {/* TOP */}
       <div className="flex items-center justify-between">
-        <h1 className="hidden md:block text-lg font-semibold">
+        <h1 className="hidden md:block text-sm font-semibold uppercase tracking-wider">
           Daftar Teknisi
         </h1>
 
@@ -143,9 +139,9 @@ export default function DaftarTeknisiPage() {
             <FormModal
               type="create"
               entityTitle="Teknisi"
-              component={TeknisiForm}
+              component={TechnicianForm}
               triggerClassName="w-8 h-8"
-              icon={<PlusIcon className="w-4 h-4" />}
+              icon={<PlusIcon className="w-4 h-4" aria-hidden="true" />}
             />
           }
         />
@@ -156,6 +152,6 @@ export default function DaftarTeknisiPage() {
 
       {/* PAGINATION */}
       <Pagination />
-    </div>
+    </section>
   );
 }

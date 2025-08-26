@@ -1,23 +1,36 @@
-// src/app/(dashboard)/pages/inventory-gudang/page.tsx
 "use client";
 
-import * as React from "react";
-import Table from "@/components/data-display/table/Table";
-import TableToolbar from "@/components/data-display/table/TableToolbar";
-import FormModal from "@/components/overlays/FormModal";
-import PriceDeltaBadge from "@/components/ui/badges/PriceDeltaBadge";
-import Pagination from "@/components/data-display/table/Pagination";
+import PriceDeltaBadge from "@/components/atoms/PriceDeltaBadge";
+import FormModal from "@/components/molecules/FormModal";
+import Pagination from "@/components/molecules/Pagination";
 import InventoryItemForm, {
-  InventoryItem,
-} from "@/components/features/inventory/forms/InventoryItemForm";
+  type InventoryItemFormProps,
+  type InventoryItemShape,
+} from "@/components/organisms/InventoryItemForm";
+import Table, { type TableColumn } from "@/components/organisms/Table";
+import TableToolbar from "@/components/organisms/TableToolbar";
 import {
   EyeIcon,
   PencilSquareIcon,
-  TrashIcon,
   PlusIcon,
+  TrashIcon,
 } from "@heroicons/react/24/outline";
+import * as React from "react";
 
-const columns = [
+type InventoryRow = {
+  id: string;
+  name: string;
+  sku?: string;
+  category?: string;
+  unit?: string;
+  stock?: number;
+  storePrice?: number;
+  marketPrice?: number;
+  marketSource?: string;
+  marketCheckedAt?: string;
+};
+
+const columns: TableColumn[] = [
   { header: "Item", accessor: "item" },
   {
     header: "Kategori",
@@ -36,12 +49,11 @@ const columns = [
 ];
 
 function delta(store?: number, market?: number) {
-  if (!store || !market) return null;
-  if (market === 0) return null;
+  if (store == null || market == null || market === 0) return null;
   return ((store - market) / market) * 100;
 }
 
-const data: InventoryItem[] = [
+const data: InventoryRow[] = [
   {
     id: "INV-001",
     name: "RAM DDR4 16GB 3200",
@@ -49,8 +61,8 @@ const data: InventoryItem[] = [
     category: "ram",
     unit: "pcs",
     stock: 24,
-    storePrice: 650000,
-    marketPrice: 599000,
+    storePrice: 650_000,
+    marketPrice: 599_000,
     marketSource: "Tokopedia",
     marketCheckedAt: "2025-08-01",
   },
@@ -61,8 +73,8 @@ const data: InventoryItem[] = [
     category: "storage",
     unit: "pcs",
     stock: 12,
-    storePrice: 1350000,
-    marketPrice: 1399000,
+    storePrice: 1_350_000,
+    marketPrice: 1_399_000,
     marketSource: "Shopee",
     marketCheckedAt: "2025-08-02",
   },
@@ -73,27 +85,36 @@ const data: InventoryItem[] = [
     category: "psu",
     unit: "pcs",
     stock: 8,
-    storePrice: 799000,
-    marketPrice: 0, // tidak ada data
-    marketSource: "",
-    marketCheckedAt: "",
+    storePrice: 799_000,
+    marketPrice: 0,
   },
 ];
 
+function toFormShape(row: InventoryRow): InventoryItemShape {
+  return {
+    id: row.id,
+    name: row.name,
+    category: row.category,
+    unit: row.unit ?? "pcs",
+    stockQty: row.stock,
+    cost: row.storePrice,
+    lastUpdated: row.marketCheckedAt,
+  };
+}
+
 export default function InventoryGudangPage() {
-  const renderRow = (item: InventoryItem) => {
+  const renderRow = (item: InventoryRow) => {
     const d = delta(item.storePrice, item.marketPrice);
 
     return (
-      <tr
-        key={String(item.id ?? item.sku)}
-        className="group/row text-sm hover:bg-[var(--mono-fg)] hover:text-[var(--mono-bg)]"
-      >
+      <tr key={item.id} className="group/row text-sm row-hover">
         {/* Item */}
         <td className="p-4">
           <div className="flex flex-col">
             <span className="font-medium">{item.name}</span>
-            <span className="text-xs">{item.sku ?? "-"}</span>
+            <span className="text-xs text-[var(--mono-muted)]">
+              {item.sku ?? "-"}
+            </span>
           </div>
         </td>
 
@@ -112,7 +133,7 @@ export default function InventoryGudangPage() {
 
         {/* Market */}
         <td className="hidden lg:table-cell">
-          {item.marketPrice ? (
+          {item.marketPrice && item.marketPrice > 0 ? (
             <>
               Rp{item.marketPrice.toLocaleString("id-ID")}{" "}
               <span className="text-[10px] ml-1 opacity-70">
@@ -136,33 +157,37 @@ export default function InventoryGudangPage() {
             <FormModal
               type="read"
               entityTitle="Item"
-              component={InventoryItemForm as any}
-              data={item}
+              component={(props: Omit<InventoryItemFormProps, "data">) => (
+                <InventoryItemForm {...props} data={toFormShape(item)} />
+              )}
+              data={toFormShape(item)}
               variant="ghost"
-              hoverInvertFromRow
+              invertOnRowHover
               triggerClassName="w-8 h-8"
-              icon={<EyeIcon className="w-4 h-4" />}
+              icon={<EyeIcon className="w-4 h-4" aria-hidden="true" />}
             />
             {/* UPDATE */}
             <FormModal
               type="update"
               entityTitle="Item"
-              component={InventoryItemForm as any}
-              data={item}
+              component={(props: Omit<InventoryItemFormProps, "data">) => (
+                <InventoryItemForm {...props} data={toFormShape(item)} />
+              )}
+              data={toFormShape(item)}
               variant="ghost"
-              hoverInvertFromRow
+              invertOnRowHover
               triggerClassName="w-8 h-8"
-              icon={<PencilSquareIcon className="w-4 h-4" />}
+              icon={<PencilSquareIcon className="w-4 h-4" aria-hidden="true" />}
             />
-            {/* DELETE (konfirmasi bawaan) */}
+            {/* DELETE */}
             <FormModal
               type="delete"
               entityTitle="Item"
-              id={item.id ?? item.sku ?? ""}
+              id={item.id}
               variant="ghost"
-              hoverInvertFromRow
+              invertOnRowHover
               triggerClassName="w-8 h-8"
-              icon={<TrashIcon className="w-4 h-4" />}
+              icon={<TrashIcon className="w-4 h-4" aria-hidden="true" />}
             />
           </div>
         </td>
@@ -171,10 +196,10 @@ export default function InventoryGudangPage() {
   };
 
   return (
-    <div className="bg-[var(--mono-bg)] text-[var(--mono-fg)] p-4 rounded-none border border-[var(--mono-border)] flex-1 m-4 mt-6">
+    <section className="section space-y-4">
       {/* TOP */}
       <div className="flex items-center justify-between">
-        <h1 className="hidden md:block text-lg font-semibold">
+        <h1 className="hidden md:block text-sm font-semibold uppercase tracking-wider">
           Inventory Gudang
         </h1>
 
@@ -184,10 +209,10 @@ export default function InventoryGudangPage() {
             <FormModal
               type="create"
               entityTitle="Item"
-              component={InventoryItemForm as any}
+              component={InventoryItemForm}
               variant="solid"
               triggerClassName="w-8 h-8"
-              icon={<PlusIcon className="w-4 h-4" />}
+              icon={<PlusIcon className="w-4 h-4" aria-hidden="true" />}
             />
           }
         />
@@ -198,6 +223,6 @@ export default function InventoryGudangPage() {
 
       {/* PAGINATION */}
       <Pagination />
-    </div>
+    </section>
   );
 }

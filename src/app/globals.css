@@ -1,57 +1,71 @@
-@config "../../tailwind.config.ts";
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --mono-bg: #fff;
-  --mono-fg: #000;
-  --mono-border: #000;
-  --mono-overlay: rgba(0, 0, 0, 0.6);
+/* ===== Monochrome Tokens =====
+   Default: DARK (hitam dominan)
+   Notes:
+   - Variabel ditempel pada wrapper .mono (pastikan elemen root kamu diberi class "mono").
+   - Light mode opsional via .light .mono (atau abaikan dulu).
+*/
+.mono {
+  --mono-bg: #0a0a0a;
+  --mono-fg: #fafafa;
+  --mono-border: #2a2a2a;
+  --mono-overlay: rgba(255, 255, 255, 0.12);
+  --mono-muted: rgba(255, 255, 255, 0.65);
+  --mono-label: rgba(255, 255, 255, 0.7);
+  --mono-ph: rgba(255, 255, 255, 0.45);
+}
+
+/* Light mode (opsional; diaktifkan jika wrapper punya class .light) */
+.light .mono {
+  --mono-bg: #ffffff;
+  --mono-fg: #0a0a0a;
+  --mono-border: #e5e5e5;
+  --mono-overlay: rgba(0, 0, 0, 0.08);
   --mono-muted: rgba(0, 0, 0, 0.6);
   --mono-label: rgba(0, 0, 0, 0.7);
   --mono-ph: rgba(0, 0, 0, 0.4);
 }
 
-.mono {
-  background: var(--mono-bg);
-  color: var(--mono-fg);
+/* Kompatibilitas: jika project sudah menggunakan .dark pada <html>, tetap gelap */
+.dark .mono {
+  --mono-bg: #0a0a0a;
+  --mono-fg: #fafafa;
+  --mono-border: #2a2a2a;
+  --mono-overlay: rgba(255, 255, 255, 0.12);
+  --mono-muted: rgba(255, 255, 255, 0.65);
+  --mono-label: rgba(255, 255, 255, 0.7);
+  --mono-ph: rgba(255, 255, 255, 0.45);
 }
 
-.mono ::placeholder {
-  color: var(--mono-ph);
-}
-.mono ::selection {
-  background: var(--mono-fg);
-  color: var(--mono-bg);
-}
-
+/* Base semantics (hanya di dalam scope .mono) */
 .mono a {
   color: inherit;
   text-decoration: none;
 }
-
 .mono :focus-visible {
   outline: 2px solid var(--mono-fg);
   outline-offset: 2px;
 }
 
+/* ===== Components Layer ===== */
 @layer components {
   .btn {
     @apply inline-flex items-center justify-center rounded-none
-           border border-black bg-black text-white transition;
+           border bg-mono-fg text-mono-bg transition px-4 py-2 text-sm font-medium;
   }
   .btn:hover {
-    @apply bg-white text-black;
+    @apply bg-mono-bg text-mono-fg;
   }
 
   .btn-ghost {
     @apply inline-flex items-center justify-center rounded-none
-           border border-black bg-white text-black transition;
+           border bg-mono-bg text-mono-fg transition px-4 py-2 text-sm font-medium;
   }
   .btn-ghost:hover {
-    @apply bg-black text-white;
+    @apply bg-mono-fg text-mono-bg;
   }
 
   .btn-icon {
@@ -62,31 +76,32 @@
   }
 
   .label {
-    @apply text-xs uppercase tracking-widest text-black/70;
+    @apply text-xs uppercase tracking-widest text-[var(--mono-label)];
   }
+
   .input {
-    @apply w-full border border-black bg-white px-3 py-2 rounded-none
-           outline-none placeholder-black/40;
+    @apply w-full border bg-mono-bg px-3 py-2 rounded-none outline-none
+           placeholder-[var(--mono-ph)] text-mono-fg;
   }
 
   .chip {
-    @apply inline-flex items-center gap-1 border border-black bg-white text-black
+    @apply inline-flex items-center gap-1 border bg-mono-bg text-mono-fg
            px-2 py-0.5 text-[10px] uppercase tracking-widest;
   }
 
   .card {
-    @apply bg-white border border-black;
+    @apply bg-mono-bg border;
   }
 
   .modal-overlay {
-    @apply fixed inset-0 z-50 grid place-items-center bg-black/60;
+    @apply fixed inset-0 z-50 grid place-items-center bg-[var(--mono-overlay)];
   }
   .modal {
     @apply relative w-[90%] md:w-[70%] lg:w-[60%] xl:w-[50%] 2xl:w-[40%]
-           bg-white border border-black;
+           bg-mono-bg border;
   }
   .modal-header {
-    @apply flex items-center justify-between px-4 py-3 border-b border-black;
+    @apply flex items-center justify-between px-4 py-3 border-b;
   }
   .modal-title {
     @apply text-sm font-semibold uppercase tracking-wider;
@@ -96,65 +111,12 @@
     @apply group text-sm;
   }
   .table-row-hover {
-    @apply hover:bg-black hover:text-white;
+    @apply hover:bg-mono-fg hover:text-mono-bg;
   }
-}
 
-@layer utilities {
-  .row-hover-invert {
-    @apply group-hover:bg-white group-hover:text-black;
-  }
-  .row-hover-icon {
-    @apply group-hover:text-black;
-  }
-}
-
-/* Tambahan kecil untuk DRY UI — taruh di @layer components yang sama */
-@layer components {
   /* Section/Card standar halaman */
   .section {
     @apply card p-4;
-  }
-  .section-header {
-    @apply flex items-center justify-between;
-  }
-  .section-title {
-    @apply text-lg font-semibold;
-  }
-
-  /* Grid list (kartu 3 kolom, responsive) */
-  .grid-cards {
-    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3;
-  }
-
-  /* Form rhythm */
-  .form {
-    @apply flex flex-col gap-3;
-  }
-  .form-actions {
-    @apply mt-2 flex items-center justify-end gap-2;
-  }
-
-  /* Ukuran tombol (opsional) */
-  .btn-sm {
-    @apply h-7 px-2 text-xs;
-  }
-  .btn-md {
-    @apply h-8 px-3 text-sm;
-  } /* default */
-  .btn-lg {
-    @apply h-10 px-4;
-  }
-
-  /* Ikon-only (sudah ada .btn-icon / .btn-icon-ghost), tambahkan versi size */
-  .btn-icon-sm {
-    @apply w-7 h-7 p-0;
-  }
-  .btn-icon-md {
-    @apply w-8 h-8 p-0;
-  } /* default */
-  .btn-icon-lg {
-    @apply w-10 h-10 p-0;
   }
 
   /* Field helpers */
@@ -162,7 +124,7 @@
     @apply label;
   }
   .field-note {
-    @apply text-[10px] text-muted mt-1;
+    @apply text-[10px] text-mono-muted mt-1;
   }
   .field-readonly {
     @apply bg-black/5;
@@ -170,24 +132,33 @@
 
   /* Badge ringan */
   .badge {
-    @apply px-2 py-0.5 text-[10px] border border-black bg-white;
+    @apply px-2 py-0.5 text-[10px] border bg-mono-bg;
   }
 
-  /* Table row hover (sudah punya, ini hanya alias yang lebih eksplisit) */
+  /* Table row hover aliases */
   .row-hover {
-    @apply hover:bg-black hover:text-white;
+    @apply hover:bg-mono-fg hover:text-mono-bg;
   }
   .row-hover-sync {
-    @apply group-hover:bg-white group-hover:text-black;
+    @apply group-hover:bg-mono-bg group-hover:text-mono-fg;
   }
 }
 
+/* ===== Utilities Layer ===== */
+@layer utilities {
+  .row-hover-invert {
+    @apply group-hover:bg-mono-bg group-hover:text-mono-fg;
+  }
+  .row-hover-icon {
+    @apply group-hover:text-mono-fg;
+  }
+}
+
+/* ===== 3rd-party Widgets ===== */
+
+/* react-calendar */
 .react-calendar {
   width: 100% !important;
-  border: none !important;
-  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
-    Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji",
-    "Segoe UI Emoji", "Segoe UI Symbol" !important;
   background: var(--mono-bg) !important;
   color: var(--mono-fg) !important;
 }
@@ -195,22 +166,23 @@
   font-weight: 600;
 }
 .react-calendar__tile--active {
-  background-color: #000 !important;
-  color: #fff !important;
+  background-color: var(--mono-fg) !important;
+  color: var(--mono-bg) !important;
 }
 
+/* react-big-calendar */
 .rbc-toolbar {
-  @apply border-b border-black;
+  @apply border-b;
 }
 .rbc-toolbar-label {
   text-align: right !important;
   padding: 0 20px !important;
 }
 .rbc-btn-group button {
-  @apply border border-black bg-white text-black;
+  @apply border bg-mono-bg text-mono-fg;
 }
 .rbc-btn-group .rbc-active {
-  @apply bg-black text-white;
+  @apply bg-mono-fg text-mono-bg;
 }
 .rbc-time-view,
 .rbc-time-content,
@@ -224,12 +196,12 @@
   font-size: 12px !important;
 }
 .rbc-timeslot-group {
-  background-color: #fff !important;
+  background-color: var(--mono-bg) !important;
 }
 .rbc-event {
   border: 1px solid var(--mono-border) !important;
-  background: #fff !important;
-  color: #000 !important;
+  background: var(--mono-bg) !important;
+  color: var(--mono-fg) !important;
   padding: 8px !important;
   margin: 8px !important;
   width: 99% !important;
@@ -237,4 +209,40 @@
 .rbc-event-label {
   color: var(--mono-muted) !important;
   margin-bottom: 4px;
+}
+
+/* ===== Modal form field contrast (override) ===== */
+.modal-body {
+  /* Field di modal sedikit lebih terang dari latar global */
+  --modal-field-bg: #111; /* ganti #111 -> #121212/#131313 sesuai selera */
+  --modal-field-bd: var(--mono-border);
+  --modal-field-fg: var(--mono-fg);
+  --modal-ph-strong: color-mix(in oklab, var(--mono-ph), white 20%);
+}
+
+.modal-body .input,
+.modal-body select,
+.modal-body textarea {
+  background-color: var(--modal-field-bg) !important;
+  color: var(--modal-field-fg) !important;
+  border-color: var(--modal-field-bd) !important;
+}
+
+.modal-body .input::placeholder,
+.modal-body textarea::placeholder {
+  color: var(--modal-ph-strong);
+}
+
+/* Samakan tinggi kontrol supaya rapi di modal */
+.modal-body select.input,
+.modal-body select {
+  height: 2.25rem; /* h-9 */
+}
+
+/* Label & helper text tetap kontras */
+.modal-body .label {
+  color: var(--mono-label);
+}
+.modal-body .field-note {
+  color: var(--mono-muted);
 }

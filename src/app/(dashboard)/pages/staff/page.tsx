@@ -1,11 +1,10 @@
 "use client";
 
-import { RoleItem } from "@/components/features/rbac/forms/RoleForm";
-import UserTable from "@/components/features/staff/UserTable";
-import { UserItem } from "@/components/features/staff/forms/AssignRoleForm";
+import UserTable from "@/components/feat/UserTable";
+import type { UserItem } from "@/components/organisms/AssignRoleForm";
+import type { RoleItem } from "@/components/organisms/RoleForm";
 import * as React from "react";
 
-// Data demo users (roleId WAJIB ada)
 const DEMO_USERS: UserItem[] = [
   {
     id: "u-001",
@@ -33,7 +32,6 @@ const DEMO_USERS: UserItem[] = [
   },
 ];
 
-// Data demo roles (cek struktur via `satisfies` TANPA jadi readonly)
 const DEMO_ROLES = [
   {
     id: "role-admin",
@@ -58,14 +56,13 @@ const DEMO_ROLES = [
   },
 ] satisfies RoleItem[];
 
-// Kalau mau mutable dengan state (opsional)
 export default function StaffPage() {
   const [users] = React.useState<UserItem[]>(DEMO_USERS);
   const [roles] = React.useState<RoleItem[]>(DEMO_ROLES);
 
   return (
-    <div className="p-4 rounded-none border flex-1 m-4 mt-6 bg-[var(--mono-bg)] text-[var(--mono-fg)] border-[var(--mono-border)]">
+    <section className="section">
       <UserTable users={users} roles={roles} title="Staff & Role Assignment" />
-    </div>
+    </section>
   );
 }

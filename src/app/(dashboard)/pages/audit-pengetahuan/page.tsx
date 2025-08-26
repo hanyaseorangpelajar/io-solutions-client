@@ -1,19 +1,19 @@
-// src/app/(dashboard)/pages/audit-pengetahuan/page.tsx
 "use client";
 
-import * as React from "react";
-import FormModal from "@/components/overlays/FormModal";
-import Pagination from "@/components/data-display/table/Pagination";
-import Table from "@/components/data-display/table/Table";
-import TableToolbar from "@/components/data-display/table/TableToolbar";
-import AuditPengetahuanForm from "@/components/features/knowledge-base/forms/AuditPengetahuanForm";
-import PublishKBForm from "@/components/features/knowledge-base/forms/PublishKBForm";
+import SafetyChip from "@/components/atoms/SafetyChip";
+import FormModal from "@/components/molecules/FormModal";
+import Pagination from "@/components/molecules/Pagination";
+import KnowledgeAuditForm from "@/components/organisms/KnowledgeAuditForm";
+import PublishKBForm from "@/components/organisms/PublishKBForm";
+import Table, { type TableColumn } from "@/components/organisms/Table";
+import TableToolbar from "@/components/organisms/TableToolbar";
 import {
+  BookOpenIcon,
   EyeIcon,
   PencilSquareIcon,
-  BookOpenIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
+import * as React from "react";
 
 type TicketPriority = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 type AuditStatus = "PENDING" | "READY" | "PUBLISHED";
@@ -29,7 +29,7 @@ type AuditItem = {
   auditStatus: AuditStatus;
 };
 
-const columns = [
+const columns: TableColumn[] = [
   { header: "Ticket", accessor: "ticket" },
   {
     header: "Priority",
@@ -51,7 +51,6 @@ const columns = [
   { header: "Actions", accessor: "action" },
 ];
 
-// Demo data
 const rows: AuditItem[] = [
   {
     id: "AUD-001",
@@ -85,54 +84,35 @@ const rows: AuditItem[] = [
   },
 ];
 
-export default function AuditPengetahuanPage() {
+export default function AuditKnowledgePage() {
   const renderRow = (item: AuditItem) => {
     const shownTags = item.tags.slice(0, 2);
     const more = item.tags.length - shownTags.length;
 
     return (
-      <tr className="group/row text-sm hover:bg-[var(--mono-fg)] hover:text-[var(--mono-bg)]">
+      <tr key={item.id} className="group/row text-sm row-hover">
         {/* Ticket */}
         <td className="p-4">
           <div className="flex flex-col">
             <span className="font-medium">{item.title}</span>
-            <span className="text-xs">{item.ticketId}</span>
+            <span className="text-xs text-[var(--mono-muted)]">
+              {item.ticketId}
+            </span>
           </div>
         </td>
 
         <td className="hidden md:table-cell">{item.priority}</td>
         <td className="hidden lg:table-cell">{item.technician ?? "-"}</td>
 
-        {/* Tags: tetap kontras saat row hover */}
+        {/* Tags (lock style on row hover) */}
         <td className="hidden md:table-cell">
           <div className="flex flex-wrap gap-1">
             {shownTags.map((t) => (
-              <span
-                key={t}
-                className="
-                  px-2 py-0.5 text-[10px] border
-                  border-[var(--mono-border)]
-                  bg-[var(--mono-bg)] text-[var(--mono-fg)]
-                  group-hover/row:bg-[var(--mono-bg)]
-                  group-hover/row:text-[var(--mono-fg)]
-                "
-              >
-                #{t}
-              </span>
+              <SafetyChip key={t} prefix="#" lockOnRowHover>
+                {t}
+              </SafetyChip>
             ))}
-            {more > 0 && (
-              <span
-                className="
-                  px-2 py-0.5 text-[10px] border
-                  border-[var(--mono-border)]
-                  bg-[var(--mono-bg)] text-[var(--mono-fg)]
-                  group-hover/row:bg-[var(--mono-bg)]
-                  group-hover/row:text-[var(--mono-fg)]
-                "
-              >
-                +{more}
-              </span>
-            )}
+            {more > 0 && <SafetyChip lockOnRowHover>+{more}</SafetyChip>}
           </div>
         </td>
 
@@ -145,22 +125,22 @@ export default function AuditPengetahuanPage() {
             <FormModal
               type="read"
               entityTitle="Audit"
-              component={AuditPengetahuanForm}
+              component={KnowledgeAuditForm}
               data={item}
               variant="ghost"
-              hoverInvertFromRow
+              invertOnRowHover
               triggerClassName="w-8 h-8"
-              icon={<EyeIcon className="w-4 h-4" />}
+              icon={<EyeIcon className="w-4 h-4" aria-hidden="true" />}
             />
             <FormModal
               type="update"
               entityTitle="Audit"
-              component={AuditPengetahuanForm}
+              component={KnowledgeAuditForm}
               data={item}
               variant="ghost"
-              hoverInvertFromRow
+              invertOnRowHover
               triggerClassName="w-8 h-8"
-              icon={<PencilSquareIcon className="w-4 h-4" />}
+              icon={<PencilSquareIcon className="w-4 h-4" aria-hidden="true" />}
             />
             <FormModal
               type="create"
@@ -169,18 +149,18 @@ export default function AuditPengetahuanPage() {
               component={PublishKBForm}
               data={item}
               variant="ghost"
-              hoverInvertFromRow
+              invertOnRowHover
               triggerClassName="w-8 h-8"
-              icon={<BookOpenIcon className="w-4 h-4" />}
+              icon={<BookOpenIcon className="w-4 h-4" aria-hidden="true" />}
             />
             <FormModal
               type="delete"
               entityTitle="Audit"
               id={item.id}
               variant="ghost"
-              hoverInvertFromRow
+              invertOnRowHover
               triggerClassName="w-8 h-8"
-              icon={<TrashIcon className="w-4 h-4" />}
+              icon={<TrashIcon className="w-4 h-4" aria-hidden="true" />}
             />
           </div>
         </td>
@@ -189,17 +169,17 @@ export default function AuditPengetahuanPage() {
   };
 
   return (
-    <div className="bg-[var(--mono-bg)] text-[var(--mono-fg)] p-4 rounded-none border border-[var(--mono-border)] flex-1 m-4 mt-6">
+    <section className="section space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="hidden md:block text-lg font-semibold">
+        <h1 className="text-sm font-semibold uppercase tracking-wider">
           Audit Pengetahuan
         </h1>
         <TableToolbar searchPlaceholder="Cari tiket tertutup…" />
       </div>
 
-      <Table columns={columns} renderRow={renderRow} data={rows} />
+      <Table columns={columns} data={rows} renderRow={renderRow} />
 
       <Pagination />
-    </div>
+    </section>
   );
 }

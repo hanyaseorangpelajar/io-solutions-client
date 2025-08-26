@@ -13,9 +13,13 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="id">
       {/* Terapkan scope .mono di level body supaya semua page ikut theme */}
-      <body className={`${inter.className} mono`}>{children}</body>
+      <body
+        className={`${inter.className} mono bg-mono-bg text-mono-fg antialiased`}
+      >
+        {children}
+      </body>
     </html>
   );
 }

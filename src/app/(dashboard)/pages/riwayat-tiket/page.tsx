@@ -1,12 +1,13 @@
-// app/dashboard/pages/riwayat-tiket/page.tsx
+// src/app/(dashboard)/pages/riwayat-tiket/page.tsx
 "use client";
 
-import FormModal from "@/components/overlays/FormModal";
-import TiketForm from "@/components/features/tickets/forms/TicketForm";
-import Pagination from "@/components/data-display/table/Pagination";
-import Table from "@/components/data-display/table/Table";
-import TableToolbar from "@/components/data-display/table/TableToolbar";
+import FormModal from "@/components/molecules/FormModal";
+import Pagination from "@/components/molecules/Pagination";
+import Table, { type TableColumn } from "@/components/organisms/Table";
+import TableToolbar from "@/components/organisms/TableToolbar";
+import TicketForm from "@/components/organisms/TicketForm";
 import { EyeIcon, TrashIcon } from "@heroicons/react/24/outline";
+import * as React from "react";
 
 type TicketStatus =
   | "OPEN"
@@ -29,7 +30,7 @@ type TicketHistory = {
   closedAt?: string; // YYYY-MM-DD
 };
 
-const columns = [
+const columns: TableColumn[] = [
   { header: "Ticket", accessor: "ticket" },
   { header: "Status", accessor: "status", className: "hidden md:table-cell" },
   {
@@ -46,7 +47,7 @@ const columns = [
   { header: "Actions", accessor: "action" },
 ];
 
-// Demo data — ganti dengan data asli dari backend
+// Demo data — ganti dengan data backend saat integrasi
 const historyData: TicketHistory[] = [
   {
     id: "TCK-2025-000123",
@@ -85,54 +86,43 @@ const historyData: TicketHistory[] = [
 
 export default function TicketHistoryPage() {
   const renderRow = (item: TicketHistory) => (
-    // pakai group/row + tokens supaya hover konsisten dengan tema
-    <tr
-      key={item.id}
-      className="group/row text-sm hover:bg-[var(--mono-fg)] hover:text-[var(--mono-bg)]"
-    >
+    <tr key={item.id} className="group/row text-sm row-hover">
       {/* Ticket (gabung title + id) */}
       <td className="p-4">
         <div className="flex flex-col">
           <span className="font-medium">{item.title}</span>
-          <span className="text-xs">{item.id}</span>
+          <span className="text-xs text-[var(--mono-muted)] group-hover/row:text-[var(--mono-bg)]">
+            {item.id}
+          </span>
         </div>
       </td>
 
-      {/* Status */}
       <td className="hidden md:table-cell">{item.status}</td>
-
-      {/* Priority */}
       <td className="hidden md:table-cell">{item.priority}</td>
-
-      {/* Technician */}
       <td className="hidden lg:table-cell">{item.assignedTo ?? "-"}</td>
-
-      {/* Closed */}
       <td className="hidden md:table-cell">{item.closedAt ?? "-"}</td>
 
-      {/* Actions: hanya READ & DELETE */}
+      {/* Actions: READ & DELETE */}
       <td>
         <div className="flex items-center gap-2">
-          {/* READ — modal */}
           <FormModal
             type="read"
             entityTitle="Tiket"
-            component={TiketForm}
+            component={TicketForm}
             data={item}
             variant="ghost"
-            hoverInvertFromRow
+            invertOnRowHover
             triggerClassName="w-8 h-8"
-            icon={<EyeIcon className="w-4 h-4" />}
+            icon={<EyeIcon className="w-4 h-4" aria-hidden="true" />}
           />
-          {/* DELETE — confirm bawaan */}
           <FormModal
             type="delete"
             entityTitle="Tiket"
             id={item.id}
             variant="ghost"
-            hoverInvertFromRow
+            invertOnRowHover
             triggerClassName="w-8 h-8"
-            icon={<TrashIcon className="w-4 h-4" />}
+            icon={<TrashIcon className="w-4 h-4" aria-hidden="true" />}
           />
         </div>
       </td>
@@ -140,15 +130,13 @@ export default function TicketHistoryPage() {
   );
 
   return (
-    <div className="bg-[var(--mono-bg)] text-[var(--mono-fg)] p-4 rounded-none border border-[var(--mono-border)] flex-1 m-4 mt-6">
+    <section className="section space-y-4">
       {/* TOP */}
       <div className="flex items-center justify-between">
-        <h1 className="hidden md:block text-lg font-semibold">Riwayat Tiket</h1>
-
-        <TableToolbar
-          searchPlaceholder="Cari riwayat…"
-          // bisa tambahkan onFilterClick / onSortClick kalau sudah ada logic-nya
-        />
+        <h1 className="hidden md:block text-sm font-semibold uppercase tracking-wider">
+          Riwayat Tiket
+        </h1>
+        <TableToolbar searchPlaceholder="Cari riwayat…" />
       </div>
 
       {/* LIST */}
@@ -156,6 +144,6 @@ export default function TicketHistoryPage() {
 
       {/* PAGINATION */}
       <Pagination />
-    </div>
+    </section>
   );
 }

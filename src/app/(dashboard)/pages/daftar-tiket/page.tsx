@@ -1,45 +1,42 @@
 "use client";
-
-import FormModal from "@/components/overlays/FormModal";
-import TiketForm from "@/components/features/tickets/forms/TicketForm";
-import TutupTiketForm from "@/components/features/tickets/forms/TutupTiketForm";
-import Pagination from "@/components/data-display/table/Pagination";
-import Table from "@/components/data-display/table/Table";
-import TableToolbar from "@/components/data-display/table/TableToolbar";
+import FormModal from "@/components/molecules/FormModal";
+import Pagination from "@/components/molecules/Pagination";
+import CloseTicketForm from "@/components/organisms/CloseTicketForm";
+import Table, { type TableColumn } from "@/components/organisms/Table";
+import TableToolbar from "@/components/organisms/TableToolbar";
+import TicketForm from "@/components/organisms/TicketForm";
 import {
-  PlusIcon,
+  CheckCircleIcon,
   EyeIcon,
   PencilSquareIcon,
+  PlusIcon,
   TrashIcon,
-  CheckCircleIcon,
 } from "@heroicons/react/24/outline";
+import * as React from "react";
 
-type DaftarTicket = {
-  id: number;
+type TicketRow = {
+  id: number | string;
   title: string;
   class: string;
   date: string;
 };
 
-const columns = [
+const columns: TableColumn[] = [
   { header: "Title", accessor: "title" },
   { header: "Class", accessor: "class", className: "hidden md:table-cell" },
   { header: "Date", accessor: "date", className: "hidden md:table-cell" },
   { header: "Actions", accessor: "action" },
 ];
 
-const daftarTiketData: DaftarTicket[] = [
+const rows: TicketRow[] = [
   { id: 1, title: "Laptop tidak menyala", class: "VIP", date: "2025-08-01" },
   { id: 2, title: "Install ulang OS", class: "Regular", date: "2025-08-03" },
   { id: 3, title: "Ganti keyboard", class: "Urgent", date: "2025-08-05" },
 ];
 
 export default function TicketPage() {
-  const renderRow = (item: DaftarTicket) => (
-    <tr
-      key={item.id}
-      className="group/row text-sm hover:bg-[var(--mono-fg)] hover:text-[var(--mono-bg)]"
-    >
+  const renderRow = (item: TicketRow) => (
+    <tr key={item.id} className="group/row text-sm row-hover">
       <td className="p-4">{item.title}</td>
       <td className="hidden md:table-cell">{item.class}</td>
       <td className="hidden md:table-cell">{item.date}</td>
@@ -49,35 +46,35 @@ export default function TicketPage() {
           <FormModal
             type="read"
             entityTitle="Tiket"
-            component={TiketForm}
+            component={TicketForm}
             data={item}
             variant="ghost"
-            hoverInvertFromRow
+            invertOnRowHover
             triggerClassName="w-8 h-8"
-            icon={<EyeIcon className="w-4 h-4" />}
+            icon={<EyeIcon className="w-4 h-4" aria-hidden="true" />}
           />
           {/* UPDATE */}
           <FormModal
             type="update"
             entityTitle="Tiket"
-            component={TiketForm}
+            component={TicketForm}
             data={item}
             variant="ghost"
-            hoverInvertFromRow
+            invertOnRowHover
             triggerClassName="w-8 h-8"
-            icon={<PencilSquareIcon className="w-4 h-4" />}
+            icon={<PencilSquareIcon className="w-4 h-4" aria-hidden="true" />}
           />
           {/* CLOSE (Tutup Tiket) */}
           <FormModal
             type="update"
             title="Tutup Tiket"
             entityTitle="Tiket"
-            component={TutupTiketForm}
+            component={CloseTicketForm}
             data={item}
             variant="ghost"
-            hoverInvertFromRow
+            invertOnRowHover
             triggerClassName="w-8 h-8"
-            icon={<CheckCircleIcon className="w-4 h-4" />}
+            icon={<CheckCircleIcon className="w-4 h-4" aria-hidden="true" />}
           />
           {/* DELETE */}
           <FormModal
@@ -85,9 +82,9 @@ export default function TicketPage() {
             entityTitle="Tiket"
             id={item.id}
             variant="ghost"
-            hoverInvertFromRow
+            invertOnRowHover
             triggerClassName="w-8 h-8"
-            icon={<TrashIcon className="w-4 h-4" />}
+            icon={<TrashIcon className="w-4 h-4" aria-hidden="true" />}
           />
         </div>
       </td>
@@ -95,10 +92,12 @@ export default function TicketPage() {
   );
 
   return (
-    <div className="bg-[var(--mono-bg)] text-[var(--mono-fg)] p-4 rounded-none border border-[var(--mono-border)] flex-1 m-4 mt-6">
+    <section className="section space-y-4">
       {/* TOP */}
       <div className="flex items-center justify-between">
-        <h1 className="hidden md:block text-lg font-semibold">Daftar Tiket</h1>
+        <h1 className="hidden md:block text-sm font-semibold uppercase tracking-wider">
+          Daftar Tiket
+        </h1>
 
         <TableToolbar
           searchPlaceholder="Cari tiket…"
@@ -106,20 +105,20 @@ export default function TicketPage() {
             <FormModal
               type="create"
               entityTitle="Tiket"
-              component={TiketForm}
-              variant="solid" // tombol header solid (hitam)
+              component={TicketForm}
+              variant="solid"
               triggerClassName="w-8 h-8"
-              icon={<PlusIcon className="w-4 h-4" />}
+              icon={<PlusIcon className="w-4 h-4" aria-hidden="true" />}
             />
           }
         />
       </div>
 
       {/* LIST */}
-      <Table columns={columns} renderRow={renderRow} data={daftarTiketData} />
+      <Table columns={columns} data={rows} renderRow={renderRow} />
 
       {/* PAGINATION */}
       <Pagination />
-    </div>
+    </section>
   );
 }

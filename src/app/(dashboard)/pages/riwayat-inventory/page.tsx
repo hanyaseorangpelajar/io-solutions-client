@@ -1,18 +1,17 @@
-// src/app/(dashboard)/pages/riwayat-inventory/page.tsx
 "use client";
 
-import * as React from "react";
-import Pagination from "@/components/data-display/table/Pagination";
-import Table from "@/components/data-display/table/Table";
-import TableToolbar from "@/components/data-display/table/TableToolbar";
+import PriceDeltaBadge from "@/components/atoms/PriceDeltaBadge";
+import FormModal from "@/components/molecules/FormModal";
+import Pagination from "@/components/molecules/Pagination";
 import InventoryHistoryDetailForm, {
-  InventoryHistory,
-} from "@/components/features/inventory/forms/InventoryHistoryDetailForm";
-import FormModal from "@/components/overlays/FormModal";
-import PriceDeltaBadge from "@/components/ui/badges/PriceDeltaBadge";
+  type InventoryHistory,
+} from "@/components/organisms/InventoryHistoryDetailForm";
+import Table, { type TableColumn } from "@/components/organisms/Table";
+import TableToolbar from "@/components/organisms/TableToolbar";
 import { EyeIcon, TrashIcon } from "@heroicons/react/24/outline";
+import * as React from "react";
 
-const columns = [
+const columns: TableColumn[] = [
   { header: "Item", accessor: "item" },
   { header: "Change", accessor: "change", className: "hidden md:table-cell" },
   { header: "Qty Δ", accessor: "qty", className: "hidden md:table-cell" },
@@ -28,7 +27,6 @@ function priceDelta(before?: number, after?: number) {
   return ((after - before) / before) * 100;
 }
 
-// demo data
 const history: InventoryHistory[] = [
   {
     id: "INVH-2025-0001",
@@ -82,12 +80,14 @@ export default function RiwayatInventoryPage() {
     const d = priceDelta(item.priceBefore, item.priceAfter);
 
     return (
-      <tr className="group/row text-sm hover:bg-[var(--mono-fg)] hover:text-[var(--mono-bg)]">
+      <tr key={item.id} className="group/row text-sm row-hover">
         {/* Item */}
         <td className="p-4">
           <div className="flex flex-col">
             <span className="font-medium">{item.itemName}</span>
-            <span className="text-xs">{item.sku ?? "-"}</span>
+            <span className="text-xs text-[var(--mono-muted)]">
+              {item.sku ?? "-"}
+            </span>
           </div>
         </td>
 
@@ -133,21 +133,21 @@ export default function RiwayatInventoryPage() {
             <FormModal
               type="read"
               entityTitle="Riwayat"
-              component={InventoryHistoryDetailForm as any}
+              component={InventoryHistoryDetailForm}
               data={item}
               variant="ghost"
-              hoverInvertFromRow
+              invertOnRowHover
               triggerClassName="w-8 h-8"
-              icon={<EyeIcon className="w-4 h-4" />}
+              icon={<EyeIcon className="w-4 h-4" aria-hidden="true" />}
             />
             <FormModal
               type="delete"
               entityTitle="Riwayat"
               id={item.id}
               variant="ghost"
-              hoverInvertFromRow
+              invertOnRowHover
               triggerClassName="w-8 h-8"
-              icon={<TrashIcon className="w-4 h-4" />}
+              icon={<TrashIcon className="w-4 h-4" aria-hidden="true" />}
             />
           </div>
         </td>
@@ -156,17 +156,14 @@ export default function RiwayatInventoryPage() {
   };
 
   return (
-    <div className="bg-[var(--mono-bg)] text-[var(--mono-fg)] p-4 rounded-none border border-[var(--mono-border)] flex-1 m-4 mt-6">
+    <section className="section space-y-4">
       {/* TOP */}
       <div className="flex items-center justify-between">
-        <h1 className="hidden md:block text-lg font-semibold">
+        <h1 className="hidden md:block text-sm font-semibold uppercase tracking-wider">
           Riwayat Inventory
         </h1>
 
-        <TableToolbar
-          searchPlaceholder="Cari riwayat…"
-          // tidak ada create untuk riwayat
-        />
+        <TableToolbar searchPlaceholder="Cari riwayat…" />
       </div>
 
       {/* LIST */}
@@ -174,6 +171,6 @@ export default function RiwayatInventoryPage() {
 
       {/* PAGINATION */}
       <Pagination />
-    </div>
+    </section>
   );
 }

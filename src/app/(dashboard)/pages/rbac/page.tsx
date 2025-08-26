@@ -1,7 +1,8 @@
 // src/app/(dashboard)/pages/rbac/page.tsx
 "use client";
+
 import * as React from "react";
-import RoleTable from "@/components/features/rbac/forms/RoleTable";
+import RoleTable from "@/components/organisms/RoleTable";
 
 const DEMO_ROLES = [
   {
@@ -34,9 +35,5 @@ const DEMO_ROLES = [
 ];
 
 export default function RBACPage() {
-  return (
-    <div className=" p-4 rounded-none border flex-1 m-4 mt-6 space-y-8 bg-[var(--mono-bg)] text-[var(--mono-fg)] border-[var(--mono-border)]">
-      <RoleTable roles={DEMO_ROLES} />
-    </div>
-  );
+  return <RoleTable roles={DEMO_ROLES} />;
 }
