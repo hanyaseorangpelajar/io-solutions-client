@@ -6,35 +6,41 @@ import {
   MagnifyingGlassIcon,
   FunnelIcon,
   ArrowsUpDownIcon,
-  XMarkIcon,
 } from "@heroicons/react/24/outline";
 
 type Props = {
-  /** Placeholder untuk kolom pencarian */
+  /** Placeholder input cari. */
   searchPlaceholder?: string;
-  /** Panggil saat submit cari (Enter / klik tombol) */
-  onSearch?: (q: string) => void;
-  /** Nilai awal kolom pencarian (optional) */
-  initialSearch?: string;
+  /** Controlled value; jika diisi maka komponen jadi controlled. */
+  searchValue?: string;
+  /** Default value untuk uncontrolled mode. */
+  defaultSearch?: string;
+  /** Dipanggil saat nilai input berubah. */
+  onSearchChange?: (value: string) => void;
+  /** Dipanggil saat submit (Enter / klik tombol cari). */
+  onSearchSubmit?: (value: string) => void;
 
-  /** Tombol Create (biasanya <FormModal .../>) */
-  createButton?: React.ReactNode;
-
-  /** Tampilkan tombol Filter */
+  /** Tampilkan tombol Filter. */
   showFilter?: boolean;
-  /** Tampilkan tombol Sort */
-  showSort?: boolean;
-
-  /** Handler click Filter / Sort (opsional) */
+  /** Event klik tombol Filter. */
   onFilterClick?: () => void;
+
+  /** Tampilkan tombol Sort. */
+  showSort?: boolean;
+  /** Event klik tombol Sort. */
   onSortClick?: () => void;
 
-  /** Kelas wrapper ekstra (opsional) */
+  /** Slot aksi kanan (mis. tombol Create via FormModal). */
+  createButton?: React.ReactNode;
+  /** Slot tambahan di kanan selain createButton. */
+  rightSlot?: React.ReactNode;
+
+  /** Kelas tambahan wrapper. */
   className?: string;
 };
 
-const btn =
-  "inline-flex items-center justify-center gap-1 h-8 px-2 " +
+const btnBase =
+  "inline-flex items-center gap-2 px-3 py-1.5 text-sm " +
   "border border-[var(--mono-border)] bg-[var(--mono-bg)] text-[var(--mono-fg)] " +
   "hover:bg-[var(--mono-fg)] hover:text-[var(--mono-bg)] transition";
 
@@ -42,91 +48,97 @@ const iconCls = "w-4 h-4";
 
 export default function TableToolbar({
   searchPlaceholder = "Search…",
-  onSearch,
-  initialSearch = "",
-  createButton,
-  showFilter = false,
-  showSort = false,
-  onFilterClick,
-  onSortClick,
-  className,
-}: Props) {
-  const [q, setQ] = React.useState(initialSearch);
+  searchValue,
+  defaultSearch = "",
+  onSearchChange,
+  onSearchSubmit,
 
-  const submit = (e?: React.FormEvent) => {
-    e?.preventDefault();
-    onSearch?.(q.trim());
+  showFilter = true,
+  onFilterClick,
+
+  showSort = true,
+  onSortClick,
+
+  createButton,
+  rightSlot,
+  className = "",
+}: Props) {
+  const isControlled = typeof searchValue === "string";
+  const [inner, setInner] = React.useState(defaultSearch);
+
+  const value = isControlled ? (searchValue as string) : inner;
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value;
+    if (!isControlled) setInner(v);
+    onSearchChange?.(v);
   };
 
-  const clear = () => {
-    setQ("");
-    onSearch?.("");
+  const submit = () => onSearchSubmit?.(value);
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") submit();
   };
 
   return (
     <div
-      className={[
-        "w-full flex items-center justify-between gap-2",
-        className || "",
-      ].join(" ")}
+      className={`mono flex items-center justify-between gap-2 ${className}`}
+      aria-label="Table toolbar"
     >
-      {/* Search */}
-      <form onSubmit={submit} className="flex items-center gap-2 min-w-0">
-        <div className="flex items-center gap-2 border border-[var(--mono-border)] bg-[var(--mono-bg)] px-2 h-9">
-          <MagnifyingGlassIcon className={iconCls} aria-hidden="true" />
-          <input
-            type="text"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={searchPlaceholder}
-            className="h-8 w-[200px] md:w-[260px] lg:w-[320px] outline-none bg-transparent"
-            aria-label="Search"
-          />
-          {q && (
-            <button
-              type="button"
-              onClick={clear}
-              className="p-1 -mr-1 hover:opacity-70"
-              aria-label="Clear"
-              title="Clear"
-            >
-              <XMarkIcon className={iconCls} />
-            </button>
-          )}
-        </div>
-        <button type="submit" className={btn} aria-label="Search">
-          Go
-        </button>
-      </form>
-
-      {/* Right actions */}
+      {/* LEFT: Search + Filter + Sort */}
       <div className="flex items-center gap-2">
+        <div className="flex items-center">
+          <input
+            aria-label="Search"
+            value={value}
+            onChange={handleChange}
+            onKeyDown={onKeyDown}
+            placeholder={searchPlaceholder}
+            className="h-8 w-56 md:w-64 px-3 py-1.5 text-sm outline-none
+                       border border-[var(--mono-border)] bg-[var(--mono-bg)] text-[var(--mono-fg)]
+                       placeholder:text-[var(--mono-ph)]"
+          />
+          <button
+            type="button"
+            onClick={submit}
+            className={`${btnBase} h-8 -ml-px`}
+            title="Cari"
+            aria-label="Cari"
+          >
+            <MagnifyingGlassIcon className={iconCls} />
+          </button>
+        </div>
+
         {showFilter && (
           <button
             type="button"
             onClick={onFilterClick}
-            className={btn}
-            aria-label="Filter"
+            className={`${btnBase} h-8`}
             title="Filter"
+            aria-label="Filter"
           >
             <FunnelIcon className={iconCls} />
             <span className="hidden sm:inline">Filter</span>
           </button>
         )}
+
         {showSort && (
           <button
             type="button"
             onClick={onSortClick}
-            className={btn}
-            aria-label="Sort"
+            className={`${btnBase} h-8`}
             title="Sort"
+            aria-label="Sort"
           >
             <ArrowsUpDownIcon className={iconCls} />
             <span className="hidden sm:inline">Sort</span>
           </button>
         )}
+      </div>
 
-        {/* Create button dari luar (mis. FormModal) */}
+      {/* RIGHT: custom actions */}
+      <div className="flex items-center gap-2">
+        {rightSlot}
         {createButton}
       </div>
     </div>

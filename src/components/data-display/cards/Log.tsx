@@ -1,13 +1,28 @@
+// src/components/data-display/cards/Log.tsx
 "use client";
 
-import { useState } from "react";
+import * as React from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 
 type ValuePiece = Date | null;
 type Value = ValuePiece | [ValuePiece, ValuePiece];
 
-const events = [
+type LogEvent = {
+  id: string | number;
+  title: string;
+  time: string;
+  description: string;
+};
+
+type Props = {
+  title?: string;
+  events?: LogEvent[];
+  defaultDate?: Date;
+  className?: string;
+};
+
+const DEFAULT_EVENTS: LogEvent[] = [
   {
     id: 1,
     title: "Lorem ipsum dolor",
@@ -28,101 +43,53 @@ const events = [
   },
 ];
 
-const Log = () => {
-  const [value, onChange] = useState<Value>(new Date());
+export default function Log({
+  title = "Log",
+  events = DEFAULT_EVENTS,
+  defaultDate = new Date(),
+  className = "",
+}: Props) {
+  const [value, onChange] = React.useState<Value>(defaultDate);
 
   return (
-    <div className="bg-white text-black p-4 rounded-none border border-black">
+    <section
+      className={[
+        "bg-[var(--mono-bg)] text-[var(--mono-fg)]",
+        "border border-[var(--mono-border)] rounded-none p-4",
+        className,
+      ].join(" ")}
+    >
+      {/* Calendar (styling lanjut di globals.css → .react-calendar ...) */}
       <Calendar onChange={onChange} value={value} />
 
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold my-4">Log</h1>
+      {/* Header */}
+      <div className="flex items-center justify-between mt-4">
+        <h2 className="text-lg font-semibold">{title}</h2>
       </div>
 
-      <div className="flex flex-col gap-4">
-        {events.map((event) => (
-          <div key={event.id} className="p-5 rounded-none border border-black">
+      {/* Events */}
+      <div className="flex flex-col gap-3 mt-3">
+        {events.map((ev) => (
+          <article
+            key={ev.id}
+            className="p-4 border border-[var(--mono-border)] rounded-none bg-[var(--mono-bg)]"
+          >
             <div className="flex items-center justify-between">
-              <h2 className="font-medium">{event.title}</h2>
-              <span className="text-xs text-white bg-black px-2 py-1 rounded-none">
-                {event.time}
+              <h3 className="font-medium">{ev.title}</h3>
+              <span
+                className={[
+                  "text-xs px-2 py-1 rounded-none border border-[var(--mono-border)]",
+                  // pill invert to keep contrast high and konsisten mono
+                  "bg-[var(--mono-fg)] text-[var(--mono-bg)]",
+                ].join(" ")}
+              >
+                {ev.time}
               </span>
             </div>
-            <p className="mt-2 text-sm">{event.description}</p>
-          </div>
+            <p className="mt-2 text-sm opacity-90">{ev.description}</p>
+          </article>
         ))}
       </div>
-
-      <style jsx global>{`
-        .react-calendar {
-          width: 100%;
-          border: 1px solid #000;
-          background: #fff;
-          color: #000;
-          border-radius: 0;
-        }
-        .react-calendar *,
-        .react-calendar *:before,
-        .react-calendar *:after {
-          color: inherit !important;
-        }
-        .react-calendar__navigation {
-          border-bottom: 1px solid #000;
-        }
-        .react-calendar__navigation button {
-          background: #fff;
-          border-radius: 0;
-        }
-        .react-calendar__navigation button:enabled:hover,
-        .react-calendar__navigation button:enabled:focus {
-          background: #000;
-          color: #fff !important;
-        }
-        .react-calendar__month-view__weekdays {
-          background: #fff;
-          border-bottom: 1px solid #000;
-        }
-        .react-calendar__month-view__weekdays__weekday abbr {
-          text-decoration: none;
-        }
-        .react-calendar__tile {
-          background: #fff;
-          border-radius: 0;
-        }
-        .react-calendar__tile:enabled:hover,
-        .react-calendar__tile:enabled:focus {
-          background: #000;
-          color: #fff !important;
-        }
-        .react-calendar__tile--now {
-          background: #fff !important;
-          outline: 2px solid #000;
-          color: #000 !important;
-        }
-        .react-calendar__tile--active,
-        .react-calendar__tile--rangeStart,
-        .react-calendar__tile--rangeEnd,
-        .react-calendar__tile--hasActive {
-          background: #000 !important;
-          color: #fff !important;
-        }
-        .react-calendar__tile--range {
-          background: #000 !important;
-          color: #fff !important;
-        }
-        .react-calendar__tile--range:enabled:hover,
-        .react-calendar__tile--range:enabled:focus {
-          background: #000 !important;
-          color: #fff !important;
-        }
-        .react-calendar__year-view__months__month,
-        .react-calendar__decade-view__years__year,
-        .react-calendar__century-view__decades__decade {
-          border-radius: 0;
-        }
-      `}</style>
-    </div>
+    </section>
   );
-};
-
-export default Log;
+}

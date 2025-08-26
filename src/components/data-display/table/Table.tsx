@@ -11,69 +11,61 @@ export type TableColumn = {
 };
 
 type Props<T = any> = {
+  /** Definisi kolom (untuk header & colSpan empty state). */
   columns: TableColumn[];
+  /** Data baris. */
   data: T[];
+  /** Renderer baris: kembalikan <tr>…</tr> (seperti di halamanmu). */
   renderRow: (item: T, index: number) => React.ReactNode;
-  /** Teks saat data kosong */
-  emptyText?: string;
-  /** Pad & tinggi sel lebih rapat */
-  dense?: boolean;
-  /** Jadikan header lengket saat scroll */
+
+  /** Header lengket. */
   stickyHeader?: boolean;
-  /** Kelas tambahan wrapper (opsional) */
+  /** Garis pemisah antar baris. */
+  rowDividers?: boolean;
+
+  /** Kustom empty state. */
+  empty?: React.ReactNode;
+
+  /** Kelas tambahan untuk <table>. */
   className?: string;
 };
 
-const headBase =
-  "text-[11px] uppercase tracking-widest font-medium text-[var(--mono-fg)]";
-const cellBase = "align-middle";
-const sepBorder = "border-b border-[var(--mono-border)]";
+const thBase =
+  "px-4 py-2 text-xs uppercase tracking-widest " +
+  "text-[var(--mono-label)] text-left " +
+  "border-b border-[var(--mono-border)]";
 
 export default function Table<T>({
   columns,
   data,
   renderRow,
-  emptyText = "No data",
-  dense = false,
   stickyHeader = false,
-  className,
+  rowDividers = true,
+  empty,
+  className = "",
 }: Props<T>) {
-  const pad = dense ? "px-3 py-2" : "px-4 py-3";
-
   return (
-    <div
-      className={[
-        "mono w-full overflow-x-auto",
-        // tidak ada margin/padding eksternal; biar parent yang atur
-        className || "",
-      ].join(" ")}
-      role="region"
-      aria-label="Data table"
-    >
-      <table className="w-full border-collapse">
+    <div className="mono w-full overflow-x-auto">
+      <table
+        className={`w-full border-collapse bg-[var(--mono-bg)] text-[var(--mono-fg)] ${className}`}
+      >
         <thead
-          className={[
-            sepBorder,
-            stickyHeader
-              ? "sticky top-0 z-10 bg-[var(--mono-bg)]"
-              : "bg-[var(--mono-bg)]",
-          ].join(" ")}
+          className={`${
+            stickyHeader ? "sticky top-0 z-10" : ""
+          } bg-[var(--mono-bg)]`}
         >
           <tr>
             {columns.map((col, i) => (
               <th
-                key={String(col.accessor) + i}
+                key={`${col.accessor}-${i}`}
                 scope="col"
-                className={[
-                  headBase,
-                  pad,
-                  col.className || "",
+                className={`${thBase} ${col.className ?? ""} ${
                   col.align === "center"
                     ? "text-center"
                     : col.align === "right"
                     ? "text-right"
-                    : "text-left",
-                ].join(" ")}
+                    : "text-left"
+                }`}
               >
                 {col.header}
               </th>
@@ -81,24 +73,26 @@ export default function Table<T>({
           </tr>
         </thead>
 
-        <tbody>
-          {data.length === 0 ? (
+        {data.length > 0 ? (
+          <tbody
+            className={`${
+              rowDividers ? "divide-y divide-[var(--mono-border)]" : ""
+            }`}
+          >
+            {data.map((item, idx) => renderRow(item, idx))}
+          </tbody>
+        ) : (
+          <tbody>
             <tr>
               <td
-                className={[
-                  pad,
-                  cellBase,
-                  "text-sm text-[var(--mono-muted)]",
-                ].join(" ")}
-                colSpan={columns.length}
+                colSpan={Math.max(1, columns.length)}
+                className="px-6 py-8 text-center text-sm text-[var(--mono-muted)] border-b border-[var(--mono-border)]"
               >
-                {emptyText}
+                {empty ?? "Belum ada data."}
               </td>
             </tr>
-          ) : (
-            data.map((item, idx) => renderRow(item, idx))
-          )}
-        </tbody>
+          </tbody>
+        )}
       </table>
     </div>
   );

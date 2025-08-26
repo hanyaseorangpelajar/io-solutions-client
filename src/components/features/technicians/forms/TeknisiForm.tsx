@@ -1,12 +1,14 @@
+// src/components/features/technicians/forms/TeknisiForm.tsx
 "use client";
 
 import * as React from "react";
 import InputLabelField from "@/components/ui/fields/InputLabelField";
 import SelectLabelField from "@/components/ui/fields/SelectLabelField";
+import TagInput from "@/components/ui/fields/TagInput";
 import FormRow from "@/components/ui/form/FormRow";
 import FormActions from "@/components/ui/form/FormActions";
 
-// harus sama dengan halaman
+// Harus sama dengan halaman
 type TechnicianStatus = "ACTIVE" | "INACTIVE" | "ON_LEAVE";
 type Technician = {
   id?: string;
@@ -38,7 +40,7 @@ export default function TeknisiForm({ type, data, onClose }: TeknisiFormProps) {
     status: data?.status ?? "ACTIVE",
   });
 
-  // sinkron saat data berubah (buka item lain)
+  // Sinkron saat data prop berubah
   React.useEffect(() => {
     setForm({
       name: data?.name ?? "",
@@ -57,12 +59,12 @@ export default function TeknisiForm({ type, data, onClose }: TeknisiFormProps) {
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: integrasi submit ke backend
+    // TODO: submit ke backend
     onClose();
   };
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-3">
+    <form onSubmit={onSubmit} className="flex flex-col gap-4">
       {/* ID (hanya tampil kalau ada) */}
       {data?.id && (
         <InputLabelField
@@ -71,10 +73,10 @@ export default function TeknisiForm({ type, data, onClose }: TeknisiFormProps) {
           value={data.id}
           onChange={() => {}}
           disabled
-          controlClassName="bg-black/5"
         />
       )}
 
+      {/* Nama */}
       <InputLabelField
         id="name"
         label="Nama"
@@ -85,6 +87,7 @@ export default function TeknisiForm({ type, data, onClose }: TeknisiFormProps) {
         required
       />
 
+      {/* Email / Telepon */}
       <FormRow>
         <InputLabelField
           id="email"
@@ -110,6 +113,27 @@ export default function TeknisiForm({ type, data, onClose }: TeknisiFormProps) {
         />
       </FormRow>
 
+      {/* Skills */}
+      <div>
+        <label
+          htmlFor="skills"
+          className="text-xs uppercase tracking-widest text-[var(--mono-label)]"
+        >
+          Skills
+        </label>
+        <TagInput
+          id="skills"
+          value={form.skills}
+          onChange={set("skills")}
+          disabled={isRead}
+          placeholder="Tambah skill lalu tekan Enter…"
+        />
+        <p className="text-[10px] text-[var(--mono-muted)] mt-1">
+          Contoh: Hardware, Windows, MacOS, Networking, Printer
+        </p>
+      </div>
+
+      {/* Aktif Sejak / Status */}
       <FormRow>
         <InputLabelField
           id="activeSince"
@@ -133,6 +157,7 @@ export default function TeknisiForm({ type, data, onClose }: TeknisiFormProps) {
         />
       </FormRow>
 
+      {/* Actions (DRY) */}
       <FormActions
         mode={type}
         onCancel={onClose}

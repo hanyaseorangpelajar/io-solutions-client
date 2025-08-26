@@ -57,8 +57,7 @@ export default function RoleTable({
         <div className="flex flex-wrap gap-1">
           {item.permissions.map((p) => (
             <SafetyChip key={p} prefix="#">
-              {" "}
-              {p}{" "}
+              {p}
             </SafetyChip>
           ))}
         </div>
@@ -75,6 +74,7 @@ export default function RoleTable({
             component={RoleForm}
             data={item}
             variant="ghost"
+            invertOnRowHover
             triggerClassName="w-8 h-8"
             icon={<EyeIcon className="w-4 h-4" />}
           />
@@ -85,6 +85,7 @@ export default function RoleTable({
             component={RoleForm}
             data={item}
             variant="ghost"
+            invertOnRowHover
             triggerClassName="w-8 h-8"
             icon={<PencilSquareIcon className="w-4 h-4" />}
           />
@@ -94,6 +95,7 @@ export default function RoleTable({
             entityTitle="Role"
             id={item.id}
             variant="ghost"
+            invertOnRowHover
             triggerClassName="w-8 h-8"
             icon={<TrashIcon className="w-4 h-4" />}
           />

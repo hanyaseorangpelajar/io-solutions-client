@@ -1,11 +1,12 @@
+// src/components/ui/fields/TextAreaLabelField.tsx
 "use client";
 
 import * as React from "react";
+import InputLabelField from "@/components/ui/fields/InputLabelField";
 
 export type TextAreaLabelFieldProps = {
   id: string;
   label: React.ReactNode;
-
   value: string;
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
 
@@ -13,24 +14,30 @@ export type TextAreaLabelFieldProps = {
   disabled?: boolean;
   required?: boolean;
   rows?: number;
-  name?: string;
-  maxLength?: number;
-
   note?: React.ReactNode;
 
-  /** styling hooks */
-  className?: string; // wrapper <div>
-  labelClassName?: string; // <label>
-  textareaClassName?: string; // <textarea>
+  /** wrapper <div> */
+  className?: string;
+  /** label <label> */
+  labelClassName?: string;
+  /** will be applied to underlying <textarea> */
+  textareaClassName?: string;
+
+  /** pass-through extra textarea attrs (optional) */
+  controlProps?: Omit<
+    React.TextareaHTMLAttributes<HTMLTextAreaElement>,
+    | "id"
+    | "value"
+    | "onChange"
+    | "onBlur"
+    | "className"
+    | "name"
+    | "placeholder"
+    | "disabled"
+    | "required"
+    | "rows"
+  >;
 };
-
-const baseLabel = "text-xs uppercase tracking-widest text-[var(--mono-label)]";
-
-const baseArea =
-  "w-full border border-[var(--mono-border)] bg-[var(--mono-bg)] text-[var(--mono-fg)] " +
-  "px-3 py-2 rounded-none outline-none";
-
-const disabledCls = "opacity-70 cursor-not-allowed";
 
 export default function TextAreaLabelField({
   id,
@@ -41,37 +48,28 @@ export default function TextAreaLabelField({
   disabled,
   required,
   rows = 4,
-  name,
-  maxLength,
   note,
-  className = "flex flex-col gap-1",
+  className,
   labelClassName,
   textareaClassName,
+  controlProps,
 }: TextAreaLabelFieldProps) {
   return (
-    <div className={className}>
-      <label htmlFor={id} className={`${baseLabel} ${labelClassName || ""}`}>
-        {label}
-      </label>
-
-      <textarea
-        id={id}
-        name={name}
-        rows={rows}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        disabled={disabled}
-        required={required}
-        maxLength={maxLength}
-        className={`${baseArea} ${disabled ? disabledCls : ""} ${
-          textareaClassName || ""
-        }`}
-      />
-
-      {note ? (
-        <p className="text-[10px] text-[var(--mono-muted)] mt-1">{note}</p>
-      ) : null}
-    </div>
+    <InputLabelField
+      id={id}
+      label={label}
+      value={value}
+      onChange={onChange as any} // safe: underlying accepts textarea/input union
+      placeholder={placeholder}
+      disabled={disabled}
+      required={required}
+      multiline
+      rows={rows}
+      note={note}
+      className={className}
+      labelClassName={labelClassName}
+      controlClassName={textareaClassName}
+      controlProps={controlProps}
+    />
   );
 }

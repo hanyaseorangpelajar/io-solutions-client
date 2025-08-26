@@ -1,29 +1,56 @@
+// src/components/ui/chips/SafetyChip.tsx
 "use client";
+
 import * as React from "react";
 
 type Props = {
   children: React.ReactNode;
-  prefix?: string; // contoh: "#"
+  /** Teks/ikon kecil di depan label, mis. "#" */
+  prefix?: React.ReactNode;
+  /** Paksa chip tetap putih/hitam saat parent <tr class="group/row hover:..."> di-hover */
+  lockOnRowHover?: boolean;
+  /** Ukuran chip */
+  size?: "xs" | "sm";
+  /** Kelas ekstra */
   className?: string;
+  /** Elemen wrapper */
+  as?: keyof JSX.IntrinsicElements;
+  /** Title (tooltip) opsional */
+  title?: string;
+};
+
+const sizeMap = {
+  xs: "px-2 py-0.5 text-[10px]",
+  sm: "px-2.5 py-1 text-[11px]",
 };
 
 export default function SafetyChip({
   children,
   prefix,
+  lockOnRowHover = true,
+  size = "xs",
   className = "",
+  as: Tag = "span",
+  title,
 }: Props) {
+  const lock = lockOnRowHover
+    ? "group-hover/row:bg-[var(--mono-bg)] group-hover/row:text-[var(--mono-fg)]"
+    : "";
+
   return (
-    <span
-      className={
-        "inline-flex items-center border border-black bg-white text-black " +
-        "px-1.5 py-0.5 text-[10px] uppercase tracking-widest " +
-        // pastikan tetap kontras saat <tr> di-hover jadi hitam/teks putih
-        "group-hover:!bg-white group-hover:!text-black " +
-        className
-      }
+    <Tag
+      title={title}
+      className={[
+        "inline-flex items-center gap-1",
+        "border border-[var(--mono-border)]",
+        "bg-[var(--mono-bg)] text-[var(--mono-fg)]",
+        sizeMap[size],
+        lock,
+        className,
+      ].join(" ")}
     >
-      {prefix ? <span className="opacity-70 mr-0.5">{prefix}</span> : null}
-      {children}
-    </span>
+      {prefix != null ? <span aria-hidden="true">{prefix}</span> : null}
+      <span className="leading-none">{children}</span>
+    </Tag>
   );
 }

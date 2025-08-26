@@ -4,6 +4,7 @@
 import * as React from "react";
 import InputLabelField from "@/components/ui/fields/InputLabelField";
 import TagInput from "@/components/ui/fields/TagInput";
+import FormActions from "@/components/ui/form/FormActions";
 
 export type RoleItem = {
   id: string;
@@ -30,11 +31,12 @@ export default function RoleForm({ type, data, onClose }: Props) {
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // TODO: submit ke backend
     onClose();
   };
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-3">
+    <form onSubmit={onSubmit} className="flex flex-col gap-4">
       <InputLabelField
         id="role-name"
         label="Nama Role"
@@ -59,7 +61,7 @@ export default function RoleForm({ type, data, onClose }: Props) {
       <div>
         <label
           htmlFor="role-perms"
-          className="text-xs uppercase tracking-widest text-label"
+          className="text-xs uppercase tracking-widest text-[var(--mono-label)]"
         >
           Permissions
         </label>
@@ -71,29 +73,21 @@ export default function RoleForm({ type, data, onClose }: Props) {
           placeholder="Tambah permission lalu Enter (mis. ticket.read)…"
           aria-describedby="role-perms-note"
         />
-        <p id="role-perms-note" className="text-[10px] text-muted mt-1">
+        <p
+          id="role-perms-note"
+          className="text-[10px] text-[var(--mono-muted)] mt-1"
+        >
           Contoh: <code>ticket.read</code>, <code>ticket.write</code>,{" "}
           <code>inventory.read</code>.
         </p>
       </div>
 
-      <div className="mt-2 flex items-center justify-end gap-2">
-        <button
-          type="button"
-          onClick={onClose}
-          className="px-4 py-2 border border-black bg-white hover:bg-black hover:text-white transition"
-        >
-          Close
-        </button>
-        {type !== "read" && (
-          <button
-            type="submit"
-            className="px-4 py-2 border border-black bg-black text-white hover:bg-white hover:text-black transition"
-          >
-            {type === "create" ? "Save" : "Save Changes"}
-          </button>
-        )}
-      </div>
+      <FormActions
+        mode={type}
+        onCancel={onClose}
+        cancelText="Close"
+        submitText={type === "create" ? "Save" : "Save Changes"}
+      />
     </form>
   );
 }

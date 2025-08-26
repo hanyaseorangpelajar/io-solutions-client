@@ -1,3 +1,4 @@
+// src/components/features/inventory/forms/InventoryHistoryDetailForm.tsx
 "use client";
 
 import * as React from "react";
@@ -32,7 +33,7 @@ export type InventoryHistory = {
 };
 
 export type InventoryHistoryDetailFormProps = {
-  type: Mode; // pakai "read"
+  type: Mode; // dipakai "read"
   data?: InventoryHistory;
   onClose: () => void;
 };
@@ -42,8 +43,13 @@ function pctDelta(before?: number, after?: number) {
   return ((after - before) / before) * 100;
 }
 
+// tokens / util
 const chip =
-  "inline-flex items-center gap-1 border border-black px-1.5 py-0.5 text-[10px] uppercase tracking-widest";
+  "inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] uppercase tracking-widest " +
+  "border border-[var(--mono-border)] bg-[var(--mono-bg)] text-[var(--mono-fg)]";
+
+const cardBox =
+  "border border-[var(--mono-border)] bg-[var(--mono-bg)] text-[var(--mono-fg)] p-3";
 
 export default function InventoryHistoryDetailForm({
   data,
@@ -52,12 +58,12 @@ export default function InventoryHistoryDetailForm({
   const d = pctDelta(data?.priceBefore, data?.priceAfter);
 
   return (
-    <form onSubmit={(e) => e.preventDefault()} className="flex flex-col gap-3">
-      {/* header mini */}
+    <form onSubmit={(e) => e.preventDefault()} className="flex flex-col gap-4">
+      {/* Header mini */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className={chip}>{data?.change ?? "UPDATE"}</span>
-          <span className="text-xs border border-black px-2 py-1 rounded-none">
+          <span className="text-xs px-2 py-1 rounded-none border border-[var(--mono-border)]">
             {data?.date ?? "-"}
           </span>
         </div>
@@ -66,7 +72,7 @@ export default function InventoryHistoryDetailForm({
         </div>
       </div>
 
-      {/* identitas */}
+      {/* Identitas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <InputLabelField
           id="ih-name"
@@ -121,10 +127,10 @@ export default function InventoryHistoryDetailForm({
         />
       </div>
 
-      {/* before/after ringkas */}
+      {/* Before / After ringkas */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className="border border-black p-3">
-          <div className="text-xs uppercase tracking-widest text-black/70 mb-2">
+        <div className={cardBox}>
+          <div className="text-xs uppercase tracking-widest text-[var(--mono-label)] mb-2">
             Stok
           </div>
           <div className="flex items-center gap-2">
@@ -136,8 +142,8 @@ export default function InventoryHistoryDetailForm({
           </div>
         </div>
 
-        <div className="border border-black p-3">
-          <div className="text-xs uppercase tracking-widest text-black/70 mb-2">
+        <div className={cardBox}>
+          <div className="text-xs uppercase tracking-widest text-[var(--mono-label)] mb-2">
             Harga
           </div>
           <div className="flex items-center gap-2">
@@ -160,20 +166,20 @@ export default function InventoryHistoryDetailForm({
       </div>
 
       {data?.note ? (
-        <div className="border border-black p-3">
-          <div className="text-xs uppercase tracking-widest text-black/70 mb-1">
+        <div className={cardBox}>
+          <div className="text-xs uppercase tracking-widest text-[var(--mono-label)] mb-1">
             Catatan
           </div>
           <p className="text-sm whitespace-pre-wrap">{data.note}</p>
         </div>
       ) : null}
 
-      {/* actions */}
+      {/* Actions */}
       <div className="mt-2 flex items-center justify-end gap-2">
         <button
           type="button"
           onClick={onClose}
-          className="px-4 py-2 border border-black bg-white hover:bg-black hover:text-white transition"
+          className="px-4 py-2 border border-[var(--mono-border)] bg-[var(--mono-bg)] text-[var(--mono-fg)] hover:bg-[var(--mono-fg)] hover:text-[var(--mono-bg)] transition"
         >
           Tutup
         </button>

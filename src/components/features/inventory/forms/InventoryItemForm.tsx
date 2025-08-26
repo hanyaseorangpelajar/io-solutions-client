@@ -1,9 +1,11 @@
+// src/components/features/inventory/forms/InventoryItemForm.tsx
 "use client";
 
 import * as React from "react";
 import InputLabelField from "@/components/ui/fields/InputLabelField";
 import SelectLabelField from "@/components/ui/fields/SelectLabelField";
 import PriceDeltaBadge from "@/components/ui/badges/PriceDeltaBadge";
+import FormActions from "@/components/ui/form/FormActions";
 
 export type InventoryItem = {
   id?: string | number;
@@ -25,6 +27,25 @@ type Props = {
   data?: InventoryItem;
   onClose: () => void;
 };
+
+const CATEGORY_OPTIONS = [
+  { value: "cpu", label: "CPU" },
+  { value: "gpu", label: "GPU" },
+  { value: "motherboard", label: "Motherboard" },
+  { value: "ram", label: "RAM" },
+  { value: "storage", label: "Storage" },
+  { value: "psu", label: "PSU" },
+  { value: "case", label: "Case" },
+  { value: "cooler", label: "Cooler" },
+  { value: "peripheral", label: "Peripheral" },
+  { value: "other", label: "Lainnya" },
+];
+
+const UNIT_OPTIONS = [
+  { value: "pcs", label: "pcs" },
+  { value: "set", label: "set" },
+  { value: "unit", label: "unit" },
+];
 
 function toNumber(val: string): number | undefined {
   if (val === "" || val === undefined || val === null) return undefined;
@@ -65,7 +86,7 @@ export default function InventoryItemForm({ type, data, onClose }: Props) {
   const d = delta(form.storePrice, form.marketPrice);
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-3">
+    <form onSubmit={onSubmit} className="flex flex-col gap-4">
       {/* Identitas */}
       <InputLabelField
         id="inv-name"
@@ -92,18 +113,7 @@ export default function InventoryItemForm({ type, data, onClose }: Props) {
           value={form.category ?? "other"}
           onChange={(e) => set("category", e.target.value)}
           disabled={readOnly}
-          options={[
-            { value: "cpu", label: "CPU" },
-            { value: "gpu", label: "GPU" },
-            { value: "motherboard", label: "Motherboard" },
-            { value: "ram", label: "RAM" },
-            { value: "storage", label: "Storage" },
-            { value: "psu", label: "PSU" },
-            { value: "case", label: "Case" },
-            { value: "cooler", label: "Cooler" },
-            { value: "peripheral", label: "Peripheral" },
-            { value: "other", label: "Lainnya" },
-          ]}
+          options={CATEGORY_OPTIONS}
         />
         <SelectLabelField
           id="inv-unit"
@@ -111,11 +121,7 @@ export default function InventoryItemForm({ type, data, onClose }: Props) {
           value={form.unit ?? "pcs"}
           onChange={(e) => set("unit", e.target.value)}
           disabled={readOnly}
-          options={[
-            { value: "pcs", label: "pcs" },
-            { value: "set", label: "set" },
-            { value: "unit", label: "unit" },
-          ]}
+          options={UNIT_OPTIONS}
         />
       </div>
 
@@ -180,24 +186,12 @@ export default function InventoryItemForm({ type, data, onClose }: Props) {
         />
       </div>
 
-      {/* Actions */}
-      <div className="mt-2 flex items-center justify-end gap-2">
-        <button
-          type="button"
-          onClick={onClose}
-          className="px-4 py-2 border border-black bg-white hover:bg-black hover:text-white transition"
-        >
-          Close
-        </button>
-        {type !== "read" && (
-          <button
-            type="submit"
-            className="px-4 py-2 border border-black bg-black text-white hover:bg-white hover:text-black transition"
-          >
-            {type === "create" ? "Save" : "Save Changes"}
-          </button>
-        )}
-      </div>
+      {/* Actions (DRY) */}
+      <FormActions
+        mode={type}
+        onCancel={onClose}
+        submitText={type === "create" ? "Save" : "Save Changes"}
+      />
     </form>
   );
 }

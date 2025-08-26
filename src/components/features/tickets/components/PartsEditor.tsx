@@ -1,11 +1,12 @@
-// src/components/PartsEditor.tsx
+// PATCH: hilangkan controlProps, gunakan type/min/step langsung
+
 "use client";
+
 import * as React from "react";
 import InputLabelField from "@/components/ui/fields/InputLabelField";
 
 export type Part = { name: string; qty: number; unitCost?: number };
 
-// Izinkan dua bentuk props: {parts,...} ATAU {value,...}
 type PropsValue = {
   value: Part[];
   onChange: (parts: Part[]) => void;
@@ -32,27 +33,21 @@ export default function PartsEditor(props: Props) {
       next[idx] = {
         ...next[idx],
         [key]: key === "name" ? raw : raw === "" ? undefined : Number(raw),
-      };
+      } as Part;
       onChange(next);
     };
 
   const add = () => onChange([...(parts || []), { name: "", qty: 1 }]);
   const remove = (idx: number) => onChange(parts.filter((_, i) => i !== idx));
 
-  // util kelas tombol mono
-  const btn =
-    "px-3 py-2 border rounded-none transition " +
-    "border-[var(--mono-border)] bg-[var(--mono-bg)] text-[var(--mono-fg)] " +
-    "hover:bg-[var(--mono-fg)] hover:text-[var(--mono-bg)]";
-
   return (
-    <div className={className}>
+    <div className={`flex flex-col gap-3 ${className ?? ""}`}>
       {parts.map((p, idx) => (
-        <div key={idx} className="grid grid-cols-1 md:grid-cols-5 gap-2 mb-2">
+        <div key={idx} className="grid grid-cols-1 md:grid-cols-5 gap-2">
           <InputLabelField
             id={`part-name-${idx}`}
             label="Nama Suku Cadang"
-            value={p.name}
+            value={p.name ?? ""}
             onChange={update(idx, "name")}
             placeholder="Mis. Keyboard ASUS K456"
             disabled={disabled}
@@ -62,33 +57,36 @@ export default function PartsEditor(props: Props) {
           <InputLabelField
             id={`part-qty-${idx}`}
             label="Jumlah"
-            type="number"
-            min={1}
-            value={p.qty === undefined ? "" : String(p.qty)} // ← pastikan string
+            value={p.qty === undefined ? "" : String(p.qty)}
             onChange={update(idx, "qty")}
             placeholder="Qty"
             disabled={disabled}
+            type="number"
+            min={1}
           />
 
           <div className="flex gap-2">
             <InputLabelField
               id={`part-cost-${idx}`}
               label="Biaya/Unit"
-              type="number"
-              min={0}
-              step={0.01}
-              value={
-                p.unitCost === undefined ? "" : String(p.unitCost) // ← pastikan string
-              }
+              value={p.unitCost === undefined ? "" : String(p.unitCost)}
               onChange={update(idx, "unitCost")}
               placeholder="0"
               disabled={disabled}
               className="flex-1"
+              type="number"
+              min={0}
+              step={0.01}
             />
             <button
               type="button"
               onClick={() => remove(idx)}
-              className={btn}
+              className="
+                px-3 py-2 border border-[var(--mono-border)]
+                bg-[var(--mono-bg)] text-[var(--mono-fg)]
+                hover:bg-[var(--mono-fg)] hover:text-[var(--mono-bg)]
+                transition
+              "
               aria-label="Hapus suku cadang"
               disabled={disabled}
             >
@@ -98,7 +96,17 @@ export default function PartsEditor(props: Props) {
         </div>
       ))}
 
-      <button type="button" onClick={add} className={btn} disabled={disabled}>
+      <button
+        type="button"
+        onClick={add}
+        className="
+          px-3 py-2 border border-[var(--mono-border)]
+          bg-[var(--mono-bg)] text-[var(--mono-fg)]
+          hover:bg-[var(--mono-fg)] hover:text-[var(--mono-bg)]
+          transition w-fit
+        "
+        disabled={disabled}
+      >
         + Tambah Suku Cadang
       </button>
     </div>

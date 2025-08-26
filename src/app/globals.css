@@ -19,10 +19,18 @@
   color: var(--mono-fg);
 }
 
-.mono ::placeholder { color: var(--mono-ph); }
-.mono ::selection { background: var(--mono-fg); color: var(--mono-bg); }
+.mono ::placeholder {
+  color: var(--mono-ph);
+}
+.mono ::selection {
+  background: var(--mono-fg);
+  color: var(--mono-bg);
+}
 
-.mono a { color: inherit; text-decoration: none; }
+.mono a {
+  color: inherit;
+  text-decoration: none;
+}
 
 .mono :focus-visible {
   outline: 2px solid var(--mono-fg);
@@ -34,16 +42,24 @@
     @apply inline-flex items-center justify-center rounded-none
            border border-black bg-black text-white transition;
   }
-  .btn:hover { @apply bg-white text-black; }
+  .btn:hover {
+    @apply bg-white text-black;
+  }
 
   .btn-ghost {
     @apply inline-flex items-center justify-center rounded-none
            border border-black bg-white text-black transition;
   }
-  .btn-ghost:hover { @apply bg-black text-white; }
+  .btn-ghost:hover {
+    @apply bg-black text-white;
+  }
 
-  .btn-icon { @apply btn w-8 h-8 p-0; }
-  .btn-icon-ghost { @apply btn-ghost w-8 h-8 p-0; }
+  .btn-icon {
+    @apply btn w-8 h-8 p-0;
+  }
+  .btn-icon-ghost {
+    @apply btn-ghost w-8 h-8 p-0;
+  }
 
   .label {
     @apply text-xs uppercase tracking-widest text-black/70;
@@ -58,49 +74,158 @@
            px-2 py-0.5 text-[10px] uppercase tracking-widest;
   }
 
-  .card { @apply bg-white border border-black; }
+  .card {
+    @apply bg-white border border-black;
+  }
 
-  .modal-overlay { @apply fixed inset-0 z-50 grid place-items-center bg-black/60; }
+  .modal-overlay {
+    @apply fixed inset-0 z-50 grid place-items-center bg-black/60;
+  }
   .modal {
     @apply relative w-[90%] md:w-[70%] lg:w-[60%] xl:w-[50%] 2xl:w-[40%]
            bg-white border border-black;
   }
-  .modal-header { @apply flex items-center justify-between px-4 py-3 border-b border-black; }
-  .modal-title  { @apply text-sm font-semibold uppercase tracking-wider; }
+  .modal-header {
+    @apply flex items-center justify-between px-4 py-3 border-b border-black;
+  }
+  .modal-title {
+    @apply text-sm font-semibold uppercase tracking-wider;
+  }
 
-  .table-row { @apply group text-sm; }
-  .table-row-hover { @apply hover:bg-black hover:text-white; }
+  .table-row {
+    @apply group text-sm;
+  }
+  .table-row-hover {
+    @apply hover:bg-black hover:text-white;
+  }
 }
 
 @layer utilities {
-  .row-hover-invert { @apply group-hover:bg-white group-hover:text-black; }
-  .row-hover-icon { @apply group-hover:text-black; }
+  .row-hover-invert {
+    @apply group-hover:bg-white group-hover:text-black;
+  }
+  .row-hover-icon {
+    @apply group-hover:text-black;
+  }
 }
 
+/* Tambahan kecil untuk DRY UI — taruh di @layer components yang sama */
+@layer components {
+  /* Section/Card standar halaman */
+  .section {
+    @apply card p-4;
+  }
+  .section-header {
+    @apply flex items-center justify-between;
+  }
+  .section-title {
+    @apply text-lg font-semibold;
+  }
+
+  /* Grid list (kartu 3 kolom, responsive) */
+  .grid-cards {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3;
+  }
+
+  /* Form rhythm */
+  .form {
+    @apply flex flex-col gap-3;
+  }
+  .form-actions {
+    @apply mt-2 flex items-center justify-end gap-2;
+  }
+
+  /* Ukuran tombol (opsional) */
+  .btn-sm {
+    @apply h-7 px-2 text-xs;
+  }
+  .btn-md {
+    @apply h-8 px-3 text-sm;
+  } /* default */
+  .btn-lg {
+    @apply h-10 px-4;
+  }
+
+  /* Ikon-only (sudah ada .btn-icon / .btn-icon-ghost), tambahkan versi size */
+  .btn-icon-sm {
+    @apply w-7 h-7 p-0;
+  }
+  .btn-icon-md {
+    @apply w-8 h-8 p-0;
+  } /* default */
+  .btn-icon-lg {
+    @apply w-10 h-10 p-0;
+  }
+
+  /* Field helpers */
+  .field-label {
+    @apply label;
+  }
+  .field-note {
+    @apply text-[10px] text-muted mt-1;
+  }
+  .field-readonly {
+    @apply bg-black/5;
+  }
+
+  /* Badge ringan */
+  .badge {
+    @apply px-2 py-0.5 text-[10px] border border-black bg-white;
+  }
+
+  /* Table row hover (sudah punya, ini hanya alias yang lebih eksplisit) */
+  .row-hover {
+    @apply hover:bg-black hover:text-white;
+  }
+  .row-hover-sync {
+    @apply group-hover:bg-white group-hover:text-black;
+  }
+}
 
 .react-calendar {
   width: 100% !important;
   border: none !important;
-  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol" !important;
   background: var(--mono-bg) !important;
   color: var(--mono-fg) !important;
 }
-.react-calendar__navigation__label__labelText { font-weight: 600; }
+.react-calendar__navigation__label__labelText {
+  font-weight: 600;
+}
 .react-calendar__tile--active {
   background-color: #000 !important;
   color: #fff !important;
 }
 
-.rbc-toolbar { @apply border-b border-black; }
-.rbc-toolbar-label { text-align: right !important; padding: 0 20px !important; }
-.rbc-btn-group button { @apply border border-black bg-white text-black; }
-.rbc-btn-group .rbc-active { @apply bg-black text-white; }
-.rbc-time-view, .rbc-time-content, .rbc-month-view {
+.rbc-toolbar {
+  @apply border-b border-black;
+}
+.rbc-toolbar-label {
+  text-align: right !important;
+  padding: 0 20px !important;
+}
+.rbc-btn-group button {
+  @apply border border-black bg-white text-black;
+}
+.rbc-btn-group .rbc-active {
+  @apply bg-black text-white;
+}
+.rbc-time-view,
+.rbc-time-content,
+.rbc-month-view {
   border-color: var(--mono-border) !important;
 }
-.rbc-time-header { display: none !important; }
-.rbc-time-gutter.rbc-time-column { font-size: 12px !important; }
-.rbc-timeslot-group { background-color: #fff !important; }
+.rbc-time-header {
+  display: none !important;
+}
+.rbc-time-gutter.rbc-time-column {
+  font-size: 12px !important;
+}
+.rbc-timeslot-group {
+  background-color: #fff !important;
+}
 .rbc-event {
   border: 1px solid var(--mono-border) !important;
   background: #fff !important;
@@ -109,4 +234,7 @@
   margin: 8px !important;
   width: 99% !important;
 }
-.rbc-event-label { color: var(--mono-muted) !important; margin-bottom: 4px; }
+.rbc-event-label {
+  color: var(--mono-muted) !important;
+  margin-bottom: 4px;
+}
