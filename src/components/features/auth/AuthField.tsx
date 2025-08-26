@@ -21,22 +21,9 @@ type AuthFieldProps = {
 
   icon?: ComponentType<SVGProps<SVGSVGElement>>;
   rightSlot?: React.ReactNode; // misal tombol show/hide password
-
-  // styling overrides (opsional)
-  className?: string; // wrapper <label>
-  labelClassName?: string; // teks label
-  inputClassName?: string; // elemen <input>
-  rightSlotClassName?: string;
-  note?: React.ReactNode; // teks kecil di bawah input
-  error?: string; // pesan error singkat
 };
 
-const baseInput =
-  "w-full h-9 rounded-none border outline-none " +
-  "border-[var(--mono-border)] bg-[var(--mono-bg)] text-[var(--mono-fg)] " +
-  "placeholder-[color:var(--mono-ph)] " +
-  "focus:ring-2 focus:ring-[var(--mono-fg)] focus:ring-offset-2 focus:ring-offset-[var(--mono-bg)] " +
-  "disabled:opacity-70 disabled:cursor-not-allowed";
+const inputCls = "input h-9 pl-8 pr-10";
 
 export default function AuthField({
   id,
