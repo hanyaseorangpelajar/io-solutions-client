@@ -35,7 +35,7 @@ const DEMO_ROLES = [
 
 export default function RBACPage() {
   return (
-    <div className="bg-white text-black p-4 rounded-none border border-black flex-1 m-4 mt-6 space-y-8">
+    <div className=" p-4 rounded-none border flex-1 m-4 mt-6 space-y-8 bg-[var(--mono-bg)] text-[var(--mono-fg)] border-[var(--mono-border)]">
       <RoleTable roles={DEMO_ROLES} />
     </div>
   );

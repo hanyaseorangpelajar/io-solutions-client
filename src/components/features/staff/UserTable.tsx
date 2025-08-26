@@ -1,3 +1,4 @@
+// src/components/features/staff/UserTable.tsx
 "use client";
 
 import * as React from "react";
@@ -35,6 +36,7 @@ export default function UserTable({
 }: Props) {
   const renderRow = (item: UserItem) => {
     const roleName = roles.find((r) => r.id === item.roleId)?.name ?? "-";
+
     return (
       <tr
         key={item.id}
@@ -46,18 +48,26 @@ export default function UserTable({
             <span className="text-xs">{item.id}</span>
           </div>
         </td>
+
         <td className="hidden md:table-cell">{item.email}</td>
         <td className="hidden md:table-cell">{roleName}</td>
+
         <td>
           <div className="flex items-center gap-2">
+            {/* READ */}
             <FormModal
               type="read"
               entityTitle="User"
               component={AssignRoleForm as any}
               data={{ ...item, roleName }}
               triggerClassName="w-8 h-8"
+              variant="ghost"
+              invertOnRowHover
               icon={<EyeIcon className="w-4 h-4" />}
+              iconColor="currentColor"
             />
+
+            {/* UPDATE (butuh inject props roles) */}
             <FormModal
               type="update"
               entityTitle="User"
@@ -71,14 +81,22 @@ export default function UserTable({
               }
               data={{ ...item, roleName }}
               triggerClassName="w-8 h-8"
+              variant="ghost"
+              invertOnRowHover
               icon={<PencilSquareIcon className="w-4 h-4" />}
+              iconColor="currentColor"
             />
+
+            {/* DELETE */}
             <FormModal
               type="delete"
               entityTitle="User"
               id={item.id}
               triggerClassName="w-8 h-8"
+              variant="ghost"
+              invertOnRowHover
               icon={<TrashIcon className="w-4 h-4" />}
+              iconColor="currentColor"
             />
           </div>
         </td>

@@ -5,13 +5,10 @@ import Link from "next/link";
 
 export default function DashboardLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <div className="h-screen flex">
-      {/* LEFT */}
-      <div className="w-[14%] md:w-[8%] lg:w-[16%] xl:w-[14%] p-4 bg-black">
+      <div className="w-[14%] md:w-[8%] lg:w-[16%] xl:w-[14%] p-4 bg-[var(--mono-fg)] text-[var(--mono-bg)]">
         <Link
           href="/sysadmin"
           className="flex items-center justify-center lg:justify-start gap-2"
@@ -23,14 +20,12 @@ export default function DashboardLayout({
             height={32}
             className="invert"
           />
-          <span className="hidden lg:block font-bold text-white">
-            I/O SOLUTIONS
-          </span>
+          <span className="hidden lg:block font-bold">I/O SOLUTIONS</span>
         </Link>
         <Menu />
       </div>
-      {/* RIGHT */}
-      <div className="w-[86%] md:w-[92%] lg:w-[84%] xl:w-[86%] bg-white overflow-scroll flex flex-col">
+
+      <div className="w-[86%] md:w-[92%] lg:w-[84%] xl:w-[86%] bg-[var(--mono-bg)] text-[var(--mono-fg)] overflow-scroll flex flex-col">
         <Navbar />
         {children}
       </div>

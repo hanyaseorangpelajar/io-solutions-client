@@ -11,12 +11,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      {/* Terapkan scope .mono di level body supaya semua page ikut theme */}
+      <body className={`${inter.className} mono`}>{children}</body>
     </html>
   );
 }

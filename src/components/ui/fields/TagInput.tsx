@@ -2,81 +2,166 @@
 
 import * as React from "react";
 
-type TagInputProps = {
+export type TagInputProps = {
+  id: string;
   value: string[];
   onChange: (tags: string[]) => void;
+
   placeholder?: string;
-  id?: string;
   disabled?: boolean;
-  className?: string;
+
+  /** Styling hooks */
+  className?: string; // wrapper
+  inputClassName?: string; // input
+  chipClassName?: string; // chip
+
+  /** Behavior */
+  addOnBlur?: boolean; // default: true (tambahkan jika blur & ada teks)
+  separators?: string[]; // default: [","] — Enter selalu menambahkan
 };
 
-const base =
-  "w-full min-h-[2.25rem] border border-black bg-white rounded-none " +
-  "px-2 py-1 flex flex-wrap items-center gap-1";
+const baseWrapper =
+  "w-full border border-[var(--mono-border)] bg-[var(--mono-bg)] rounded-none px-2 py-2 " +
+  "flex flex-wrap gap-1 items-center";
+
+const baseInput =
+  "flex-1 min-w-[120px] bg-transparent outline-none px-1 py-1 " +
+  "placeholder:text-[var(--mono-ph)] text-[var(--mono-fg)]";
+
+const baseChip =
+  "inline-flex items-center gap-1 px-2 py-0.5 text-[10px] " +
+  "border border-[var(--mono-border)] bg-[var(--mono-bg)] text-[var(--mono-fg)]";
+
+const removeBtn =
+  "ml-1 grid place-items-center w-4 h-4 border border-[var(--mono-border)] " +
+  "bg-[var(--mono-bg)] text-[var(--mono-fg)] hover:bg-[var(--mono-fg)] hover:text-[var(--mono-bg)] transition";
 
 export default function TagInput({
+  id,
   value,
   onChange,
-  placeholder = "Tambah tag…",
-  id,
+  placeholder = "Tambah tag lalu Enter…",
   disabled,
-  className = "",
+  className,
+  inputClassName,
+  chipClassName,
+  addOnBlur = true,
+  separators = [","],
 }: TagInputProps) {
   const [text, setText] = React.useState("");
 
-  const add = (t: string) => {
-    const tag = t.trim().toLowerCase();
-    if (!tag) return;
-    if (value.includes(tag)) return;
-    onChange([...value, tag]);
-    setText("");
-  };
+  const commit = (raw: string) => {
+    const trimmed = raw.trim();
+    if (!trimmed) return;
 
-  const remove = (t: string) => {
-    onChange(value.filter((v) => v !== t));
+    // pecah berdasarkan separators jika ada di string
+    const pattern = new RegExp(`[${separators.map(escapeForRegex).join("")}]`);
+    const pieces = trimmed
+      .split(pattern)
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    if (pieces.length === 0) return;
+
+    // de-duplicate (case-sensitive tetap, cocokkan exact string)
+    const set = new Set(value);
+    let changed = false;
+    for (const p of pieces) {
+      if (!set.has(p)) {
+        set.add(p);
+        changed = true;
+      }
+    }
+    if (changed) onChange(Array.from(set));
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (disabled) return;
-    if (e.key === "Enter" || e.key === ",") {
+
+    const isEnter = e.key === "Enter";
+    const isSep = separators.includes(e.key);
+
+    if (isEnter || isSep) {
       e.preventDefault();
-      add(text);
-    } else if (e.key === "Backspace" && !text) {
-      // hapus terakhir
-      remove(value[value.length - 1]);
+      if (text.trim()) {
+        commit(text);
+        setText("");
+      }
+    } else if (e.key === "Backspace" && !text && value.length > 0) {
+      // backspace saat input kosong → hapus tag terakhir (UX umum)
+      onChange(value.slice(0, -1));
     }
   };
 
+  const onBlur = () => {
+    if (disabled) return;
+    if (addOnBlur && text.trim()) {
+      commit(text);
+      setText("");
+    }
+  };
+
+  const removeAt = (idx: number) => {
+    if (disabled) return;
+    onChange(value.filter((_, i) => i !== idx));
+  };
+
   return (
-    <div className={`${base} ${className}`} aria-disabled={disabled}>
-      {value.map((t) => (
-        <span
-          key={t}
-          className="inline-flex items-center gap-1 border border-black bg-white px-2 py-0.5 text-[10px]"
-        >
-          #{t}
-          {!disabled && (
+    <div className={`flex flex-col gap-1 ${className || ""}`}>
+      <div
+        className={`${baseWrapper} ${
+          disabled ? "opacity-70 cursor-not-allowed" : ""
+        }`}
+      >
+        {/* chips */}
+        {value.map((t, idx) => (
+          <span
+            key={`${t}-${idx}`}
+            className={`${baseChip} ${chipClassName || ""}`}
+          >
+            #{t}
             <button
               type="button"
-              className="leading-none px-1 border border-black bg-white hover:bg-black hover:text-white transition"
-              onClick={() => remove(t)}
-              aria-label={`Hapus ${t}`}
+              aria-label={`Hapus tag ${t}`}
+              onClick={() => removeAt(idx)}
+              disabled={disabled}
+              className={removeBtn}
             >
               ×
             </button>
-          )}
-        </span>
-      ))}
-      <input
-        id={id}
-        disabled={disabled}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={onKeyDown}
-        placeholder={placeholder}
-        className="flex-1 min-w-[120px] bg-transparent outline-none text-sm placeholder:text-black/40 px-1 py-1"
-      />
+          </span>
+        ))}
+
+        {/* input */}
+        <input
+          id={id}
+          type="text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={onKeyDown}
+          onBlur={onBlur}
+          placeholder={placeholder}
+          disabled={disabled}
+          className={`${baseInput} ${inputClassName || ""}`}
+          aria-disabled={disabled}
+          aria-describedby={value.length ? `${id}-tags-count` : undefined}
+        />
+      </div>
+
+      {/* helper kecil opsional (count) */}
+      {value.length > 0 && (
+        <p
+          id={`${id}-tags-count`}
+          className="text-[10px] text-[var(--mono-muted)]"
+        >
+          {value.length} tag
+        </p>
+      )}
     </div>
   );
+}
+
+function escapeForRegex(s: string) {
+  // escape char untuk regex char-class
+  return s.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
 }

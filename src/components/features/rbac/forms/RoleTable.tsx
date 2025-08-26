@@ -1,3 +1,4 @@
+// src/components/features/rbac/forms/RoleTable.tsx
 "use client";
 
 import * as React from "react";
@@ -39,7 +40,10 @@ export default function RoleTable({
   title = "Roles & Permissions",
 }: Props) {
   const renderRow = (item: RoleItem) => (
-    <tr key={item.id} className="group text-sm hover:bg-black hover:text-white">
+    <tr
+      key={item.id}
+      className="group/row text-sm hover:bg-black hover:text-white"
+    >
       <td className="p-4">
         <div className="flex flex-col">
           <span className="font-medium">{item.name}</span>
@@ -48,46 +52,50 @@ export default function RoleTable({
           )}
         </div>
       </td>
+
       <td className="hidden md:table-cell">
         <div className="flex flex-wrap gap-1">
           {item.permissions.map((p) => (
             <SafetyChip key={p} prefix="#">
-              {p}
+              {" "}
+              {p}{" "}
             </SafetyChip>
           ))}
         </div>
       </td>
+
       <td className="hidden md:table-cell">{item.members}</td>
+
       <td>
         <div className="flex items-center gap-2">
+          {/* READ */}
           <FormModal
             type="read"
             entityTitle="Role"
             component={RoleForm}
             data={item}
+            variant="ghost"
             triggerClassName="w-8 h-8"
-            icon={
-              <EyeIcon className="w-4 h-4 text-white group-hover:text-black" />
-            }
+            icon={<EyeIcon className="w-4 h-4" />}
           />
+          {/* UPDATE */}
           <FormModal
             type="update"
             entityTitle="Role"
             component={RoleForm}
             data={item}
+            variant="ghost"
             triggerClassName="w-8 h-8"
-            icon={
-              <PencilSquareIcon className="w-4 h-4 text-white group-hover:text-black" />
-            }
+            icon={<PencilSquareIcon className="w-4 h-4" />}
           />
+          {/* DELETE */}
           <FormModal
             type="delete"
             entityTitle="Role"
             id={item.id}
+            variant="ghost"
             triggerClassName="w-8 h-8"
-            icon={
-              <TrashIcon className="w-4 h-4 text-white group-hover:text-black" />
-            }
+            icon={<TrashIcon className="w-4 h-4" />}
           />
         </div>
       </td>
@@ -105,10 +113,9 @@ export default function RoleTable({
               type="create"
               entityTitle="Role"
               component={RoleForm}
+              variant="solid"
               triggerClassName="w-8 h-8"
-              icon={
-                <PlusIcon className="w-4 h-4 text-white group-hover:text-black" />
-              }
+              icon={<PlusIcon className="w-4 h-4" />}
             />
           }
         />

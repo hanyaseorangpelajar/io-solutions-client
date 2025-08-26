@@ -1,3 +1,4 @@
+// src/components/features/rbac/forms/RoleForm.tsx
 "use client";
 
 import * as React from "react";
@@ -58,7 +59,7 @@ export default function RoleForm({ type, data, onClose }: Props) {
       <div>
         <label
           htmlFor="role-perms"
-          className="text-xs uppercase tracking-widest text-black/70"
+          className="text-xs uppercase tracking-widest text-label"
         >
           Permissions
         </label>
@@ -68,8 +69,9 @@ export default function RoleForm({ type, data, onClose }: Props) {
           onChange={setPerms}
           disabled={isRead}
           placeholder="Tambah permission lalu Enter (mis. ticket.read)…"
+          aria-describedby="role-perms-note"
         />
-        <p className="text-[10px] text-black/60 mt-1">
+        <p id="role-perms-note" className="text-[10px] text-muted mt-1">
           Contoh: <code>ticket.read</code>, <code>ticket.write</code>,{" "}
           <code>inventory.read</code>.
         </p>

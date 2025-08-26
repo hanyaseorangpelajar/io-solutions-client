@@ -36,10 +36,9 @@ const daftarTiketData: DaftarTicket[] = [
 
 export default function TicketPage() {
   const renderRow = (item: DaftarTicket) => (
-    // penting: pakai group/row agar tombol aksi ikut invert saat hover baris
     <tr
       key={item.id}
-      className="group/row text-sm hover:bg-black hover:text-white"
+      className="group/row text-sm hover:bg-[var(--mono-fg)] hover:text-[var(--mono-bg)]"
     >
       <td className="p-4">{item.title}</td>
       <td className="hidden md:table-cell">{item.class}</td>
@@ -52,6 +51,8 @@ export default function TicketPage() {
             entityTitle="Tiket"
             component={TiketForm}
             data={item}
+            variant="ghost"
+            hoverInvertFromRow
             triggerClassName="w-8 h-8"
             icon={<EyeIcon className="w-4 h-4" />}
           />
@@ -61,6 +62,8 @@ export default function TicketPage() {
             entityTitle="Tiket"
             component={TiketForm}
             data={item}
+            variant="ghost"
+            hoverInvertFromRow
             triggerClassName="w-8 h-8"
             icon={<PencilSquareIcon className="w-4 h-4" />}
           />
@@ -71,6 +74,8 @@ export default function TicketPage() {
             entityTitle="Tiket"
             component={TutupTiketForm}
             data={item}
+            variant="ghost"
+            hoverInvertFromRow
             triggerClassName="w-8 h-8"
             icon={<CheckCircleIcon className="w-4 h-4" />}
           />
@@ -79,6 +84,8 @@ export default function TicketPage() {
             type="delete"
             entityTitle="Tiket"
             id={item.id}
+            variant="ghost"
+            hoverInvertFromRow
             triggerClassName="w-8 h-8"
             icon={<TrashIcon className="w-4 h-4" />}
           />
@@ -88,7 +95,7 @@ export default function TicketPage() {
   );
 
   return (
-    <div className="bg-white text-black p-4 rounded-none border border-black flex-1 m-4 mt-6">
+    <div className="bg-[var(--mono-bg)] text-[var(--mono-fg)] p-4 rounded-none border border-[var(--mono-border)] flex-1 m-4 mt-6">
       {/* TOP */}
       <div className="flex items-center justify-between">
         <h1 className="hidden md:block text-lg font-semibold">Daftar Tiket</h1>
@@ -100,6 +107,7 @@ export default function TicketPage() {
               type="create"
               entityTitle="Tiket"
               component={TiketForm}
+              variant="solid" // tombol header solid (hitam)
               triggerClassName="w-8 h-8"
               icon={<PlusIcon className="w-4 h-4" />}
             />

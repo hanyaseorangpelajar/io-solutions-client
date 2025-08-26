@@ -1,13 +1,14 @@
-// src/components/InputLabelField.tsx
 "use client";
 
 import * as React from "react";
 
+/** ====== PROPS ====== */
 type CommonProps = {
   id: string;
   label: React.ReactNode;
 
-  value: string | number; // <-- izinkan number
+  /** IZINKAN string | number agar aman untuk input number/date */
+  value: string | number;
   onChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => void;
@@ -24,45 +25,39 @@ type CommonProps = {
   required?: boolean;
   note?: React.ReactNode;
 
+  /** Wrapper & element classes */
   className?: string; // wrapper <div>
-  labelClassName?: string; // label
-  controlClassName?: string; // input/textarea
+  labelClassName?: string; // <label>
+  controlClassName?: string; // <input>/<textarea>
 };
 
-// Semua atribut native <input> yang boleh ikut (min, max, step, pattern, dsb)
-type NativeInputExtras = Omit<
-  React.InputHTMLAttributes<HTMLInputElement>,
-  | "id"
-  | "name"
-  | "value"
-  | "onChange"
-  | "onBlur"
-  | "disabled"
-  | "required"
-  | "placeholder"
-  | "className"
-  | "type"
->;
-
 type InputOnly = {
-  type?: React.HTMLInputTypeAttribute; // default "text"
+  type?: React.HTMLInputTypeAttribute; // default: "text"
   multiline?: false;
   rows?: never;
-} & NativeInputExtras;
+
+  /** Tambahkan agar tidak error saat pakai number input */
+  min?: number;
+  max?: number;
+  step?: number;
+};
 
 type TextareaOnly = {
   type?: never;
   multiline: true;
-  rows?: number; // default 4
-  // (kalau perlu, bisa ditambah textarea props lain)
+  rows?: number; // default: 4
 };
 
 export type InputLabelFieldProps = CommonProps & (InputOnly | TextareaOnly);
 
-const baseLabel = "text-xs uppercase tracking-widest text-black/70";
+/** ====== STYLES (monochrome tokens) ====== */
+const baseLabel = "text-xs uppercase tracking-widest text-[var(--mono-label)]";
 const baseControl =
-  "w-full border border-black bg-white px-3 py-2 rounded-none outline-none placeholder:text-black/40";
+  "w-full border border-[var(--mono-border)] bg-[var(--mono-bg)] text-[var(--mono-fg)] " +
+  "px-3 py-2 rounded-none outline-none placeholder:text-[var(--mono-ph)]";
+const disabledCls = "opacity-70 cursor-not-allowed";
 
+/** ====== COMPONENT ====== */
 export default function InputLabelField(props: InputLabelFieldProps) {
   const {
     id,
@@ -81,10 +76,9 @@ export default function InputLabelField(props: InputLabelFieldProps) {
     labelClassName,
     controlClassName,
     ...rest
-  } = props as any;
+  } = props as InputLabelFieldProps;
 
-  const isTextarea = (rest as TextareaOnly)?.multiline === true;
-  const disabledCls = disabled ? "opacity-70 cursor-not-allowed" : "";
+  const isTextarea = (rest as TextareaOnly).multiline === true;
 
   return (
     <div className={className}>
@@ -96,14 +90,16 @@ export default function InputLabelField(props: InputLabelFieldProps) {
         <textarea
           id={id}
           name={name}
-          value={String(value ?? "")}
+          value={value as string}
           onChange={onChange}
           onBlur={onBlur}
           placeholder={placeholder}
           disabled={disabled}
           required={required}
           rows={(rest as TextareaOnly).rows ?? 4}
-          className={`${baseControl} ${disabledCls} ${controlClassName || ""}`}
+          className={`${baseControl} ${disabled ? disabledCls : ""} ${
+            controlClassName || ""
+          }`}
         />
       ) : (
         <input
@@ -118,13 +114,19 @@ export default function InputLabelField(props: InputLabelFieldProps) {
           required={required}
           autoComplete={autoComplete}
           inputMode={inputMode}
-          // Penting: hanya spread saat mode input agar prop textarea (multiline/rows) tak ikut
-          {...(rest as InputOnly)}
-          className={`${baseControl} ${disabledCls} ${controlClassName || ""}`}
+          /** number helpers (aman walau type bukan number) */
+          min={(rest as InputOnly).min}
+          max={(rest as InputOnly).max}
+          step={(rest as InputOnly).step}
+          className={`${baseControl} ${disabled ? disabledCls : ""} ${
+            controlClassName || ""
+          }`}
         />
       )}
 
-      {note ? <p className="text-[10px] text-black/60 mt-1">{note}</p> : null}
+      {note ? (
+        <p className="text-[10px] text-[var(--mono-muted)] mt-1">{note}</p>
+      ) : null}
     </div>
   );
 }

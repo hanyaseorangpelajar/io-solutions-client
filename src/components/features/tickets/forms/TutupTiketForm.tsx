@@ -1,10 +1,11 @@
+// src/components/features/tickets/forms/TutupTiketForm.tsx
 "use client";
 
 import * as React from "react";
 import CostSummary from "@/components/widgets/CostSummary";
 import PartsEditor from "@/components/features/tickets/components/PartsEditor";
 import { Part } from "@/components/features/tickets/components/PartsEditor";
-import FormActions from "../../../ui/form/FormActions";
+import FormActions from "@/components/ui/form/FormActions";
 import InputLabelField from "@/components/ui/fields/InputLabelField";
 import SelectLabelField from "@/components/ui/fields/SelectLabelField";
 import TextAreaLabelField from "@/components/ui/fields/TextAreaLabelField";
@@ -44,14 +45,17 @@ type Props = {
   onSubmit?: (payload: TutupTiketPayload) => Promise<void> | void;
 };
 
-const btnPrimary =
-  "px-4 py-2 border border-black bg-black text-white hover:bg-white hover:text-black transition";
-const btnGhost =
-  "px-3 py-2 border border-black bg-white hover:bg-black hover:text-white transition";
+// tokenized chip
 const chip =
-  "inline-flex items-center gap-1 border border-black px-1.5 py-0.5 text-[10px] uppercase tracking-widest";
+  "inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] uppercase tracking-widest " +
+  "border border-[var(--mono-border)] bg-[var(--mono-bg)] text-[var(--mono-fg)]";
 
-export default function TutupTiketForm({ data, onClose, onSubmit }: Props) {
+export default function TutupTiketForm({
+  type,
+  data,
+  onClose,
+  onSubmit,
+}: Props) {
   const [form, setForm] = React.useState<TutupTiketPayload>({
     ringkasanSolusi: "",
     akarMasalah: "",
@@ -90,13 +94,14 @@ export default function TutupTiketForm({ data, onClose, onSubmit }: Props) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mt-2 flex flex-col gap-4">
+    // HAPUS mt-2 → padding sudah dari FormModal body
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {/* Header kecil */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className={chip}>Tutup Tiket</span>
           {data?.id && (
-            <span className="text-xs border border-black px-2 py-1 rounded-none">
+            <span className="text-xs px-2 py-1 rounded-none border border-[var(--mono-border)]">
               ID: {String(data.id)}
             </span>
           )}
@@ -141,7 +146,7 @@ export default function TutupTiketForm({ data, onClose, onSubmit }: Props) {
 
       {/* Suku Cadang */}
       <PartsEditor
-        value={form.parts || []}
+        parts={form.parts || []}
         onChange={(parts) => set("parts", parts)}
       />
 
@@ -153,7 +158,7 @@ export default function TutupTiketForm({ data, onClose, onSubmit }: Props) {
           type="number"
           min={0}
           step={0.25}
-          value={form.laborHours ?? ""}
+          value={`${form.laborHours ?? ""}`}
           onChange={(e) =>
             set(
               "laborHours",
@@ -168,7 +173,7 @@ export default function TutupTiketForm({ data, onClose, onSubmit }: Props) {
           type="number"
           min={0}
           step={0.01}
-          value={form.laborCost ?? ""}
+          value={`${form.laborCost ?? ""}`}
           onChange={(e) =>
             set(
               "laborCost",
@@ -182,7 +187,7 @@ export default function TutupTiketForm({ data, onClose, onSubmit }: Props) {
           label="Garansi (hari)"
           type="number"
           min={0}
-          value={form.warrantyDays ?? ""}
+          value={`${form.warrantyDays ?? ""}`}
           onChange={(e) =>
             set(
               "warrantyDays",
@@ -253,11 +258,8 @@ export default function TutupTiketForm({ data, onClose, onSubmit }: Props) {
       {/* Ringkasan Biaya */}
       <CostSummary parts={form.parts} laborCost={form.laborCost} />
 
-      <FormActions
-        mode={"update"}
-        onCancel={onClose}
-        submitText="Simpan & Tutup"
-      />
+      {/* Aksi */}
+      <FormActions mode={type} onCancel={onClose} submitText="Simpan & Tutup" />
     </form>
   );
 }

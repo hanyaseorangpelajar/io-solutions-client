@@ -64,7 +64,7 @@ export default function StaffPage() {
   const [roles] = React.useState<RoleItem[]>(DEMO_ROLES);
 
   return (
-    <div className="bg-white text-black p-4 rounded-none border border-black flex-1 m-4 mt-6">
+    <div className="p-4 rounded-none border flex-1 m-4 mt-6 bg-[var(--mono-bg)] text-[var(--mono-fg)] border-[var(--mono-border)]">
       <UserTable users={users} roles={roles} title="Staff & Role Assignment" />
     </div>
   );

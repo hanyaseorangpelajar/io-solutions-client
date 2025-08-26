@@ -1,6 +1,7 @@
 // src/app/(dashboard)/pages/audit-pengetahuan/page.tsx
 "use client";
 
+import * as React from "react";
 import FormModal from "@/components/overlays/FormModal";
 import Pagination from "@/components/data-display/table/Pagination";
 import Table from "@/components/data-display/table/Table";
@@ -90,10 +91,7 @@ export default function AuditPengetahuanPage() {
     const more = item.tags.length - shownTags.length;
 
     return (
-      <tr
-        key={item.id}
-        className="group text-sm hover:bg-black hover:text-white"
-      >
+      <tr className="group/row text-sm hover:bg-[var(--mono-fg)] hover:text-[var(--mono-bg)]">
         {/* Ticket */}
         <td className="p-4">
           <div className="flex flex-col">
@@ -105,16 +103,18 @@ export default function AuditPengetahuanPage() {
         <td className="hidden md:table-cell">{item.priority}</td>
         <td className="hidden lg:table-cell">{item.technician ?? "-"}</td>
 
-        {/* Tags: chip tetap putih+hitam saat row hover */}
+        {/* Tags: tetap kontras saat row hover */}
         <td className="hidden md:table-cell">
           <div className="flex flex-wrap gap-1">
             {shownTags.map((t) => (
               <span
                 key={t}
                 className="
-                  px-2 py-0.5 text-[10px] border border-black
-                  bg-white text-black
-                  group-hover:bg-white group-hover:text-black
+                  px-2 py-0.5 text-[10px] border
+                  border-[var(--mono-border)]
+                  bg-[var(--mono-bg)] text-[var(--mono-fg)]
+                  group-hover/row:bg-[var(--mono-bg)]
+                  group-hover/row:text-[var(--mono-fg)]
                 "
               >
                 #{t}
@@ -123,9 +123,11 @@ export default function AuditPengetahuanPage() {
             {more > 0 && (
               <span
                 className="
-                  px-2 py-0.5 text-[10px] border border-black
-                  bg-white text-black
-                  group-hover:bg-white group-hover:text-black
+                  px-2 py-0.5 text-[10px] border
+                  border-[var(--mono-border)]
+                  bg-[var(--mono-bg)] text-[var(--mono-fg)]
+                  group-hover/row:bg-[var(--mono-bg)]
+                  group-hover/row:text-[var(--mono-fg)]
                 "
               >
                 +{more}
@@ -137,7 +139,7 @@ export default function AuditPengetahuanPage() {
         <td className="hidden md:table-cell">{item.auditStatus}</td>
         <td className="hidden md:table-cell">{item.closedAt}</td>
 
-        {/* Actions: tombol ikut invert saat row hover */}
+        {/* Actions */}
         <td>
           <div className="flex items-center gap-2">
             <FormModal
@@ -145,20 +147,20 @@ export default function AuditPengetahuanPage() {
               entityTitle="Audit"
               component={AuditPengetahuanForm}
               data={item}
-              triggerClassName="w-8 h-8 group-hover:bg-white group-hover:text-black"
-              icon={
-                <EyeIcon className="w-4 h-4 text-white group-hover:text-black" />
-              }
+              variant="ghost"
+              hoverInvertFromRow
+              triggerClassName="w-8 h-8"
+              icon={<EyeIcon className="w-4 h-4" />}
             />
             <FormModal
               type="update"
               entityTitle="Audit"
               component={AuditPengetahuanForm}
               data={item}
-              triggerClassName="w-8 h-8 group-hover:bg-white group-hover:text-black"
-              icon={
-                <PencilSquareIcon className="w-4 h-4 text-white group-hover:text-black" />
-              }
+              variant="ghost"
+              hoverInvertFromRow
+              triggerClassName="w-8 h-8"
+              icon={<PencilSquareIcon className="w-4 h-4" />}
             />
             <FormModal
               type="create"
@@ -166,19 +168,19 @@ export default function AuditPengetahuanPage() {
               entityTitle="Artikel"
               component={PublishKBForm}
               data={item}
-              triggerClassName="w-8 h-8 group-hover:bg-white group-hover:text-black"
-              icon={
-                <BookOpenIcon className="w-4 h-4 text-white group-hover:text-black" />
-              }
+              variant="ghost"
+              hoverInvertFromRow
+              triggerClassName="w-8 h-8"
+              icon={<BookOpenIcon className="w-4 h-4" />}
             />
             <FormModal
               type="delete"
               entityTitle="Audit"
               id={item.id}
-              triggerClassName="w-8 h-8 group-hover:bg-white group-hover:text-black"
-              icon={
-                <TrashIcon className="w-4 h-4 text-white group-hover:text-black" />
-              }
+              variant="ghost"
+              hoverInvertFromRow
+              triggerClassName="w-8 h-8"
+              icon={<TrashIcon className="w-4 h-4" />}
             />
           </div>
         </td>
@@ -187,7 +189,7 @@ export default function AuditPengetahuanPage() {
   };
 
   return (
-    <div className="bg-white text-black p-4 rounded-none border border-black flex-1 m-4 mt-6">
+    <div className="bg-[var(--mono-bg)] text-[var(--mono-fg)] p-4 rounded-none border border-[var(--mono-border)] flex-1 m-4 mt-6">
       <div className="flex items-center justify-between">
         <h1 className="hidden md:block text-lg font-semibold">
           Audit Pengetahuan

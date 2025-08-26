@@ -39,6 +39,12 @@ export default function PartsEditor(props: Props) {
   const add = () => onChange([...(parts || []), { name: "", qty: 1 }]);
   const remove = (idx: number) => onChange(parts.filter((_, i) => i !== idx));
 
+  // util kelas tombol mono
+  const btn =
+    "px-3 py-2 border rounded-none transition " +
+    "border-[var(--mono-border)] bg-[var(--mono-bg)] text-[var(--mono-fg)] " +
+    "hover:bg-[var(--mono-fg)] hover:text-[var(--mono-bg)]";
+
   return (
     <div className={className}>
       {parts.map((p, idx) => (
@@ -52,16 +58,18 @@ export default function PartsEditor(props: Props) {
             disabled={disabled}
             className="md:col-span-3"
           />
+
           <InputLabelField
             id={`part-qty-${idx}`}
             label="Jumlah"
             type="number"
             min={1}
-            value={p.qty}
+            value={p.qty === undefined ? "" : String(p.qty)} // ← pastikan string
             onChange={update(idx, "qty")}
             placeholder="Qty"
             disabled={disabled}
           />
+
           <div className="flex gap-2">
             <InputLabelField
               id={`part-cost-${idx}`}
@@ -69,7 +77,9 @@ export default function PartsEditor(props: Props) {
               type="number"
               min={0}
               step={0.01}
-              value={p.unitCost ?? ""}
+              value={
+                p.unitCost === undefined ? "" : String(p.unitCost) // ← pastikan string
+              }
               onChange={update(idx, "unitCost")}
               placeholder="0"
               disabled={disabled}
@@ -78,7 +88,7 @@ export default function PartsEditor(props: Props) {
             <button
               type="button"
               onClick={() => remove(idx)}
-              className="px-3 py-2 border border-black bg-white hover:bg-black hover:text-white transition"
+              className={btn}
               aria-label="Hapus suku cadang"
               disabled={disabled}
             >
@@ -88,12 +98,7 @@ export default function PartsEditor(props: Props) {
         </div>
       ))}
 
-      <button
-        type="button"
-        onClick={add}
-        className="px-3 py-2 border border-black bg-white hover:bg-black hover:text-white transition"
-        disabled={disabled}
-      >
+      <button type="button" onClick={add} className={btn} disabled={disabled}>
         + Tambah Suku Cadang
       </button>
     </div>

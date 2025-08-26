@@ -1,108 +1,112 @@
+@config "../../tailwind.config.ts";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --mono-bg: #fff;
+  --mono-fg: #000;
+  --mono-border: #000;
+  --mono-overlay: rgba(0, 0, 0, 0.6);
+  --mono-muted: rgba(0, 0, 0, 0.6);
+  --mono-label: rgba(0, 0, 0, 0.7);
+  --mono-ph: rgba(0, 0, 0, 0.4);
+}
+
+.mono {
+  background: var(--mono-bg);
+  color: var(--mono-fg);
+}
+
+.mono ::placeholder { color: var(--mono-ph); }
+.mono ::selection { background: var(--mono-fg); color: var(--mono-bg); }
+
+.mono a { color: inherit; text-decoration: none; }
+
+.mono :focus-visible {
+  outline: 2px solid var(--mono-fg);
+  outline-offset: 2px;
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center rounded-none
+           border border-black bg-black text-white transition;
+  }
+  .btn:hover { @apply bg-white text-black; }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center rounded-none
+           border border-black bg-white text-black transition;
+  }
+  .btn-ghost:hover { @apply bg-black text-white; }
+
+  .btn-icon { @apply btn w-8 h-8 p-0; }
+  .btn-icon-ghost { @apply btn-ghost w-8 h-8 p-0; }
+
+  .label {
+    @apply text-xs uppercase tracking-widest text-black/70;
+  }
+  .input {
+    @apply w-full border border-black bg-white px-3 py-2 rounded-none
+           outline-none placeholder-black/40;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1 border border-black bg-white text-black
+           px-2 py-0.5 text-[10px] uppercase tracking-widest;
+  }
+
+  .card { @apply bg-white border border-black; }
+
+  .modal-overlay { @apply fixed inset-0 z-50 grid place-items-center bg-black/60; }
+  .modal {
+    @apply relative w-[90%] md:w-[70%] lg:w-[60%] xl:w-[50%] 2xl:w-[40%]
+           bg-white border border-black;
+  }
+  .modal-header { @apply flex items-center justify-between px-4 py-3 border-b border-black; }
+  .modal-title  { @apply text-sm font-semibold uppercase tracking-wider; }
+
+  .table-row { @apply group text-sm; }
+  .table-row-hover { @apply hover:bg-black hover:text-white; }
+}
+
+@layer utilities {
+  .row-hover-invert { @apply group-hover:bg-white group-hover:text-black; }
+  .row-hover-icon { @apply group-hover:text-black; }
+}
+
+
 .react-calendar {
   width: 100% !important;
   border: none !important;
-  font-family: "Inter", sans-serif !important;
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
+  background: var(--mono-bg) !important;
+  color: var(--mono-fg) !important;
 }
-
-.react-calendar__navigation__label__labelText {
-  font-weight: 600;
-}
-
+.react-calendar__navigation__label__labelText { font-weight: 600; }
 .react-calendar__tile--active {
-  background-color: #c3ebfa !important;
-  color: black !important;
+  background-color: #000 !important;
+  color: #fff !important;
 }
 
-.rbc-btn-group:first-child {
-  display: none !important;
+.rbc-toolbar { @apply border-b border-black; }
+.rbc-toolbar-label { text-align: right !important; padding: 0 20px !important; }
+.rbc-btn-group button { @apply border border-black bg-white text-black; }
+.rbc-btn-group .rbc-active { @apply bg-black text-white; }
+.rbc-time-view, .rbc-time-content, .rbc-month-view {
+  border-color: var(--mono-border) !important;
 }
-
-.rbc-toolbar-label {
-  text-align: right !important;
-  padding: 0px 20px !important;
-}
-
-.rbc-btn-group:last-child {
-  font-size: 13px !important;
-}
-
-.rbc-btn-group:last-child button {
-  border: none !important;
-  background-color: #f1f0ff !important;
-  margin-left: 2px !important;
-}
-
-.rbc-toolbar button.rbc-active {
-  background-color: #dbdafe !important;
-  box-shadow: none !important;
-}
-
-.rbc-time-view {
-  border-color: #eee !important;
-}
-
-.rbc-time-header {
-  display: none !important;
-}
-
-.rbc-time-content {
-  border: none !important;
-}
-
-.rbc-time-gutter.rbc-time-column {
-  font-size: 12px !important;
-}
-
-.rbc-time-gutter.rbc-time-column .rbc-timeslot-group {
-  padding: 0px 20px !important;
-}
-
-.rbc-timeslot-group {
-  background-color: #f7fdff !important;
-}
-
-.rbc-day-slot {
-  font-size: 14px !important;
-}
-
+.rbc-time-header { display: none !important; }
+.rbc-time-gutter.rbc-time-column { font-size: 12px !important; }
+.rbc-timeslot-group { background-color: #fff !important; }
 .rbc-event {
-  border: none !important;
-  color: black !important;
-  padding: 10px !important;
-  margin: 10px !important;
+  border: 1px solid var(--mono-border) !important;
+  background: #fff !important;
+  color: #000 !important;
+  padding: 8px !important;
+  margin: 8px !important;
   width: 99% !important;
 }
-
-.rbc-event:nth-child(1) {
-  background-color: #e2f8ff !important;
-}
-.rbc-event:nth-child(2) {
-  background-color: #fefce8 !important;
-}
-.rbc-event:nth-child(3) {
-  background-color: #f2f1ff !important;
-}
-.rbc-event:nth-child(4) {
-  background-color: #fdf2fb !important;
-}
-.rbc-event:nth-child(5) {
-  background-color: #e2f8ff !important;
-}
-.rbc-event:nth-child(6) {
-  background-color: #fefce8 !important;
-}
-.rbc-event:nth-child(7) {
-  background-color: #f2f1ff !important;
-}
-.rbc-event:nth-child(8) {
-  background-color: #fdf2fb !important;
-}
-
-.rbc-event-label{
-  color: gray !important;
-  margin-bottom: 5px;
-}
+.rbc-event-label { color: var(--mono-muted) !important; margin-bottom: 4px; }

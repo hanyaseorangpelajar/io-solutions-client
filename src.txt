@@ -1,0 +1,111 @@
+src
+├── app
+│   ├── (dashboard)
+│   │   ├── admin
+│   │   │   └── page.tsx
+│   │   ├── layout.tsx
+│   │   ├── pages
+│   │   │   ├── audit-pengetahuan
+│   │   │   │   └── page.tsx
+│   │   │   ├── daftar-teknisi
+│   │   │   │   └── page.tsx
+│   │   │   ├── daftar-tiket
+│   │   │   │   └── page.tsx
+│   │   │   ├── inventory-gudang
+│   │   │   │   └── page.tsx
+│   │   │   ├── rbac
+│   │   │   │   └── page.tsx
+│   │   │   ├── repository
+│   │   │   │   └── page.tsx
+│   │   │   ├── riwayat-inventory
+│   │   │   │   └── page.tsx
+│   │   │   ├── riwayat-tiket
+│   │   │   │   └── page.tsx
+│   │   │   └── staff
+│   │   │       └── page.tsx
+│   │   ├── sysadmin
+│   │   │   └── page.tsx
+│   │   └── teknisi
+│   │       └── page.tsx
+│   ├── favicon.ico
+│   ├── globals.css
+│   ├── layout.tsx
+│   ├── page.tsx
+│   └── sign-in
+│       └── page.tsx
+├── components
+│   ├── data-display
+│   │   ├── Announcements.tsx
+│   │   ├── cards
+│   │   │   ├── Log.tsx
+│   │   │   └── UserCard.tsx
+│   │   ├── charts
+│   │   │   ├── BigCalender.tsx
+│   │   │   ├── CountChart.tsx
+│   │   │   ├── FinanceChart.tsx
+│   │   │   └── StockChart.tsx
+│   │   └── table
+│   │       ├── Pagination.tsx
+│   │       ├── Table.tsx
+│   │       ├── TableSearch.tsx
+│   │       └── TableToolbar.tsx
+│   ├── features
+│   │   ├── auth
+│   │   │   └── AuthField.tsx
+│   │   ├── inventory
+│   │   │   ├── components
+│   │   │   └── forms
+│   │   │       ├── InventoryHistoryDetailForm.tsx
+│   │   │       └── InventoryItemForm.tsx
+│   │   ├── knowledge-base
+│   │   │   └── forms
+│   │   │       ├── AuditPengetahuanForm.tsx
+│   │   │       └── PublishKBForm.tsx
+│   │   ├── rbac
+│   │   │   └── forms
+│   │   │       ├── RoleForm.tsx
+│   │   │       └── RoleTable.tsx
+│   │   ├── staff
+│   │   │   ├── UserTable.tsx
+│   │   │   └── forms
+│   │   │       └── AssignRoleForm.tsx
+│   │   ├── technicians
+│   │   │   └── forms
+│   │   │       └── TeknisiForm.tsx
+│   │   └── tickets
+│   │       ├── components
+│   │       │   └── PartsEditor.tsx
+│   │       └── forms
+│   │           ├── TicketForm.tsx
+│   │           └── TutupTiketForm.tsx
+│   ├── layout
+│   │   ├── Menu.tsx
+│   │   └── Navbar.tsx
+│   ├── overlays
+│   │   └── FormModal.tsx
+│   ├── ui
+│   │   ├── badges
+│   │   │   └── PriceDeltaBadge.tsx
+│   │   ├── buttons
+│   │   │   └── IconButton.tsx
+│   │   ├── chips
+│   │   │   └── SafetyChip.tsx
+│   │   ├── fields
+│   │   │   ├── CheckboxLabel.tsx
+│   │   │   ├── InputLabelField.tsx
+│   │   │   ├── SelectLabelField.tsx
+│   │   │   ├── TagChip.tsx
+│   │   │   ├── TagInput.tsx
+│   │   │   └── TextAreaLabelField.tsx
+│   │   ├── form
+│   │   │   ├── AdjustStockForm.tsx
+│   │   │   ├── FormActions.tsx
+│   │   │   ├── FormRow.tsx
+│   │   │   └── InventoryItemForm.tsx
+│   │   └── tokens
+│   │       └── uiTokens.tsx
+│   └── widgets
+│       ├── CostSummary.tsx
+│       └── Performance.tsx
+└── lib
+    └── data.ts

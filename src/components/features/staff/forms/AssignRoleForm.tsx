@@ -1,3 +1,4 @@
+// src/components/features/staff/forms/AssignRoleForm.tsx
 "use client";
 
 import * as React from "react";
@@ -32,6 +33,15 @@ export default function AssignRoleForm({
     data?.roleId ?? roles[0]?.id ?? ""
   );
 
+  // sinkron jika data/roles berubah (mis. buka modal user lain)
+  React.useEffect(() => {
+    setRoleId((prev) => {
+      if (data?.roleId) return data.roleId;
+      if (!prev && roles[0]?.id) return roles[0].id;
+      return prev;
+    });
+  }, [data?.roleId, roles]);
+
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onClose();
@@ -41,16 +51,15 @@ export default function AssignRoleForm({
     <form onSubmit={onSubmit} className="flex flex-col gap-3">
       <InputLabelField
         id="assign-user"
-        label="User"
+        label="Pengguna"
         value={`${data?.name ?? ""} — ${data?.email ?? ""}`}
         onChange={() => {}}
         disabled
-        controlClassName="bg-black/5"
       />
 
       <SelectLabelField
         id="assign-role"
-        label="Role"
+        label="Peran"
         value={roleId}
         onChange={(e) => setRoleId(e.target.value)}
         options={roles.map((r) => ({ value: r.id, label: r.name }))}
@@ -58,19 +67,12 @@ export default function AssignRoleForm({
       />
 
       <div className="mt-2 flex items-center justify-end gap-2">
-        <button
-          type="button"
-          onClick={onClose}
-          className="px-4 py-2 border border-black bg-white hover:bg-black hover:text-white transition"
-        >
-          Close
+        <button type="button" onClick={onClose} className="btn btn--ghost">
+          Tutup
         </button>
         {!isRead && (
-          <button
-            type="submit"
-            className="px-4 py-2 border border-black bg-black text-white hover:bg-white hover:text-black transition"
-          >
-            Save Changes
+          <button type="submit" className="btn btn--solid">
+            Simpan Perubahan
           </button>
         )}
       </div>

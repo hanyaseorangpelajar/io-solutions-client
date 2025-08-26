@@ -1,3 +1,4 @@
+// src/app/(dashboard)/pages/inventory-gudang/page.tsx
 "use client";
 
 import * as React from "react";
@@ -6,8 +7,9 @@ import TableToolbar from "@/components/data-display/table/TableToolbar";
 import FormModal from "@/components/overlays/FormModal";
 import PriceDeltaBadge from "@/components/ui/badges/PriceDeltaBadge";
 import Pagination from "@/components/data-display/table/Pagination";
-import { InventoryItem } from "@/components/features/inventory/forms/InventoryItemForm";
-import InventoryItemForm from "@/components/ui/form/InventoryItemForm";
+import InventoryItemForm, {
+  InventoryItem,
+} from "@/components/features/inventory/forms/InventoryItemForm";
 import {
   EyeIcon,
   PencilSquareIcon,
@@ -85,7 +87,7 @@ export default function InventoryGudangPage() {
     return (
       <tr
         key={String(item.id ?? item.sku)}
-        className="text-sm hover:bg-black hover:text-white"
+        className="group/row text-sm hover:bg-[var(--mono-fg)] hover:text-[var(--mono-bg)]"
       >
         {/* Item */}
         <td className="p-4">
@@ -136,10 +138,10 @@ export default function InventoryGudangPage() {
               entityTitle="Item"
               component={InventoryItemForm as any}
               data={item}
+              variant="ghost"
+              hoverInvertFromRow
               triggerClassName="w-8 h-8"
-              icon={
-                <EyeIcon className="w-4 h-4 text-white group-hover:text-black" />
-              }
+              icon={<EyeIcon className="w-4 h-4" />}
             />
             {/* UPDATE */}
             <FormModal
@@ -147,20 +149,20 @@ export default function InventoryGudangPage() {
               entityTitle="Item"
               component={InventoryItemForm as any}
               data={item}
+              variant="ghost"
+              hoverInvertFromRow
               triggerClassName="w-8 h-8"
-              icon={
-                <PencilSquareIcon className="w-4 h-4 text-white group-hover:text-black" />
-              }
+              icon={<PencilSquareIcon className="w-4 h-4" />}
             />
             {/* DELETE (konfirmasi bawaan) */}
             <FormModal
               type="delete"
               entityTitle="Item"
               id={item.id ?? item.sku ?? ""}
+              variant="ghost"
+              hoverInvertFromRow
               triggerClassName="w-8 h-8"
-              icon={
-                <TrashIcon className="w-4 h-4 text-white group-hover:text-black" />
-              }
+              icon={<TrashIcon className="w-4 h-4" />}
             />
           </div>
         </td>
@@ -169,7 +171,7 @@ export default function InventoryGudangPage() {
   };
 
   return (
-    <div className="bg-white text-black p-4 rounded-none border border-black flex-1 m-4 mt-6">
+    <div className="bg-[var(--mono-bg)] text-[var(--mono-fg)] p-4 rounded-none border border-[var(--mono-border)] flex-1 m-4 mt-6">
       {/* TOP */}
       <div className="flex items-center justify-between">
         <h1 className="hidden md:block text-lg font-semibold">
@@ -178,16 +180,14 @@ export default function InventoryGudangPage() {
 
         <TableToolbar
           searchPlaceholder="Cari barang…"
-          // create = tambah item baru (hanya via inventory, bukan market)
           createButton={
             <FormModal
               type="create"
               entityTitle="Item"
               component={InventoryItemForm as any}
+              variant="solid"
               triggerClassName="w-8 h-8"
-              icon={
-                <PlusIcon className="w-4 h-4 text-white group-hover:text-black" />
-              }
+              icon={<PlusIcon className="w-4 h-4" />}
             />
           }
         />

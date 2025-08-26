@@ -85,8 +85,11 @@ const historyData: TicketHistory[] = [
 
 export default function TicketHistoryPage() {
   const renderRow = (item: TicketHistory) => (
-    // jadikan baris group agar tombol aksi bisa ikut invert saat hover
-    <tr key={item.id} className="group text-sm hover:bg-black hover:text-white">
+    // pakai group/row + tokens supaya hover konsisten dengan tema
+    <tr
+      key={item.id}
+      className="group/row text-sm hover:bg-[var(--mono-fg)] hover:text-[var(--mono-bg)]"
+    >
       {/* Ticket (gabung title + id) */}
       <td className="p-4">
         <div className="flex flex-col">
@@ -116,21 +119,20 @@ export default function TicketHistoryPage() {
             entityTitle="Tiket"
             component={TiketForm}
             data={item}
-            // sinkron hover: tombol jadi putih saat row di-hover
-            triggerClassName="w-8 h-8 group-hover:bg-white group-hover:text-black"
-            icon={
-              <EyeIcon className="w-4 h-4 text-white group-hover:text-black" />
-            }
+            variant="ghost"
+            hoverInvertFromRow
+            triggerClassName="w-8 h-8"
+            icon={<EyeIcon className="w-4 h-4" />}
           />
           {/* DELETE — confirm bawaan */}
           <FormModal
             type="delete"
             entityTitle="Tiket"
             id={item.id}
-            triggerClassName="w-8 h-8 group-hover:bg-white group-hover:text-black"
-            icon={
-              <TrashIcon className="w-4 h-4 text-white group-hover:text-black" />
-            }
+            variant="ghost"
+            hoverInvertFromRow
+            triggerClassName="w-8 h-8"
+            icon={<TrashIcon className="w-4 h-4" />}
           />
         </div>
       </td>
@@ -138,7 +140,7 @@ export default function TicketHistoryPage() {
   );
 
   return (
-    <div className="bg-white text-black p-4 rounded-none border border-black flex-1 m-4 mt-6">
+    <div className="bg-[var(--mono-bg)] text-[var(--mono-fg)] p-4 rounded-none border border-[var(--mono-border)] flex-1 m-4 mt-6">
       {/* TOP */}
       <div className="flex items-center justify-between">
         <h1 className="hidden md:block text-lg font-semibold">Riwayat Tiket</h1>

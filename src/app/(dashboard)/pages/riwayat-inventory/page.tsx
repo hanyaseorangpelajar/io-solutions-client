@@ -1,5 +1,7 @@
+// src/app/(dashboard)/pages/riwayat-inventory/page.tsx
 "use client";
 
+import * as React from "react";
 import Pagination from "@/components/data-display/table/Pagination";
 import Table from "@/components/data-display/table/Table";
 import TableToolbar from "@/components/data-display/table/TableToolbar";
@@ -9,7 +11,6 @@ import InventoryHistoryDetailForm, {
 import FormModal from "@/components/overlays/FormModal";
 import PriceDeltaBadge from "@/components/ui/badges/PriceDeltaBadge";
 import { EyeIcon, TrashIcon } from "@heroicons/react/24/outline";
-import * as React from "react";
 
 const columns = [
   { header: "Item", accessor: "item" },
@@ -81,7 +82,7 @@ export default function RiwayatInventoryPage() {
     const d = priceDelta(item.priceBefore, item.priceAfter);
 
     return (
-      <tr key={item.id} className="text-sm hover:bg-black hover:text-white">
+      <tr className="group/row text-sm hover:bg-[var(--mono-fg)] hover:text-[var(--mono-bg)]">
         {/* Item */}
         <td className="p-4">
           <div className="flex flex-col">
@@ -126,7 +127,7 @@ export default function RiwayatInventoryPage() {
         {/* Date */}
         <td className="hidden md:table-cell">{item.date}</td>
 
-        {/* Actions: READ + DELETE */}
+        {/* Actions */}
         <td>
           <div className="flex items-center gap-2">
             <FormModal
@@ -134,19 +135,19 @@ export default function RiwayatInventoryPage() {
               entityTitle="Riwayat"
               component={InventoryHistoryDetailForm as any}
               data={item}
+              variant="ghost"
+              hoverInvertFromRow
               triggerClassName="w-8 h-8"
-              icon={
-                <EyeIcon className="w-4 h-4 text-white group-hover:text-black" />
-              }
+              icon={<EyeIcon className="w-4 h-4" />}
             />
             <FormModal
               type="delete"
               entityTitle="Riwayat"
               id={item.id}
+              variant="ghost"
+              hoverInvertFromRow
               triggerClassName="w-8 h-8"
-              icon={
-                <TrashIcon className="w-4 h-4 text-white group-hover:text-black" />
-              }
+              icon={<TrashIcon className="w-4 h-4" />}
             />
           </div>
         </td>
@@ -155,7 +156,7 @@ export default function RiwayatInventoryPage() {
   };
 
   return (
-    <div className="bg-white text-black p-4 rounded-none border border-black flex-1 m-4 mt-6">
+    <div className="bg-[var(--mono-bg)] text-[var(--mono-fg)] p-4 rounded-none border border-[var(--mono-border)] flex-1 m-4 mt-6">
       {/* TOP */}
       <div className="flex items-center justify-between">
         <h1 className="hidden md:block text-lg font-semibold">
@@ -164,8 +165,7 @@ export default function RiwayatInventoryPage() {
 
         <TableToolbar
           searchPlaceholder="Cari riwayat…"
-          // filter/sort nanti bisa dihubungkan
-          // tidak ada create di riwayat
+          // tidak ada create untuk riwayat
         />
       </div>
 

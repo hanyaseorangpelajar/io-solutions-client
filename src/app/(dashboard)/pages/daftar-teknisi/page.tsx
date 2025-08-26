@@ -72,8 +72,11 @@ const technicians: Technician[] = [
 
 export default function DaftarTeknisiPage() {
   const renderRow = (item: Technician) => (
-    // jadikan tr sebuah group
-    <tr key={item.id} className="group text-sm hover:bg-black hover:text-white">
+    // pakai group/row agar tombol aksi bisa ikut invert saat hover
+    <tr
+      key={item.id}
+      className="group/row text-sm hover:bg-[var(--mono-fg)] hover:text-[var(--mono-bg)]"
+    >
       <td className="p-4">
         <div className="flex flex-col">
           <span className="font-medium">{item.name}</span>
@@ -95,11 +98,10 @@ export default function DaftarTeknisiPage() {
             entityTitle="Teknisi"
             component={TeknisiForm}
             data={item}
-            // sinkron hover baris → tombol ikut invert putih
-            triggerClassName="w-8 h-8 group-hover:bg-white group-hover:text-black"
-            icon={
-              <EyeIcon className="w-4 h-4 text-white group-hover:text-black" />
-            }
+            variant="ghost"
+            hoverInvertFromRow
+            triggerClassName="w-8 h-8"
+            icon={<EyeIcon className="w-4 h-4" />}
           />
           {/* UPDATE */}
           <FormModal
@@ -107,20 +109,20 @@ export default function DaftarTeknisiPage() {
             entityTitle="Teknisi"
             component={TeknisiForm}
             data={item}
-            triggerClassName="w-8 h-8 group-hover:bg-white group-hover:text-black"
-            icon={
-              <PencilSquareIcon className="w-4 h-4 text-white group-hover:text-black" />
-            }
+            variant="ghost"
+            hoverInvertFromRow
+            triggerClassName="w-8 h-8"
+            icon={<PencilSquareIcon className="w-4 h-4" />}
           />
           {/* DELETE */}
           <FormModal
             type="delete"
             entityTitle="Teknisi"
             id={item.id}
-            triggerClassName="w-8 h-8 group-hover:bg-white group-hover:text-black"
-            icon={
-              <TrashIcon className="w-4 h-4 text-white group-hover:text-black" />
-            }
+            variant="ghost"
+            hoverInvertFromRow
+            triggerClassName="w-8 h-8"
+            icon={<TrashIcon className="w-4 h-4" />}
           />
         </div>
       </td>
@@ -128,7 +130,7 @@ export default function DaftarTeknisiPage() {
   );
 
   return (
-    <div className="bg-white text-black p-4 rounded-none border border-black flex-1 m-4 mt-6">
+    <div className="bg-[var(--mono-bg)] text-[var(--mono-fg)] p-4 rounded-none border border-[var(--mono-border)] flex-1 m-4 mt-6">
       {/* TOP */}
       <div className="flex items-center justify-between">
         <h1 className="hidden md:block text-lg font-semibold">
@@ -142,11 +144,8 @@ export default function DaftarTeknisiPage() {
               type="create"
               entityTitle="Teknisi"
               component={TeknisiForm}
-              // di header tidak perlu group-hover sync (boleh tetap sama juga)
               triggerClassName="w-8 h-8"
-              icon={
-                <PlusIcon className="w-4 h-4 text-white group-hover:text-black" />
-              }
+              icon={<PlusIcon className="w-4 h-4" />}
             />
           }
         />

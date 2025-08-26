@@ -26,6 +26,7 @@ type Article = {
   author?: string;
 };
 
+// NOTE: unikkan id agar tidak bentrok (React key warning)
 const demoArticles: Article[] = [
   {
     id: "KB-2025-0001",
@@ -61,85 +62,84 @@ const demoArticles: Article[] = [
     author: "Dimas S.",
   },
   {
-    id: "KB-2025-0001",
-    title: "ASUS X455L mati total — short MOSFET 3V/5V",
+    id: "KB-2025-0004",
+    title: "Optimasi jaringan kantor — segmentasi VLAN dasar",
     summary:
-      "Unit tidak menyala. Ditemukan short pada rail 3V/5V, ganti MOSFET AO4407, verifikasi dengan burn-in 2 jam.",
-    tags: ["asus", "x455l", "short", "mosfet", "3v5v", "mati-total"],
-    category: "hardware",
+      "Membagi jaringan kantor ke beberapa VLAN untuk isolasi traffic, menurunkan broadcast storm dan menaikkan keamanan.",
+    tags: ["network", "vlan", "switch"],
+    category: "network",
     visibility: "internal",
-    updatedAt: "2025-08-01",
+    updatedAt: "2025-07-28",
     author: "Rudi H.",
   },
   {
-    id: "KB-2025-0002",
-    title: "Windows tidak bisa update — perbaikan komponen WU",
+    id: "KB-2025-0005",
+    title: "BSOD acak — analisis dump & update driver chipset",
     summary:
-      "Memperbaiki layanan Windows Update (WU) yang korup, reset komponen WU, clear cache, re-register DLL.",
-    tags: ["windows", "update", "wu", "software"],
+      "Analisa minidump menunjuk pada driver chipset lama. Update driver + verifikasi stress test 4 jam.",
+    tags: ["windows", "bsod", "driver"],
     category: "software",
     visibility: "public",
-    updatedAt: "2025-08-02",
+    updatedAt: "2025-08-03",
     author: "Sari P.",
   },
   {
-    id: "KB-2025-0003",
-    title: "Printer tidak terdeteksi — fix port & driver",
+    id: "KB-2025-0006",
+    title: "Thermal throttling — re-paste & pembersihan heatsink",
     summary:
-      "Reinstall driver, pastikan service spooler aktif, ganti port USB, uji test page & share via network.",
-    tags: ["printer", "driver", "spooler"],
-    category: "printer",
+      "Temperatur CPU/GPU tinggi. Lakukan re-paste, bersihkan heatsink & kipas, ganti thermal pad VRM.",
+    tags: ["hardware", "thermal", "heatsink"],
+    category: "hardware",
     visibility: "internal",
-    updatedAt: "2025-07-29",
+    updatedAt: "2025-08-01",
     author: "Dimas S.",
   },
   {
-    id: "KB-2025-0001",
-    title: "ASUS X455L mati total — short MOSFET 3V/5V",
+    id: "KB-2025-0007",
+    title: "Scan to Network Folder (SMB) — setting printer MFP",
     summary:
-      "Unit tidak menyala. Ditemukan short pada rail 3V/5V, ganti MOSFET AO4407, verifikasi dengan burn-in 2 jam.",
-    tags: ["asus", "x455l", "short", "mosfet", "3v5v", "mati-total"],
-    category: "hardware",
-    visibility: "internal",
-    updatedAt: "2025-08-01",
+      "Aktifkan SMBv2, buat user khusus, mapping folder share dengan permission terbatas, uji dari MFP.",
+    tags: ["printer", "smb", "scan"],
+    category: "printer",
+    visibility: "public",
+    updatedAt: "2025-07-27",
     author: "Rudi H.",
   },
   {
-    id: "KB-2025-0002",
-    title: "Windows tidak bisa update — perbaikan komponen WU",
+    id: "KB-2025-0008",
+    title: "WLAN lemot — channel overlap & band steering",
     summary:
-      "Memperbaiki layanan Windows Update (WU) yang korup, reset komponen WU, clear cache, re-register DLL.",
-    tags: ["windows", "update", "wu", "software"],
-    category: "software",
+      "Survey kanal, pindah ke channel non-overlap, aktifkan band steering 2.4/5 GHz, optimalkan tx power.",
+    tags: ["network", "wifi", "channel"],
+    category: "network",
     visibility: "public",
-    updatedAt: "2025-08-02",
+    updatedAt: "2025-07-26",
     author: "Sari P.",
   },
   {
-    id: "KB-2025-0003",
-    title: "Printer tidak terdeteksi — fix port & driver",
+    id: "KB-2025-0009",
+    title: "Dual boot Windows/Linux — perbaiki GRUB hilang",
     summary:
-      "Reinstall driver, pastikan service spooler aktif, ganti port USB, uji test page & share via network.",
-    tags: ["printer", "driver", "spooler"],
-    category: "printer",
+      "Restore GRUB via live USB, update fstab & grub.cfg, pastikan boot order UEFI benar.",
+    tags: ["linux", "grub", "dual-boot"],
+    category: "other",
     visibility: "internal",
-    updatedAt: "2025-07-29",
+    updatedAt: "2025-07-25",
     author: "Dimas S.",
   },
 ];
 
 const cardCls =
-  "relative flex flex-col border border-black bg-white text-black";
+  "relative flex flex-col border border-[var(--mono-border)] bg-[var(--mono-bg)] text-[var(--mono-fg)]";
 
 const metaItem =
-  "px-2 py-1 border border-black text-[10px] uppercase tracking-widest";
-const tagChip = "px-2 py-0.5 text-[10px] border border-black bg-white";
-
-const actionIcon = "w-4 h-4 text-white group-hover:text-black transition";
+  "px-2 py-1 border border-[var(--mono-border)] text-[10px] uppercase tracking-widest";
+const tagChip =
+  "px-2 py-0.5 text-[10px] border border-[var(--mono-border)] bg-[var(--mono-bg)] text-[var(--mono-fg)]";
 
 export default function RepositoryPage() {
   return (
-    <div className="bg-white text-black p-4 rounded-none border border-black flex-1 m-4 mt-6">
+    <div className="bg-[var(--mono-bg)] text-[var(--mono-fg)] p-4 rounded-none border border-[var(--mono-border)] flex-1 m-4 mt-6">
       {/* TOP */}
       <div className="flex items-center justify-between mb-4">
         <h1 className="hidden md:block text-lg font-semibold">
@@ -148,12 +148,12 @@ export default function RepositoryPage() {
         <TableToolbar searchPlaceholder="Cari artikel…" />
       </div>
 
-      {/* GRID: 1 / 2 / 3 kolom (maks 3 per baris) */}
+      {/* GRID: 1 / 2 / 3 kolom (maks 3 per baris), tanpa hover warna kartu */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {demoArticles.map((a) => (
           <article key={a.id} className={cardCls}>
             {/* Header */}
-            <div className="p-3 border-b border-black">
+            <div className="p-3 border-b border-[var(--mono-border)]">
               <h2 className="text-sm font-semibold leading-snug line-clamp-2">
                 {a.title}
               </h2>
@@ -181,37 +181,40 @@ export default function RepositoryPage() {
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="mt-auto px-3 py-2 border-t border-black flex items-center justify-end gap-2">
+            {/* Actions (pakai variant ghost; ikon mengikuti warna currentColor) */}
+            <div className="mt-auto px-3 py-2 border-t border-[var(--mono-border)] flex items-center justify-end gap-2">
               <FormModal
                 type="read"
                 entityTitle="Artikel"
                 component={PublishKBForm as any}
                 data={a}
+                variant="ghost"
                 triggerClassName="w-8 h-8"
-                icon={<EyeIcon className={actionIcon} />}
+                icon={<EyeIcon className="w-4 h-4" />}
               />
               <FormModal
                 type="update"
                 entityTitle="Artikel"
                 component={PublishKBForm as any}
                 data={a}
+                variant="ghost"
                 triggerClassName="w-8 h-8"
-                icon={<PencilSquareIcon className={actionIcon} />}
+                icon={<PencilSquareIcon className="w-4 h-4" />}
               />
               <FormModal
                 type="delete"
                 entityTitle="Artikel"
                 id={a.id}
+                variant="ghost"
                 triggerClassName="w-8 h-8"
-                icon={<TrashIcon className={actionIcon} />}
+                icon={<TrashIcon className="w-4 h-4" />}
               />
             </div>
           </article>
         ))}
       </div>
 
-      {/* PAGINATION (UI-only, konsisten dengan halaman lain) */}
+      {/* PAGINATION */}
       <Pagination />
     </div>
   );
