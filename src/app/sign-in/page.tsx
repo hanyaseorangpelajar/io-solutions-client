@@ -17,10 +17,10 @@ export default function SignInPage() {
   const [password, setPassword] = useState("");
 
   return (
-    <main className="min-h-screen bg-white text-black grid place-items-center p-6">
-      <section className="w-full max-w-md border border-black rounded-none bg-white">
+    <main className="min-h-screen grid place-items-center p-6">
+      <section className="w-full max-w-md card">
         <div className="flex items-center gap-3 p-4 border-b border-black">
-          <div className="grid h-8 w-8 place-items-center border border-black bg-black text-white">
+          <div className="btn-icon">
             <span className="font-bold font-mono leading-none tracking-[0.02em] text-[11px]">
               I<span className="px-[1px]">/</span>O
             </span>
@@ -64,7 +64,7 @@ export default function SignInPage() {
               <button
                 type="button"
                 aria-label={showPassword ? "Hide password" : "Show password"}
-                className="p-1 border border-black bg-white hover:bg-black hover:text-white transition"
+                className="btn-ghost p-1"
                 onClick={() => setShowPassword((s) => !s)}
               >
                 {showPassword ? (
@@ -94,7 +94,7 @@ export default function SignInPage() {
 
           <button
             type="submit"
-            className="group mt-2 inline-flex items-center justify-center gap-2 rounded-none border border-black bg-black px-4 py-2 text-white hover:bg-white hover:text-black transition"
+            className="group mt-2 btn gap-2 px-4 py-2"
           >
             <span className="text-sm font-medium">Sign In</span>
             <ArrowRightIcon className="w-4 h-4" />

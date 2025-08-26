@@ -221,7 +221,7 @@ const Menu: React.FC = () => {
               onClick={() => toggle(g.title)}
               aria-expanded={isOpen}
               aria-controls={`panel-${g.title}`}
-              className="flex items-center justify-between px-1 py-2 text-white hover:bg-black transition-colors"
+              className="btn w-full justify-between px-1 py-2 border-0 hover:bg-black hover:text-white"
             >
               <span className="font-light">{g.title}</span>
               <svg
