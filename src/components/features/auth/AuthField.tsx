@@ -15,8 +15,7 @@ type AuthFieldProps = {
   rightSlot?: React.ReactNode; // misal tombol show/hide password
 };
 
-const inputCls =
-  "w-full h-9 rounded-none border border-black bg-white px-8 pr-10 outline-none placeholder:text-black/40";
+const inputCls = "input h-9 pl-8 pr-10";
 
 export default function AuthField({
   id,

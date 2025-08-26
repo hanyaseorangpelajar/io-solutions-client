@@ -2,10 +2,10 @@ import Image from "next/image";
 
 const Navbar = () => {
   return (
-    <header className="w-full border-b border-black bg-white text-black">
+    <header className="w-full border-b border-black">
       <div className="mx-auto flex items-center justify-between p-4">
         <div className="flex items-center gap-3">
-          <div className="grid h-8 w-8 place-items-center border border-black bg-black text-white">
+          <div className="btn-icon">
             <span className="font-bold font-mono leading-none tracking-[0.02em] text-[11px] scale-[0.95]">
               I<span className="px-[1px]">/</span>O
             </span>
