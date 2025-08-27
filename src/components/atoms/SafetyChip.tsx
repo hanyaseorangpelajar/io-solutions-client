@@ -3,56 +3,54 @@ import * as React from "react";
 
 type Props = {
   children: React.ReactNode;
-  /** Small prefix before label, e.g. "#" */
+  /** Mis. "#" di depan tag */
   prefix?: React.ReactNode;
-  /** Keep chip colors stable when parent row (class "group/row") is hovered */
+  /**
+   * Sinkron dengan hover baris tabel (pakai group/row).
+   * Biar chip ikut “kontras” saat row di-hover.
+   */
   lockOnRowHover?: boolean;
-  /** Chip size */
-  size?: "xs" | "sm";
-  /** Extra classes */
   className?: string;
-  /** Wrapper element */
-  as?: keyof JSX.IntrinsicElements;
-  /** Optional tooltip */
   title?: string;
-};
-
-const sizeMap: Record<NonNullable<Props["size"]>, string> = {
-  xs: "px-2 py-0.5 text-[10px]",
-  sm: "px-2.5 py-1 text-[11px]",
 };
 
 export default function SafetyChip({
   children,
   prefix,
-  lockOnRowHover = true,
-  size = "xs",
+  lockOnRowHover = false,
   className = "",
-  as: Tag = "span",
   title,
 }: Props) {
-  const lock = lockOnRowHover
-    ? "group-hover/row:bg-[var(--mono-bg)] group-hover/row:text-[var(--mono-fg)]"
-    : "";
-
   return (
-    <Tag
+    <span
       title={title}
       className={[
-        "inline-flex items-center gap-1 rounded-none",
+        // IDENTITAS: penting agar bisa di-target CSS global
+        "safety-chip", // spesifik untuk komponen ini
+        "chip", // base util (jika ada di globals.css)
+
+        // Visual dasar (monokrom)
+        "inline-flex items-center gap-1 px-2 py-0.5 text-[10px]",
         "border border-[var(--mono-border)]",
         "bg-[var(--mono-bg)] text-[var(--mono-fg)]",
-        "uppercase tracking-widest",
-        "transition duration-200",
-        sizeMap[size],
-        lock,
+        "rounded-none transition-colors duration-200",
+
+        // Ikuti hover baris (opsional)
+        lockOnRowHover
+          ? "group-hover/row:bg-[var(--mono-bg)] group-hover/row:text-[var(--mono-fg)] group-hover/row:border-[var(--mono-bg)]"
+          : "",
+
         className,
       ]
         .filter(Boolean)
         .join(" ")}
     >
-      {prefix != null ? <span aria-hidden="true">{prefix}</span> : null}
+      {prefix ? (
+        <span className="opacity-70" aria-hidden="true">
+          {prefix}
+        </span>
+      ) : null}
       <span className="leading-none">{children}</span>
-    </Tag>
+    </span>
   );
 }

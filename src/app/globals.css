@@ -2,12 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ===== Monochrome Tokens =====
-   Default: DARK (hitam dominan)
-   Notes:
-   - Variabel ditempel pada wrapper .mono (pastikan elemen root kamu diberi class "mono").
-   - Light mode opsional via .light .mono (atau abaikan dulu).
-*/
 .mono {
   --mono-bg: #0a0a0a;
   --mono-fg: #fafafa;
@@ -18,7 +12,6 @@
   --mono-ph: rgba(255, 255, 255, 0.45);
 }
 
-/* Light mode (opsional; diaktifkan jika wrapper punya class .light) */
 .light .mono {
   --mono-bg: #ffffff;
   --mono-fg: #0a0a0a;
@@ -29,7 +22,6 @@
   --mono-ph: rgba(0, 0, 0, 0.4);
 }
 
-/* Kompatibilitas: jika project sudah menggunakan .dark pada <html>, tetap gelap */
 .dark .mono {
   --mono-bg: #0a0a0a;
   --mono-fg: #fafafa;
@@ -40,7 +32,6 @@
   --mono-ph: rgba(255, 255, 255, 0.45);
 }
 
-/* Base semantics (hanya di dalam scope .mono) */
 .mono a {
   color: inherit;
   text-decoration: none;
@@ -50,7 +41,6 @@
   outline-offset: 2px;
 }
 
-/* ===== Components Layer ===== */
 @layer components {
   .btn {
     @apply inline-flex items-center justify-center rounded-none
@@ -78,7 +68,6 @@
   .label {
     @apply text-xs uppercase tracking-widest text-[var(--mono-label)];
   }
-
   .input {
     @apply w-full border bg-mono-bg px-3 py-2 rounded-none outline-none
            placeholder-[var(--mono-ph)] text-mono-fg;
@@ -91,6 +80,9 @@
 
   .card {
     @apply bg-mono-bg border;
+  }
+  .section {
+    @apply card p-4;
   }
 
   .modal-overlay {
@@ -107,35 +99,6 @@
     @apply text-sm font-semibold uppercase tracking-wider;
   }
 
-  .table-row {
-    @apply group text-sm;
-  }
-  .table-row-hover {
-    @apply hover:bg-mono-fg hover:text-mono-bg;
-  }
-
-  /* Section/Card standar halaman */
-  .section {
-    @apply card p-4;
-  }
-
-  /* Field helpers */
-  .field-label {
-    @apply label;
-  }
-  .field-note {
-    @apply text-[10px] text-mono-muted mt-1;
-  }
-  .field-readonly {
-    @apply bg-black/5;
-  }
-
-  /* Badge ringan */
-  .badge {
-    @apply px-2 py-0.5 text-[10px] border bg-mono-bg;
-  }
-
-  /* Table row hover aliases */
   .row-hover {
     @apply hover:bg-mono-fg hover:text-mono-bg;
   }
@@ -144,7 +107,6 @@
   }
 }
 
-/* ===== Utilities Layer ===== */
 @layer utilities {
   .row-hover-invert {
     @apply group-hover:bg-mono-bg group-hover:text-mono-fg;
@@ -154,9 +116,6 @@
   }
 }
 
-/* ===== 3rd-party Widgets ===== */
-
-/* react-calendar */
 .react-calendar {
   width: 100% !important;
   background: var(--mono-bg) !important;
@@ -170,7 +129,6 @@
   color: var(--mono-bg) !important;
 }
 
-/* react-big-calendar */
 .rbc-toolbar {
   @apply border-b;
 }
@@ -211,15 +169,12 @@
   margin-bottom: 4px;
 }
 
-/* ===== Modal form field contrast (override) ===== */
 .modal-body {
-  /* Field di modal sedikit lebih terang dari latar global */
-  --modal-field-bg: #111; /* ganti #111 -> #121212/#131313 sesuai selera */
+  --modal-field-bg: #111;
   --modal-field-bd: var(--mono-border);
   --modal-field-fg: var(--mono-fg);
   --modal-ph-strong: color-mix(in oklab, var(--mono-ph), white 20%);
 }
-
 .modal-body .input,
 .modal-body select,
 .modal-body textarea {
@@ -227,22 +182,65 @@
   color: var(--modal-field-fg) !important;
   border-color: var(--modal-field-bd) !important;
 }
-
 .modal-body .input::placeholder,
 .modal-body textarea::placeholder {
   color: var(--modal-ph-strong);
 }
 
-/* Samakan tinggi kontrol supaya rapi di modal */
 .modal-body select.input,
 .modal-body select {
-  height: 2.25rem; /* h-9 */
+  height: 2.25rem;
 }
-
-/* Label & helper text tetap kontras */
 .modal-body .label {
   color: var(--mono-label);
 }
 .modal-body .field-note {
   color: var(--mono-muted);
+}
+
+tr.row-hover {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+tr.row-hover:hover {
+  background-color: var(--mono-fg);
+  color: var(--mono-bg);
+}
+
+tr.row-hover:hover
+  :where(
+    td,
+    th,
+    span,
+    p,
+    a,
+    small,
+    strong,
+    em,
+    div,
+    time,
+    code,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6
+  ) {
+  color: var(--mono-bg) !important;
+}
+
+tr.row-hover:hover svg {
+  color: var(--mono-bg) !important;
+  stroke: currentColor !important;
+  fill: none;
+}
+
+tr.row-hover:hover :where(.tag-chip, .chip, .safety-chip, .price-delta-badge) {
+  background-color: var(--mono-bg) !important;
+  color: var(--mono-fg) !important;
+  border-color: var(--mono-bg) !important;
+}
+
+tr.row-hover:hover :where(.tag-chip, .chip, .safety-chip) * {
+  color: currentColor !important;
 }

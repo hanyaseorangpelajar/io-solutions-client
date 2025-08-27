@@ -74,9 +74,7 @@ export default function DaftarTeknisiPage() {
       <td className="p-4">
         <div className="flex flex-col">
           <span className="font-medium">{item.name}</span>
-          <span className="text-xs text-[var(--mono-muted)] group-hover/row:text-[var(--mono-bg)]">
-            {item.id}
-          </span>
+          <span className="text-xs text-[var(--mono-muted)]">{item.id}</span>
         </div>
       </td>
 

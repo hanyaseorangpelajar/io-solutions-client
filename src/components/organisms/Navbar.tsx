@@ -25,7 +25,9 @@ export default function Navbar({
         <div className="flex items-center gap-3">
           <div className="btn-icon" aria-hidden="true">
             <span className="font-bold font-mono leading-none tracking-[0.02em] text-[11px] scale-[0.95]">
-              I<span className="px-[1px]">/</span>O
+              <a href="/sysadmin">
+                I<span className="px-[1px]">/</span>O
+              </a>
             </span>
           </div>
           <div className="leading-tight">

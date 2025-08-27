@@ -24,8 +24,8 @@ export default function PriceDeltaBadge({
     return (
       <span
         className={[
-          "inline-flex items-center px-1.5 py-0.5 text-[10px] border rounded-none",
-          "bg-mono-bg text-mono-muted border-[var(--mono-border)]",
+          "price-delta-badge inline-flex items-center px-1.5 py-0.5 text-[10px] border rounded-none",
+          "bg-[var(--mono-bg)] text-[var(--mono-muted)] border-[var(--mono-border)]",
           "transition duration-200",
           className,
         ]
@@ -44,14 +44,14 @@ export default function PriceDeltaBadge({
   // Tone (monochrome): large change = inverted (solid), small = ghost
   const toneClass =
     abs >= 10
-      ? "bg-mono-fg text-mono-bg border-mono-fg"
-      : "bg-mono-bg text-mono-fg border-[var(--mono-border)]";
+      ? "bg-[var(--mono-fg)] text-[var(--mono-bg)] border-[var(--mono-fg)]"
+      : "bg-[var(--mono-bg)] text-[var(--mono-fg)] border-[var(--mono-border)]";
 
   return (
     <span
       data-delta={delta}
       className={[
-        "inline-flex items-center px-1.5 py-0.5 text-[10px] border rounded-none",
+        "price-delta-badge inline-flex items-center px-1.5 py-0.5 text-[10px] border rounded-none",
         "uppercase tracking-widest",
         "transition duration-200 hover:opacity-90",
         toneClass,
