@@ -1,8 +1,8 @@
-import Announcements from "@/components/organisms/Announcements";
-import AttendanceChart from "@/components/organisms/StockChart";
-import CountChart from "@/components/organisms/CountChart";
-import EventCalendar from "@/components/organisms/Log";
-import FinanceChart from "@/components/organisms/FinanceChart";
+import Announcements from "@/components/molecules/Announcements";
+import AttendanceChart from "@/components/atoms/StockChart";
+import CountChart from "@/components/molecules/CountChart";
+import EventCalendar from "@/components/molecules/Log";
+import FinanceChart from "@/components/atoms/FinanceChart";
 import UserCard from "@/components/molecules/UserCard";
 
 const AdminView = () => {

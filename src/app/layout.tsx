@@ -1,6 +1,11 @@
+import Providers from "@/providers";
+import { ColorSchemeScript } from "@mantine/core";
+import "@mantine/core/styles.css";
+import "@mantine/dates/styles.css";
+import "@mantine/notifications/styles.css";
+import "@mantine/nprogress/styles.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -14,11 +19,15 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="id">
-      {/* Terapkan scope .mono di level body supaya semua page ikut theme */}
-      <body
-        className={`${inter.className} mono bg-mono-bg text-mono-fg antialiased`}
-      >
-        {children}
+      <head>
+        <ColorSchemeScript defaultColorScheme="dark" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, viewport-fit=cover"
+        />
+      </head>
+      <body className={`${inter.className} antialiased`}>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

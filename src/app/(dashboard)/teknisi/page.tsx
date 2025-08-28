@@ -1,5 +1,5 @@
-import Announcements from "@/components/organisms/Announcements";
-import BigCalendar from "@/components/organisms/BigCalender";
+import Announcements from "@/components/molecules/Announcements";
+import BigCalendar from "@/components/atoms/BigCalender";
 
 const TeknisiView = () => {
   return (

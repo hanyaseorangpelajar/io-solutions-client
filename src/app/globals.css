@@ -1,246 +1,124 @@
+/* src/app/globals.css */
+
+/* Tailwind layers */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-.mono {
-  --mono-bg: #0a0a0a;
-  --mono-fg: #fafafa;
-  --mono-border: #2a2a2a;
-  --mono-overlay: rgba(255, 255, 255, 0.12);
-  --mono-muted: rgba(255, 255, 255, 0.65);
-  --mono-label: rgba(255, 255, 255, 0.7);
-  --mono-ph: rgba(255, 255, 255, 0.45);
-}
-
-.light .mono {
-  --mono-bg: #ffffff;
-  --mono-fg: #0a0a0a;
-  --mono-border: #e5e5e5;
-  --mono-overlay: rgba(0, 0, 0, 0.08);
-  --mono-muted: rgba(0, 0, 0, 0.6);
-  --mono-label: rgba(0, 0, 0, 0.7);
-  --mono-ph: rgba(0, 0, 0, 0.4);
-}
-
-.dark .mono {
-  --mono-bg: #0a0a0a;
-  --mono-fg: #fafafa;
-  --mono-border: #2a2a2a;
-  --mono-overlay: rgba(255, 255, 255, 0.12);
-  --mono-muted: rgba(255, 255, 255, 0.65);
-  --mono-label: rgba(255, 255, 255, 0.7);
-  --mono-ph: rgba(255, 255, 255, 0.45);
-}
-
-.mono a {
-  color: inherit;
-  text-decoration: none;
-}
-.mono :focus-visible {
-  outline: 2px solid var(--mono-fg);
-  outline-offset: 2px;
-}
-
-@layer components {
-  .btn {
-    @apply inline-flex items-center justify-center rounded-none
-           border bg-mono-fg text-mono-bg transition px-4 py-2 text-sm font-medium;
+/* ================================
+   MONOCHROME THEME (BLACK/WHITE)
+   ================================ */
+@layer base {
+  /* Tokens: hanya black/white */
+  :root {
+    color-scheme: light;
+    --bg: #ffffff; /* background */
+    --fg: #000000; /* foreground (text, border, outline) */
   }
-  .btn:hover {
-    @apply bg-mono-bg text-mono-fg;
+  /* Mode gelap via class .dark */
+  .dark {
+    color-scheme: dark;
+    --bg: #000000;
+    --fg: #ffffff;
   }
 
-  .btn-ghost {
-    @apply inline-flex items-center justify-center rounded-none
-           border bg-mono-bg text-mono-fg transition px-4 py-2 text-sm font-medium;
-  }
-  .btn-ghost:hover {
-    @apply bg-mono-fg text-mono-bg;
-  }
-
-  .btn-icon {
-    @apply btn w-8 h-8 p-0;
-  }
-  .btn-icon-ghost {
-    @apply btn-ghost w-8 h-8 p-0;
+  /* Dokumen */
+  html,
+  body {
+    background-color: var(--bg);
+    color: var(--fg);
   }
 
-  .label {
-    @apply text-xs uppercase tracking-widest text-[var(--mono-label)];
-  }
-  .input {
-    @apply w-full border bg-mono-bg px-3 py-2 rounded-none outline-none
-           placeholder-[var(--mono-ph)] text-mono-fg;
-  }
-
-  .chip {
-    @apply inline-flex items-center gap-1 border bg-mono-bg text-mono-fg
-           px-2 py-0.5 text-[10px] uppercase tracking-widest;
-  }
-
-  .card {
-    @apply bg-mono-bg border;
-  }
-  .section {
-    @apply card p-4;
+  /* Teks & heading */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  span,
+  small,
+  strong,
+  em {
+    color: var(--fg);
   }
 
-  .modal-overlay {
-    @apply fixed inset-0 z-50 grid place-items-center bg-[var(--mono-overlay)];
-  }
-  .modal {
-    @apply relative w-[90%] md:w-[70%] lg:w-[60%] xl:w-[50%] 2xl:w-[40%]
-           bg-mono-bg border;
-  }
-  .modal-header {
-    @apply flex items-center justify-between px-4 py-3 border-b;
-  }
-  .modal-title {
-    @apply text-sm font-semibold uppercase tracking-wider;
+  /* Link: tetap mewarisi warna, beri underline untuk affordance */
+  a {
+    color: var(--fg);
+    text-decoration: underline;
   }
 
-  .row-hover {
-    @apply hover:bg-mono-fg hover:text-mono-bg;
+  /* Garis & pembatas */
+  hr {
+    border-color: var(--fg);
   }
-  .row-hover-sync {
-    @apply group-hover:bg-mono-bg group-hover:text-mono-fg;
+
+  /* Border/outline default ke hitam/putih */
+  *,
+  ::before,
+  ::after {
+    border-color: var(--fg);
+    outline-color: var(--fg);
   }
-}
 
-@layer utilities {
-  .row-hover-invert {
-    @apply group-hover:bg-mono-bg group-hover:text-mono-fg;
+  /* Selection */
+  ::selection {
+    background: #000000;
+    color: #ffffff;
   }
-  .row-hover-icon {
-    @apply group-hover:text-mono-fg;
+  ::-moz-selection {
+    background: #000000;
+    color: #ffffff;
   }
-}
 
-.react-calendar {
-  width: 100% !important;
-  background: var(--mono-bg) !important;
-  color: var(--mono-fg) !important;
-}
-.react-calendar__navigation__label__labelText {
-  font-weight: 600;
-}
-.react-calendar__tile--active {
-  background-color: var(--mono-fg) !important;
-  color: var(--mono-bg) !important;
-}
+  /* Scrollbar (Firefox & WebKit) */
+  * {
+    scrollbar-color: #000000 #ffffff; /* thumb, track */
+  }
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #ffffff;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #000000;
+  }
+  ::-webkit-scrollbar-corner {
+    background: #ffffff;
+  }
 
-.rbc-toolbar {
-  @apply border-b;
-}
-.rbc-toolbar-label {
-  text-align: right !important;
-  padding: 0 20px !important;
-}
-.rbc-btn-group button {
-  @apply border bg-mono-bg text-mono-fg;
-}
-.rbc-btn-group .rbc-active {
-  @apply bg-mono-fg text-mono-bg;
-}
-.rbc-time-view,
-.rbc-time-content,
-.rbc-month-view {
-  border-color: var(--mono-border) !important;
-}
-.rbc-time-header {
-  display: none !important;
-}
-.rbc-time-gutter.rbc-time-column {
-  font-size: 12px !important;
-}
-.rbc-timeslot-group {
-  background-color: var(--mono-bg) !important;
-}
-.rbc-event {
-  border: 1px solid var(--mono-border) !important;
-  background: var(--mono-bg) !important;
-  color: var(--mono-fg) !important;
-  padding: 8px !important;
-  margin: 8px !important;
-  width: 99% !important;
-}
-.rbc-event-label {
-  color: var(--mono-muted) !important;
-  margin-bottom: 4px;
-}
+  /* Form controls */
+  input,
+  textarea,
+  select,
+  button {
+    background-color: var(--bg);
+    color: var(--fg);
+    border: 1px solid var(--fg);
+  }
 
-.modal-body {
-  --modal-field-bg: #111;
-  --modal-field-bd: var(--mono-border);
-  --modal-field-fg: var(--mono-fg);
-  --modal-ph-strong: color-mix(in oklab, var(--mono-ph), white 20%);
-}
-.modal-body .input,
-.modal-body select,
-.modal-body textarea {
-  background-color: var(--modal-field-bg) !important;
-  color: var(--modal-field-fg) !important;
-  border-color: var(--modal-field-bd) !important;
-}
-.modal-body .input::placeholder,
-.modal-body textarea::placeholder {
-  color: var(--modal-ph-strong);
-}
+  /* Placeholder tetap solid (tanpa abu-abu) */
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--fg);
+    opacity: 1; /* jangan transparan agar tetap pure black/white */
+  }
 
-.modal-body select.input,
-.modal-body select {
-  height: 2.25rem;
-}
-.modal-body .label {
-  color: var(--mono-label);
-}
-.modal-body .field-note {
-  color: var(--mono-muted);
-}
+  /* Caret & accent (checkbox/radio/switch) pure monochrome */
+  input,
+  textarea,
+  select {
+    caret-color: var(--fg);
+    accent-color: var(--fg);
+  }
 
-tr.row-hover {
-  transition: background-color 0.2s ease, color 0.2s ease;
-}
-tr.row-hover:hover {
-  background-color: var(--mono-fg);
-  color: var(--mono-bg);
-}
-
-tr.row-hover:hover
-  :where(
-    td,
-    th,
-    span,
-    p,
-    a,
-    small,
-    strong,
-    em,
-    div,
-    time,
-    code,
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6
-  ) {
-  color: var(--mono-bg) !important;
-}
-
-tr.row-hover:hover svg {
-  color: var(--mono-bg) !important;
-  stroke: currentColor !important;
-  fill: none;
-}
-
-tr.row-hover:hover :where(.tag-chip, .chip, .safety-chip, .price-delta-badge) {
-  background-color: var(--mono-bg) !important;
-  color: var(--mono-fg) !important;
-  border-color: var(--mono-bg) !important;
-}
-
-tr.row-hover:hover :where(.tag-chip, .chip, .safety-chip) * {
-  color: currentColor !important;
+  /* Fokus yang jelas dan kontras */
+  :focus-visible {
+    outline: 2px solid var(--fg);
+    outline-offset: 2px;
+  }
 }
