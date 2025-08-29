@@ -3,10 +3,10 @@
 import { Alert, Card, Group, List, Text, Title } from "@mantine/core";
 import type {
   BuilderSelection,
-  BuildType,
   ComponentCategory,
+  BuildId,
 } from "../model/types";
-import { COMPONENT_LABEL, REQUIRED_BY_BUILD } from "../model/types";
+import { COMPONENT_LABEL, REQUIRED_BY_SYSTEM } from "../model/types";
 import { MARKET_ITEMS } from "../model/mock";
 import { INVENTORY_ITEMS } from "@/features/inventory/model/mock";
 import { idr, sum } from "../model/pricing";
@@ -27,13 +27,13 @@ function getPriceFromSelection(
 }
 
 export default function BuildSummary({
-  buildType,
+  systemId,
   selection,
 }: {
-  buildType: BuildType;
+  systemId: BuildId;
   selection: BuilderSelection;
 }) {
-  const required = REQUIRED_BY_BUILD[buildType] ?? [];
+  const required = (REQUIRED_BY_SYSTEM[systemId] ?? []) as ComponentCategory[];
   const missing = required.filter((cat) => !selection[cat]?.itemId);
 
   const prices = required.map((cat) => getPriceFromSelection(cat, selection));

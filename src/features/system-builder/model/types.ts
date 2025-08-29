@@ -1,6 +1,7 @@
 // ==== System Builder types (UI layer) ====
 
-export type BuildType = "desktop" | "server" | "iot";
+// Lebih fleksibel: bisa tambah id baru ke depan
+export type BuildId = "desktop" | "server" | "iot" | (string & {});
 
 export type ComponentCategory =
   | "cpu"
@@ -27,6 +28,7 @@ export const COMPONENT_LABEL: Record<ComponentCategory, string> = {
   others: "Others",
 };
 
+// Pilihan sumber item
 export type SourceType = "store" | "market";
 
 export type MarketItem = {
@@ -35,7 +37,6 @@ export type MarketItem = {
   category: ComponentCategory;
   vendor?: string;
   price: number; // IDR
-  // metadata opsional untuk future compatibility check
   meta?: Record<string, string | number | boolean>;
 };
 
@@ -46,10 +47,10 @@ export type BuilderPick = {
 
 export type BuilderSelection = Partial<Record<ComponentCategory, BuilderPick>>;
 
-export type RequiredMap = Partial<Record<BuildType, ComponentCategory[]>>;
-
-export const REQUIRED_BY_BUILD: RequiredMap = {
-  desktop: ["cpu", "motherboard", "ram", "storage", "psu", "case"],
-  server: ["cpu", "motherboard", "ram", "storage", "psu", "nic"],
-  iot: ["others", "storage"], // sederhana: SoC/MCU taruh di "others"
-};
+// Mapping kategori wajib per jenis sistem
+export const REQUIRED_BY_SYSTEM: Partial<Record<BuildId, ComponentCategory[]>> =
+  {
+    desktop: ["cpu", "motherboard", "ram", "storage", "psu", "case"],
+    server: ["cpu", "motherboard", "ram", "storage", "psu", "nic"],
+    iot: ["others", "storage"],
+  };
