@@ -1,4 +1,4 @@
-import TicketsMyWorkPage from "@/features/tickets/ui/TicketsMyWorkPage";
+import { TicketsMyWorkPage } from "@/features/tickets";
 
 export const metadata = {
   title: "My Work — I/O SOLUTIONS",

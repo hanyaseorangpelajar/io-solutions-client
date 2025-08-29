@@ -1,1 +1,2 @@
-export { SysAdminPage } from "./ui/SysAdminPage";
+export * from "./model";
+export * from "./ui";

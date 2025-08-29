@@ -1,4 +1,4 @@
-import AuditRepositoryPage from "@/features/audit/ui/AuditRepositoryPage";
+import { AuditRepositoryPage } from "@/features/audit";
 
 export const metadata = {
   title: "Repository — I/O SOLUTIONS",

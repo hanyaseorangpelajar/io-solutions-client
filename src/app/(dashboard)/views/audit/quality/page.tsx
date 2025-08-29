@@ -1,4 +1,4 @@
-import AuditQualityPage from "@/features/audit/ui/AuditQualityPage";
+import { AuditQualityPage } from "@/features/audit";
 
 export const metadata = {
   title: "Ticket Audit Quality — I/O SOLUTIONS",

@@ -39,4 +39,14 @@ export const defaultNav: NavItem[] = [
   },
 
   // Nanti: SystemSolution (PC/Server/IoT build templates) — akan dibuat sebagai group baru di sini.
+  {
+    group: true,
+    label: "Miscellaneous",
+    children: [
+      {
+        label: "System Builder",
+        href: "/views/misc/system-builder",
+      },
+    ],
+  },
 ];
