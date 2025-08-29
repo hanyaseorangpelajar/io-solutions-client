@@ -1,4 +1,4 @@
-import { TicketsHistoryPage } from "@/features/tickets";
+import { TicketsHistoryPage } from "@/features/tickets/ui/TicketsHistoryPage";
 
 export const metadata = {
   title: "Riwayat Tickets — I/O SOLUTIONS",

@@ -116,12 +116,6 @@ export default function SidebarNav({ items, onNavigate }: SidebarNavProps) {
 
   return (
     <Stack gap="xs" h="100%">
-      <Box px="md" pt="md">
-        <Text fw={600} size="sm" c="dimmed">
-          NAVIGASI
-        </Text>
-      </Box>
-
       <ScrollArea style={{ flex: 1 }} type="auto">
         <Stack gap={4} p="xs">
           {items.map((it) => (it.group ? renderGroup(it) : renderLink(it)))}

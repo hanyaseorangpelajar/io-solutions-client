@@ -10,10 +10,14 @@ export default function AppShellLayout({
   children,
   navItems,
   headerTitle,
+  headerTagline,
+  headerHref,
 }: {
   children: React.ReactNode;
   navItems: NavItem[];
   headerTitle?: string;
+  headerTagline?: string;
+  headerHref?: string;
 }) {
   const [opened, setOpened] = useState(false); // navbar mobile
 
@@ -28,7 +32,13 @@ export default function AppShellLayout({
       padding="md"
     >
       <AppShell.Header>
-        <HeaderBar opened={opened} setOpened={setOpened} title={headerTitle} />
+        <HeaderBar
+          opened={opened}
+          setOpened={setOpened}
+          title={headerTitle}
+          tagline={headerTagline}
+          href={headerHref}
+        />
       </AppShell.Header>
 
       <AppShell.Navbar p="xs">

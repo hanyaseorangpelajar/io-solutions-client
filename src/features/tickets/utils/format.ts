@@ -1,7 +1,7 @@
 export function formatDateTime(iso: string) {
-  try {
-    return new Date(iso).toLocaleString();
-  } catch {
-    return iso;
-  }
+  const d = new Date(iso);
+  return d.toLocaleString("id-ID", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
 }

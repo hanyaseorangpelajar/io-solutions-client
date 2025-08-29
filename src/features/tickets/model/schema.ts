@@ -1,46 +1,44 @@
 import { z } from "zod";
 
-/* ---------- Ticket form (create/edit) ---------- */
+// ---- Parts (dipakai di beberapa form)
+export const PartUsageSchema = z.object({
+  partId: z.string().min(1),
+  name: z.string().min(1),
+  qty: z.number().int().min(1),
+});
+export const PartsArraySchema = z.array(PartUsageSchema).default([]);
 
+// Catatan: gunakan .min(1) agar URL "blob:" preview foto lulus validasi
+export const PhotosArraySchema = z.array(z.string().min(1)).default([]);
+export const TagsArraySchema = z.array(z.string().min(1)).default([]);
+
+// ---- Custom costs (biaya tambahan)
+export const CustomCostSchema = z.object({
+  label: z.string().min(1, "Nama biaya wajib"),
+  amount: z.number().min(0, "Jumlah tidak boleh negatif"),
+});
+export const CustomCostsArraySchema = z.array(CustomCostSchema).default([]);
+
+// ---- Resolution payload (dipakai modal resolve/edit)
+export const TicketResolutionSchema = z.object({
+  rootCause: z.string().min(1, "Akar masalah wajib"),
+  solution: z.string().min(1, "Solusi wajib"),
+  parts: PartsArraySchema,
+  photos: PhotosArraySchema,
+  tags: TagsArraySchema,
+  extraCosts: CustomCostsArraySchema,
+});
+export type TicketResolutionInput = z.infer<typeof TicketResolutionSchema>;
+export type PartUsageInput = z.infer<typeof PartUsageSchema>;
+export type CustomCostInput = z.infer<typeof CustomCostSchema>;
+
+// ---- Form create/edit ticket (dipakai TicketFormModal)
 export const TicketFormSchema = z.object({
-  subject: z.string().min(3, "Minimal 3 karakter"),
-  requester: z.string().min(2, "Wajib diisi"),
+  subject: z.string().min(1, "Subjek wajib"),
+  requester: z.string().min(1, "Pemohon wajib"),
   priority: z.enum(["low", "medium", "high", "urgent"]),
   status: z.enum(["open", "in_progress", "resolved", "closed"]),
-  assignee: z.string().optional(),
-  description: z.string().optional(),
+  assignee: z.string().optional().default(""),
+  description: z.string().optional().default(""),
 });
 export type TicketFormInput = z.infer<typeof TicketFormSchema>;
-
-/* ---------- Resolution (resolve/close) ---------- */
-/** Satu item penggunaan part dari gudang */
-export const PartUsageSchema = z.object({
-  partId: z.string(),
-  name: z.string(),
-  qty: z.number().min(1, "Minimal 1"),
-});
-
-/** Array part (dipisah dari default agar bisa diberi .min() saat diperlukan) */
-export const PartsArraySchema = z.array(PartUsageSchema);
-
-/** Skema dasar resolusi tiket */
-const TicketResolutionBase = z.object({
-  rootCause: z.string().min(10, "Jelaskan akar masalah (≥ 10 karakter)"),
-  solution: z.string().min(10, "Jelaskan solusi (≥ 10 karakter)"),
-  // default: []  → boleh kosong secara umum
-  parts: PartsArraySchema.default([]),
-  // wajib minimal 1 foto dokumentasi
-  photos: z.array(z.string()).min(1, "Minimal 1 foto dokumentasi"),
-  // wajib minimal 1 tag
-  tags: z.array(z.string().min(1)).min(1, "Minimal 1 tag"),
-});
-
-/** Skema standar (parts boleh kosong) */
-export const TicketResolutionSchema = TicketResolutionBase;
-
-/** Skema alternatif jika parts diwajibkan (mis. kebijakan tertentu) */
-export const TicketResolutionRequirePartsSchema = TicketResolutionBase.extend({
-  parts: PartsArraySchema.min(1, "Minimal 1 part"),
-});
-
-export type TicketResolutionInput = z.infer<typeof TicketResolutionSchema>;

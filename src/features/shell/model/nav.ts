@@ -2,22 +2,19 @@ import type { ReactNode } from "react";
 
 export type NavItem = {
   label: string;
-  href?: string; // kosong untuk node "group" (section header)
+  href?: string;
   icon?: ReactNode;
   children?: NavItem[];
-  group?: boolean; // jika true → header group (non-clickable)
+  group?: boolean;
 };
 
-/** Struktur default sidebar (kelompok/section) */
 export const defaultNav: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard" },
   { label: "SysAdmin", href: "/sysadmin" },
-
   {
     label: "Tickets",
     group: true,
     children: [
-      { label: "My Work", href: "/views/tickets/my" },
+      { label: "Works", href: "/views/tickets/my" },
       { label: "Tickets List", href: "/views/tickets" },
       { label: "Tickets History", href: "/views/tickets/history" },
     ],
@@ -31,4 +28,15 @@ export const defaultNav: NavItem[] = [
       { label: "Repository", href: "/views/audit/repository" },
     ],
   },
+
+  {
+    label: "Inventory",
+    group: true,
+    children: [
+      { label: "Items", href: "/views/inventory/items" },
+      { label: "Stock Movements", href: "/views/inventory/movements" },
+    ],
+  },
+
+  // Nanti: SystemSolution (PC/Server/IoT build templates) — akan dibuat sebagai group baru di sini.
 ];

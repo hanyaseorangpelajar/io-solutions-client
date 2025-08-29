@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   ActionIcon,
   Avatar,
@@ -11,6 +12,8 @@ import {
   Text,
   TextInput,
   Tooltip,
+  rem,
+  useMantineTheme,
 } from "@mantine/core";
 import { useComputedColorScheme, useMantineColorScheme } from "@mantine/core";
 import {
@@ -25,7 +28,12 @@ import {
 type HeaderBarProps = {
   opened: boolean;
   setOpened: (v: boolean) => void; // toggle navbar mobile
+  /** Judul brand; default: I/O SOLUTIONS */
   title?: string;
+  /** Tagline kecil uppercase; default: DATA • INFORMATION • KNOWLEDGE • WISDOM */
+  tagline?: string;
+  /** Link saat klik kotak I/O; default: /(dashboard)/sysadmin */
+  href?: string;
 };
 
 function ThemeToggle() {
@@ -48,20 +56,97 @@ function ThemeToggle() {
   );
 }
 
+/** Blok brand minimalis: kotak I/O + title + tagline */
+function BrandBar({
+  title = "I/O SOLUTIONS",
+  tagline = "DATA • INFORMATION • KNOWLEDGE • WISDOM",
+  href = "/(dashboard)/sysadmin",
+}: {
+  title?: string;
+  tagline?: string;
+  href?: string;
+}) {
+  const theme = useMantineTheme();
+  return (
+    <Group gap={12} wrap="nowrap">
+      <Box
+        component={Link}
+        href={href}
+        aria-label="Home"
+        style={{
+          display: "grid",
+          placeItems: "center",
+          width: rem(28),
+          height: rem(28),
+          border: `1px solid ${theme.colors.gray[4]}`,
+          borderRadius: rem(6),
+          textDecoration: "none",
+        }}
+      >
+        <Text
+          component="span"
+          ff={theme.fontFamilyMonospace}
+          fw={800}
+          fz={10}
+          lh={1}
+          style={{ letterSpacing: rem(0.5) }}
+        >
+          I<span style={{ padding: "0 1px" }}>/</span>O
+        </Text>
+      </Box>
+
+      <Box style={{ lineHeight: 1.1, overflow: "hidden" }}>
+        <Text
+          fw={600}
+          fz="sm"
+          tt="uppercase"
+          style={{
+            letterSpacing: rem(2.4),
+            whiteSpace: "nowrap",
+            textOverflow: "ellipsis",
+            overflow: "hidden",
+          }}
+          title={title}
+          aria-label={title}
+        >
+          {title}
+        </Text>
+        <Text
+          c="dimmed"
+          fz={10}
+          tt="uppercase"
+          style={{
+            letterSpacing: rem(2),
+            whiteSpace: "nowrap",
+            textOverflow: "ellipsis",
+            overflow: "hidden",
+          }}
+          title={tagline}
+        >
+          {tagline}
+        </Text>
+      </Box>
+    </Group>
+  );
+}
+
 export default function HeaderBar({
   opened,
   setOpened,
   title,
+  tagline,
+  href,
 }: HeaderBarProps) {
   return (
     <Group h="100%" px="md" justify="space-between" wrap="nowrap">
-      <Group gap="sm">
+      <Group gap="sm" wrap="nowrap">
         <Burger
           opened={opened}
           onClick={() => setOpened(!opened)}
           hiddenFrom="sm"
         />
-        <Text fw={600}>{title ?? "I/O SOLUTIONS"}</Text>
+
+        <BrandBar title={title} tagline={tagline} href={href} />
       </Group>
 
       <Group gap="sm" wrap="nowrap">

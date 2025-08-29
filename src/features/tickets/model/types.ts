@@ -1,41 +1,66 @@
-export type TicketStatus = "open" | "in_progress" | "resolved" | "closed";
-export type TicketPriority = "low" | "medium" | "high" | "urgent";
+// ==== Tickets domain types (UI layer) ====
 
-export type Ticket = {
-  id: string; // UUID or code
-  code: string; // e.g., TCK-2025-000123
-  subject: string;
-  requester: string;
-  priority: TicketPriority;
-  status: TicketStatus;
-  createdAt: string; // ISO datetime
-  updatedAt: string; // ISO datetime
-  assignee?: string;
-  description?: string;
+// Prioritas tiket
+export type Priority = "low" | "medium" | "high" | "urgent";
+// Alias kompatibilitas
+export type TicketPriority = Priority;
 
-  resolution?: TicketResolution; // terisi saat status "resolved/closed"
-};
+// Status tiket
+export type Status = "open" | "in_progress" | "resolved" | "closed";
+// Alias kompatibilitas
+export type TicketStatus = Status;
 
-export type Part = {
-  id: string;
-  name: string;
-  sku?: string;
-  unit?: string; // pcs, set, dll
-  stock?: number;
-};
-
+// Part yang dipakai saat perbaikan (refer ke Inventory by id)
 export type PartUsage = {
-  partId: string;
+  partId: string; // id dari Inventory
   name: string;
   qty: number;
 };
 
+// Biaya tambahan kustom (servis, konsultasi, kunjungan, dll.)
+export type CustomCost = {
+  label: string;
+  amount: number; // IDR, >= 0
+};
+
+// Data resolusi tiket
 export type TicketResolution = {
   rootCause: string;
   solution: string;
-  parts: PartUsage[];
-  photos: string[]; // UI-only: pakai Object URLs untuk preview
-  tags: string[]; // hashtag/label
-  resolvedBy: string; // teknisi
+  parts?: PartUsage[];
+  photos?: string[];
+  tags?: string[];
+  extraCosts?: CustomCost[];
+  // metadata penyelesaian
+  resolvedBy: string; // user id / name
   resolvedAt: string; // ISO datetime
 };
+
+// Entitas Ticket
+export type Ticket = {
+  id: string;
+  code: string;
+  subject: string;
+  requester: string;
+  priority: Priority;
+  status: Status;
+  assignee?: string | null; // user id / name
+  description?: string; // <— dipakai di detail & form
+  createdAt: string; // ISO
+  updatedAt: string; // ISO
+  resolution?: TicketResolution;
+};
+
+// Kumpulan konstanta (opsional berguna untuk filter UI)
+export const TICKET_PRIORITIES: Priority[] = [
+  "low",
+  "medium",
+  "high",
+  "urgent",
+];
+export const TICKET_STATUSES: Status[] = [
+  "open",
+  "in_progress",
+  "resolved",
+  "closed",
+];

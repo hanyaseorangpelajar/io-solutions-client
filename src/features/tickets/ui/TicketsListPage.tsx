@@ -253,6 +253,32 @@ export function TicketsListPage() {
     },
   ];
 
+  // ---- Resolve modal wiring ----
+  const resolveOpen = resolveFor !== null;
+
+  const closeResolve = () => setResolveFor(null);
+
+  const handleResolveSubmit = (payload: TicketResolutionInput) => {
+    if (!resolveFor) return;
+
+    const ids = resolveFor === "bulk" ? Array.from(selected) : [resolveFor.id];
+
+    // Untuk single resolve, kita pakai assignee tiket tsb sebagai resolvedBy (fallback di applyResolution juga aman)
+    const resolvedBy =
+      resolveFor !== "bulk" ? resolveFor.assignee || undefined : undefined;
+
+    applyResolution(ids, payload, resolvedBy);
+
+    // Bersihkan selection yang telah diproses
+    setSelected((prev) => {
+      const s = new Set(prev);
+      ids.forEach((id) => s.delete(id));
+      return s;
+    });
+
+    closeResolve();
+  };
+
   return (
     <Stack gap="md">
       <Group justify="space-between" align="center">
@@ -406,31 +432,9 @@ export function TicketsListPage() {
 
       {/* Modal Resolve (single / bulk) */}
       <ResolveTicketModal
-        opened={!!resolveFor}
-        onClose={() => setResolveFor(null)}
-        title={
-          resolveFor === "bulk"
-            ? `Tandai selesai (${selected.size} tiket)`
-            : "Tandai tiket selesai"
-        }
-        assignee={
-          resolveFor !== "bulk" && resolveFor ? resolveFor.assignee : undefined
-        }
-        onSubmit={(payload) => {
-          const ids =
-            resolveFor === "bulk"
-              ? Array.from(selected)
-              : resolveFor
-              ? [resolveFor.id]
-              : [];
-          const resolvedBy =
-            resolveFor !== "bulk" && resolveFor?.assignee
-              ? resolveFor.assignee
-              : undefined; // fallback ke assignee tiket masing2 di applyResolution
-          applyResolution(ids, payload as TicketResolutionInput, resolvedBy);
-          if (resolveFor === "bulk") setSelected(new Set());
-          setResolveFor(null);
-        }}
+        opened={resolveOpen}
+        onClose={closeResolve}
+        onSubmit={handleResolveSubmit}
       />
     </Stack>
   );

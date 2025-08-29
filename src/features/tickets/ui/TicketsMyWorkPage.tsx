@@ -107,7 +107,7 @@ export default function TicketsMyWorkPage() {
   return (
     <Stack gap="md">
       <Group justify="space-between" align="center">
-        <Title order={3}>My Work</Title>
+        <Title order={3}>Works</Title>
         <TextField
           label="Cari"
           placeholder="Kode / Subjek / Pemohon"
