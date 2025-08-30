@@ -1,14 +1,17 @@
 import { AppShellLayout, defaultNav } from "@/features/shell";
 
-export const metadata = {
-  title: "Dashboard — I/O SOLUTIONS",
-};
-
 export default function DashboardLayout({
   children,
-}: Readonly<{ children: React.ReactNode }>) {
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <AppShellLayout navItems={defaultNav} headerTitle="Dashboard">
+    <AppShellLayout
+      navItems={defaultNav}
+      headerTitle="I/O SOLUTIONS"
+      headerTagline="DATA • INFORMATION • KNOWLEDGE • WISDOM"
+      headerHref="/(dashboard)/sysadmin"
+    >
       {children}
     </AppShellLayout>
   );

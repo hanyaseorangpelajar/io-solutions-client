@@ -7,7 +7,6 @@ import {
   NavLink,
   ScrollArea,
   Stack,
-  Text,
   ActionIcon,
   Group,
 } from "@mantine/core";
@@ -16,12 +15,16 @@ import { useMemo, useState } from "react";
 import type { NavItem } from "../model/nav";
 
 type SidebarNavProps = {
-  items: NavItem[];
+  items?: NavItem[]; // boleh undefined: defensif
   onNavigate?: () => void;
 };
 
-// Kumpulkan semua href dari pohon nav
-function collectHrefs(nodes: NavItem[], acc: string[] = []): string[] {
+// Kumpulkan semua href dari pohon nav (aman bila nodes bukan array)
+function collectHrefs(
+  nodes: NavItem[] | undefined | null,
+  acc: string[] = []
+): string[] {
+  if (!Array.isArray(nodes)) return acc;
   for (const n of nodes) {
     if (n.href) acc.push(n.href);
     if (n.children?.length) collectHrefs(n.children, acc);
@@ -30,8 +33,11 @@ function collectHrefs(nodes: NavItem[], acc: string[] = []): string[] {
 }
 
 // Temukan href terpanjang yang cocok dengan pathname saat ini
-function findActiveHref(items: NavItem[], pathname: string): string | null {
-  const hrefs = collectHrefs(items);
+function findActiveHref(
+  items: NavItem[] | undefined | null,
+  pathname: string
+): string | null {
+  const hrefs = collectHrefs(items, []);
   const candidates = hrefs.filter(
     (h) => pathname === h || pathname.startsWith(h + "/")
   );
@@ -40,17 +46,17 @@ function findActiveHref(items: NavItem[], pathname: string): string | null {
 }
 
 export default function SidebarNav({ items, onNavigate }: SidebarNavProps) {
+  const list = Array.isArray(items) ? items : [];
   const pathname = usePathname();
   const activeHref = useMemo(
-    () => findActiveHref(items, pathname),
-    [items, pathname]
+    () => findActiveHref(list, pathname),
+    [list, pathname]
   );
 
   // inisialisasi state open per-group (default: open)
   const groupKeys = useMemo(
-    () =>
-      items.filter((i) => i.group && i.children?.length).map((g) => g.label),
-    [items]
+    () => list.filter((i) => i.group && i.children?.length).map((g) => g.label),
+    [list]
   );
   const [open, setOpen] = useState<Record<string, boolean>>(
     Object.fromEntries(groupKeys.map((k) => [k, true]))
@@ -66,7 +72,6 @@ export default function SidebarNav({ items, onNavigate }: SidebarNavProps) {
       <NavLink
         key={item.href ?? item.label}
         active={active}
-        leftSection={item.icon}
         label={item.label}
         component={item.href ? (Link as any) : undefined}
         href={item.href as any}
@@ -86,9 +91,18 @@ export default function SidebarNav({ items, onNavigate }: SidebarNavProps) {
     return (
       <Box key={`group-${k}`}>
         <Group px="md" py={6} justify="space-between">
-          <Text size="xs" fw={600} c="dimmed" tt="uppercase" lts={0.5}>
+          {/* Header group saja, TIDAK ada teks "Navigasi" global */}
+          <span
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: "var(--mantine-color-dimmed)",
+              textTransform: "uppercase",
+              letterSpacing: 0.5,
+            }}
+          >
             {group.label}
-          </Text>
+          </span>
           <ActionIcon
             size="sm"
             variant="subtle"
@@ -115,10 +129,10 @@ export default function SidebarNav({ items, onNavigate }: SidebarNavProps) {
   };
 
   return (
-    <Stack gap="xs" h="100%">
+    <Stack gap={4} h="100%">
       <ScrollArea style={{ flex: 1 }} type="auto">
         <Stack gap={4} p="xs">
-          {items.map((it) => (it.group ? renderGroup(it) : renderLink(it)))}
+          {list.map((it) => (it.group ? renderGroup(it) : renderLink(it)))}
         </Stack>
       </ScrollArea>
     </Stack>

@@ -14,29 +14,39 @@ import { MOCK_TICKETS } from "../model/mock";
 import { formatDateTime } from "../utils/format";
 import { ActionsDropdown } from "@/shared/ui/menus";
 
-// ⚠️ Placeholder “user aktif”. Nanti ganti dari auth/session.
-const CURRENT_TECH = "tech02";
-
 export default function TicketsMyWorkPage() {
   const [q, setQ] = useState("");
-  const [rows, setRows] = useState<Ticket[]>(MOCK_TICKETS);
+  // salin mock agar aman dimutasi di UI
+  const [rows, setRows] = useState<Ticket[]>(() => [...MOCK_TICKETS]);
   const [resolveFor, setResolveFor] = useState<null | Ticket>(null);
 
-  // Ticket yang dikerjakan oleh teknisi aktif: status in_progress + assignee = CURRENT_TECH
+  // TODO: ganti dengan user/tech dari auth/session
+  // fallback: ambil assignee pertama yang ada di mock, atau 'tech01'
+  const currentTech = useMemo(() => {
+    const any = rows.find((t) => !!t.assignee)?.assignee;
+    return any ?? "tech01";
+  }, [rows]);
+
+  // Definisi "tiket aktif" yang masih dikerjakan teknisi:
+  // - assignee = currentTech
+  // - status belum 'resolved' (dan opsional: belum 'closed' jika ada)
   const myTickets = useMemo(() => {
     const term = q.trim().toLowerCase();
+
     return rows
-      .filter(
-        (t) =>
-          t.status === "in_progress" &&
-          t.assignee === CURRENT_TECH &&
-          (term.length === 0 ||
-            t.code.toLowerCase().includes(term) ||
-            t.subject.toLowerCase().includes(term) ||
-            t.requester.toLowerCase().includes(term))
-      )
+      .filter((t) => {
+        const owned = t.assignee === currentTech;
+        const active =
+          t.status !== "resolved" && t.status !== ("closed" as any); // sesuaikan jika punya status 'closed'
+        const matchesQuery =
+          term.length === 0 ||
+          t.code.toLowerCase().includes(term) ||
+          t.subject.toLowerCase().includes(term) ||
+          t.requester.toLowerCase().includes(term);
+        return owned && active && matchesQuery;
+      })
       .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
-  }, [rows, q]);
+  }, [rows, q, currentTech]);
 
   const applyResolved = (id: string, payload: TicketResolutionInput) => {
     const now = new Date().toISOString();
@@ -50,7 +60,7 @@ export default function TicketsMyWorkPage() {
               resolution: {
                 ...payload,
                 resolvedAt: now,
-                resolvedBy: t.assignee ?? CURRENT_TECH,
+                resolvedBy: t.assignee ?? currentTech,
               },
             }
           : t
@@ -107,7 +117,7 @@ export default function TicketsMyWorkPage() {
   return (
     <Stack gap="md">
       <Group justify="space-between" align="center">
-        <Title order={3}>Works</Title>
+        <Title order={3}>My Work</Title>
         <TextField
           label="Cari"
           placeholder="Kode / Subjek / Pemohon"
@@ -131,7 +141,7 @@ export default function TicketsMyWorkPage() {
       <ResolveTicketModal
         opened={!!resolveFor}
         onClose={() => setResolveFor(null)}
-        assignee={CURRENT_TECH}
+        assignee={currentTech}
         onSubmit={(payload) => {
           if (!resolveFor) return;
           applyResolved(resolveFor.id, payload);

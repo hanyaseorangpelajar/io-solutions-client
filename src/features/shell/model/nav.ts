@@ -1,52 +1,63 @@
-import type { ReactNode } from "react";
+// Nav TANPA ikon
 
 export type NavItem = {
   label: string;
   href?: string;
-  icon?: ReactNode;
-  children?: NavItem[];
   group?: boolean;
+  children?: NavItem[];
 };
 
-export const defaultNav: NavItem[] = [
-  { label: "SysAdmin", href: "/sysadmin" },
+export function isGroup(
+  item: NavItem
+): item is NavItem & { group: true; children: NavItem[] } {
+  return !!item.group && Array.isArray(item.children);
+}
+
+export const SYSADMIN_NAV: NavItem[] = [
+  // ← route dashboard benar: /sysadmin (route group () tidak muncul di URL)
+  { label: "Dashboard", href: "/sysadmin" },
+
   {
-    label: "Tickets",
     group: true,
+    label: "Tickets",
     children: [
-      { label: "Works", href: "/views/tickets/my" },
       { label: "Tickets List", href: "/views/tickets" },
       { label: "Tickets History", href: "/views/tickets/history" },
+      { label: "My Work", href: "/views/tickets/my-work" },
+      { label: "Repository", href: "/views/tickets/repository" },
     ],
   },
 
   {
+    group: true,
     label: "Audit",
-    group: true,
-    children: [
-      { label: "Ticket Audit Quality", href: "/views/audit/quality" },
-      { label: "Repository", href: "/views/audit/repository" },
-    ],
+    children: [{ label: "Ticket Audit Quality", href: "/views/audit" }],
   },
 
   {
-    label: "Inventory",
     group: true,
+    label: "Inventory",
     children: [
-      { label: "Items", href: "/views/inventory/items" },
+      { label: "Inventory Items", href: "/inventory" },
       { label: "Stock Movements", href: "/views/inventory/movements" },
     ],
   },
 
-  // Nanti: SystemSolution (PC/Server/IoT build templates) — akan dibuat sebagai group baru di sini.
+  {
+    group: true,
+    label: "Access Control",
+    children: [
+      { label: "RBAC (Roles & Permissions)", href: "/views/access/rbac" },
+      { label: "Staff", href: "/views/access/staff" },
+    ],
+  },
+
   {
     group: true,
     label: "Miscellaneous",
     children: [
-      {
-        label: "System Builder",
-        href: "/views/misc/system-builder",
-      },
+      { label: "System Builder", href: "/views/misc/system-builder" },
+      { label: "RMA & Warranty", href: "/views/misc/rma" },
     ],
   },
 ];
