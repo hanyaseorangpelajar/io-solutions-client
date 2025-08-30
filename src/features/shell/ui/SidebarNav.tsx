@@ -47,6 +47,7 @@ function findActiveHref(
 
 export default function SidebarNav({ items, onNavigate }: SidebarNavProps) {
   const list = Array.isArray(items) ? items : [];
+
   const pathname = usePathname();
   const activeHref = useMemo(
     () => findActiveHref(list, pathname),
@@ -91,7 +92,7 @@ export default function SidebarNav({ items, onNavigate }: SidebarNavProps) {
     return (
       <Box key={`group-${k}`}>
         <Group px="md" py={6} justify="space-between">
-          {/* Header group saja, TIDAK ada teks "Navigasi" global */}
+          {/* Hanya header group, tanpa teks "Navigasi" global */}
           <span
             style={{
               fontSize: 12,

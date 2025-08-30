@@ -14,7 +14,7 @@ export function isGroup(
 }
 
 export const SYSADMIN_NAV: NavItem[] = [
-  // ← route dashboard benar: /sysadmin (route group () tidak muncul di URL)
+  // route group () tidak muncul di URL
   { label: "Dashboard", href: "/sysadmin" },
 
   {
@@ -23,15 +23,17 @@ export const SYSADMIN_NAV: NavItem[] = [
     children: [
       { label: "Tickets List", href: "/views/tickets" },
       { label: "Tickets History", href: "/views/tickets/history" },
-      { label: "My Work", href: "/views/tickets/my-work" },
-      { label: "Repository", href: "/views/tickets/repository" },
+      { label: "Works", href: "/views/tickets/works" },
     ],
   },
 
   {
     group: true,
     label: "Audit",
-    children: [{ label: "Ticket Audit Quality", href: "/views/audit" }],
+    children: [
+      { label: "Ticket Audit Quality", href: "/views/audit/quality" },
+      { label: "Repository", href: "/views/audit/repository" },
+    ],
   },
 
   {
@@ -43,12 +45,23 @@ export const SYSADMIN_NAV: NavItem[] = [
     ],
   },
 
+  // Access Control
   {
     group: true,
     label: "Access Control",
     children: [
       { label: "RBAC (Roles & Permissions)", href: "/views/access/rbac" },
       { label: "Staff", href: "/views/access/staff" },
+    ],
+  },
+
+  // 🆕 Pengaturan
+  {
+    group: true,
+    label: "Pengaturan",
+    children: [
+      { label: "Akun", href: "/views/settings/account" },
+      { label: "Dukungan Pengguna", href: "/views/settings/support" },
     ],
   },
 
