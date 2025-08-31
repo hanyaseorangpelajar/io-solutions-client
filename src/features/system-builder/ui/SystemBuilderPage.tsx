@@ -2,14 +2,15 @@
 
 import { useMemo, useState } from "react";
 import {
+  Badge,
   Button,
   Card,
   Divider,
   Group,
+  NumberInput,
   Paper,
   SimpleGrid,
   Stack,
-  Switch,
   Text,
   Title,
 } from "@mantine/core";
@@ -18,7 +19,7 @@ import type {
   ComponentCategory,
   BuildId,
 } from "../model/types";
-import { REQUIRED_BY_SYSTEM, COMPONENT_LABEL } from "../model/types";
+import { REQUIRED_BY_SYSTEM } from "../model/types";
 import ComponentPicker, { type ComponentPickerValue } from "./ComponentPicker";
 import BuildSummary from "./BuildSummary";
 import SystemTypeCard from "./SystemTypeCard";
@@ -30,7 +31,17 @@ import {
   IconRouter,
 } from "@tabler/icons-react";
 
-// Katalog sistem (bisa tambah kapan saja tanpa sentuh tipe)
+// Harga dari inventory toko
+import { INVENTORY_ITEMS } from "@/features/inventory";
+
+// ———————————————————————————————————————————————————————————
+// Helper kecil
+const toNum = (v: any, fb = 0) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fb;
+};
+// ———————————————————————————————————————————————————————————
+
 const SYSTEMS: {
   id: BuildId;
   label: string;
@@ -59,8 +70,6 @@ const SYSTEMS: {
     icon: <IconCircuitBattery size={20} />,
     tags: ["low-power", "compact"],
   },
-
-  // Contoh tambahan ke depan (ID bebas string):
   {
     id: "router-ap" as BuildId,
     label: "Router/AP",
@@ -79,9 +88,9 @@ const SYSTEMS: {
 
 export default function SystemBuilderPage() {
   const [systemId, setSystemId] = useState<BuildId>("desktop");
-  const [preferStore, setPreferStore] = useState(true);
+  const [preferStore] = useState(true); // kalau nanti mau toggle, tinggal aktifkan
+  const [budget, setBudget] = useState<number | "">("");
 
-  // selection state per kategori
   const [selection, setSelection] = useState<BuilderSelection>({});
 
   const requiredCats = useMemo(
@@ -95,6 +104,76 @@ export default function SystemBuilderPage() {
 
   const resetAll = () => setSelection({});
 
+  // Peta harga: INVENTORY TOKO
+  const storePriceMap = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const it of (INVENTORY_ITEMS ?? []) as any[]) {
+      const id = String(it?.id ?? it?.partId ?? it?.code ?? it?.sku ?? "");
+      if (!id) continue;
+      const price = toNum(it?.unitPrice ?? it?.price ?? it?.cost ?? 0);
+      m.set(id, price);
+    }
+    return m;
+  }, []);
+
+  // Peta harga: MARKET (placeholder—kosong dulu sampai dataset siap)
+  const marketPriceMap = useMemo(() => {
+    // TODO sambungkan ke dataset market kamu:
+    // const m = new Map<string, number>();
+    // for (const it of (MARKET_ITEMS ?? []) as any[]) {
+    //   const id = String(it?.id ?? it?.sku ?? it?.code ?? "");
+    //   if (!id) continue;
+    //   m.set(id, toNum(it?.price ?? it?.offerPrice ?? 0));
+    // }
+    // return m;
+    return new Map<string, number>();
+  }, []);
+
+  // Ambil harga yang paling “pasti” dari nilai picker
+  function getPrice(val: ComponentPickerValue): number {
+    if (!val) return 0;
+
+    // 1) Jika picker mengirimkan price langsung
+    const override = (val as any)?.overridePrice ?? (val as any)?.price;
+    if (override != null) return toNum(override);
+
+    // 2) Lookup berdasarkan source & itemId
+    const itemId = val.itemId ? String(val.itemId) : null;
+    if (!itemId) return 0;
+
+    if (val.source === "store") {
+      return storePriceMap.get(itemId) ?? 0;
+    }
+    if (val.source === "market") {
+      return marketPriceMap.get(itemId) ?? 0;
+    }
+    return 0;
+  }
+
+  // Total harga komponen terpilih (wajib + opsional), dukung qty jika ada
+  const grandTotal = useMemo(() => {
+    let sum = 0;
+    for (const [, val] of Object.entries(selection) as [
+      ComponentCategory,
+      ComponentPickerValue
+    ][]) {
+      if (
+        !val?.itemId &&
+        (val as any)?.price == null &&
+        (val as any)?.overridePrice == null
+      ) {
+        continue; // belum memilih apa-apa
+      }
+      const qty = Math.max(1, toNum((val as any)?.qty ?? 1));
+      sum += getPrice(val) * qty;
+    }
+    return sum;
+  }, [selection, storePriceMap, marketPriceMap]);
+
+  const numericBudget = typeof budget === "number" ? budget : 0;
+  const remaining = numericBudget - grandTotal;
+  const isOver = remaining < 0;
+
   return (
     <Stack gap="md">
       <Group justify="space-between" align="center">
@@ -107,11 +186,6 @@ export default function SystemBuilderPage() {
         </Stack>
 
         <Group wrap="wrap" gap="sm">
-          <Switch
-            checked={preferStore}
-            onChange={(e) => setPreferStore(e.currentTarget.checked)}
-            label="Prefer toko (jika tersedia)"
-          />
           <Button variant="default" onClick={resetAll}>
             Reset
           </Button>
@@ -119,7 +193,7 @@ export default function SystemBuilderPage() {
         </Group>
       </Group>
 
-      {/* Grid pilihan sistem */}
+      {/* Pilihan sistem */}
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
         {SYSTEMS.map((s) => (
           <SystemTypeCard
@@ -137,8 +211,8 @@ export default function SystemBuilderPage() {
 
       <Paper withBorder radius="md" p="md">
         <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
+          {/* KIRI: picker komponen */}
           <Stack gap="lg">
-            {/* KOMPONEN WAJIB */}
             <Card withBorder radius="md" p="md">
               <Title order={6} mb="sm">
                 Komponen Wajib
@@ -161,7 +235,6 @@ export default function SystemBuilderPage() {
               </Stack>
             </Card>
 
-            {/* KOMPONEN OPSIONAL */}
             <Card withBorder radius="md" p="md">
               <Title order={6} mb="sm">
                 Komponen Opsional
@@ -187,13 +260,71 @@ export default function SystemBuilderPage() {
             </Card>
           </Stack>
 
+          {/* KANAN: budget + ringkasan */}
           <Stack gap="md">
-            <BuildSummary systemId={systemId} selection={selection} />
+            <Card withBorder radius="md" p="md">
+              <Title order={6} mb="xs">
+                Budget Pelanggan
+              </Title>
+              <NumberInput
+                label="Budget (Rp)"
+                hideControls
+                min={0}
+                value={budget}
+                onChange={(v) => setBudget(typeof v === "number" ? v : "")}
+                w="100%"
+              />
+              <Text size="xs" c="dimmed" mt="xs">
+                Tentukan anggaran agar total komponen selaras dengan ekspektasi
+                pelanggan.
+              </Text>
+            </Card>
+
+            <Card withBorder radius="md" p="md">
+              <Group justify="space-between" align="center" mb="xs">
+                <Title order={6}>Ringkasan Budget</Title>
+                <Badge color={isOver ? "red" : "teal"} variant="light">
+                  {isOver ? "Defisit" : "Sisa"}
+                </Badge>
+              </Group>
+
+              <Stack gap={6}>
+                <Group justify="space-between">
+                  <Text c="dimmed">Budget</Text>
+                  <Text fw={600}>{numericBudget.toLocaleString("id-ID")}</Text>
+                </Group>
+                <Group justify="space-between">
+                  <Text c="dimmed">Perkiraan total</Text>
+                  <Text fw={600}>{grandTotal.toLocaleString("id-ID")}</Text>
+                </Group>
+                <Divider my="xs" />
+                <Group justify="space-between">
+                  <Text c="dimmed">{isOver ? "Defisit" : "Sisa budget"}</Text>
+                  <Text fw={700} c={isOver ? "red" : "teal"}>
+                    {Math.abs(remaining).toLocaleString("id-ID")}
+                  </Text>
+                </Group>
+                <Text size="xs" c="dimmed">
+                  Total menjumlahkan semua komponen yang dipilih (wajib &
+                  opsional). Item sumber <em>market</em> ikut terhitung bila
+                  komponen mengisi harga (<code>price</code>/
+                  <code>overridePrice</code>); jika tidak, sementara 0.
+                </Text>
+              </Stack>
+            </Card>
+
+            <BuildSummary
+              systemId={systemId}
+              selection={selection}
+              // opsional: oper budget ke BuildSummary bila diperlukan
+              // @ts-expect-error jika komponen belum definisikan prop-nya
+              budget={typeof budget === "number" ? budget : undefined}
+            />
+
             <Divider />
             <Text size="sm" c="dimmed">
-              Catatan: ini versi UI. Validasi kompatibilitas (socket, TDP, form
-              factor) & kalkulasi kebutuhan PSU bisa ditambahkan memakai
-              metadata dataset.
+              Nanti kita tambahkan validasi kompatibilitas (socket, TDP, form
+              factor) dan rekomendasi PSU otomatis.
             </Text>
           </Stack>
         </SimpleGrid>

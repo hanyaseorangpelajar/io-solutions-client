@@ -1,5 +1,3 @@
-// Nav TANPA ikon
-
 export type NavItem = {
   label: string;
   href?: string;
@@ -14,16 +12,15 @@ export function isGroup(
 }
 
 export const SYSADMIN_NAV: NavItem[] = [
-  // route group () tidak muncul di URL
   { label: "Dashboard", href: "/sysadmin" },
-
+  { label: "Dashboard", href: "/admin" },
+  { label: "Dashboard", href: "/teknisi" },
   {
     group: true,
-    label: "Tickets",
+    label: "Access Control",
     children: [
-      { label: "Tickets List", href: "/views/tickets" },
-      { label: "Tickets History", href: "/views/tickets/history" },
-      { label: "Works", href: "/views/tickets/works" },
+      { label: "Staff", href: "/views/access/staff" },
+      { label: "Roles & Permissions", href: "/views/access/rbac" },
     ],
   },
 
@@ -31,8 +28,8 @@ export const SYSADMIN_NAV: NavItem[] = [
     group: true,
     label: "Audit",
     children: [
-      { label: "Ticket Audit Quality", href: "/views/audit/quality" },
       { label: "Repository", href: "/views/audit/repository" },
+      { label: "Ticket Audit Quality", href: "/views/audit/quality" },
     ],
   },
 
@@ -40,28 +37,29 @@ export const SYSADMIN_NAV: NavItem[] = [
     group: true,
     label: "Inventory",
     children: [
-      { label: "Inventory Items", href: "/inventory" },
+      { label: "Inventory Items", href: "/views/inventory/items" },
       { label: "Stock Movements", href: "/views/inventory/movements" },
     ],
   },
 
-  // Access Control
   {
     group: true,
-    label: "Access Control",
+    label: "Laporan",
     children: [
-      { label: "RBAC (Roles & Permissions)", href: "/views/access/rbac" },
-      { label: "Staff", href: "/views/access/staff" },
+      { label: "Inventory", href: "/views/reports/inventory" },
+      { label: "Ringkasan", href: "/views/reports/overview" },
+      { label: "RMA & Warranty", href: "/views/reports/rma" },
+      { label: "Tickets", href: "/views/reports/tickets" },
     ],
   },
 
-  // 🆕 Pengaturan
   {
     group: true,
-    label: "Pengaturan",
+    label: "Tickets",
     children: [
-      { label: "Akun", href: "/views/settings/account" },
-      { label: "Dukungan Pengguna", href: "/views/settings/support" },
+      { label: "Tickets List", href: "/views/tickets/list" },
+      { label: "Tickets History", href: "/views/tickets/history" },
+      { label: "Works", href: "/views/tickets/works" },
     ],
   },
 
@@ -69,8 +67,16 @@ export const SYSADMIN_NAV: NavItem[] = [
     group: true,
     label: "Miscellaneous",
     children: [
-      { label: "System Builder", href: "/views/misc/system-builder" },
       { label: "RMA & Warranty", href: "/views/misc/rma" },
+      { label: "System Builder", href: "/views/misc/system-builder" },
+    ],
+  },
+  {
+    group: true,
+    label: "Pengaturan",
+    children: [
+      { label: "Akun", href: "/views/settings/account" },
+      { label: "Dukungan Pengguna", href: "/views/settings/support" },
     ],
   },
 ];
