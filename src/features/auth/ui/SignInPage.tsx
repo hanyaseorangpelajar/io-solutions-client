@@ -1,106 +1,86 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import {
-  Anchor,
-  Button,
-  Checkbox,
-  Divider,
-  Group,
-  Stack,
-  Text,
-} from "@mantine/core";
+import { useState } from "react";
+import { Alert, Anchor, Button, Stack, Text } from "@mantine/core";
+import { useRouter } from "next/navigation";
+
 import AuthLayout from "./AuthLayout";
 import FormHeader from "./FormHeader";
-import SSOButtons from "./SSOButtons";
 import TextField from "@/shared/ui/inputs/TextField";
 import PasswordField from "@/shared/ui/inputs/PasswordField";
-import { SignInSchema } from "../model/schema";
-import type { SignInInput } from "../model/types";
+
+// Firebase Auth helpers
 
 export function SignInPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errMsg, setErrMsg] = useState<string | null>(null);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isValid, isSubmitting },
-    watch,
-  } = useForm<SignInInput>({
-    resolver: zodResolver(SignInSchema),
-    defaultValues: { identifier: "", password: "", remember: false },
-    mode: "onChange",
-  });
-
-  const onSubmit = handleSubmit(async () => {
+  async function handleEmailSignIn(e: React.FormEvent) {
+    e.preventDefault();
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 700));
-    setLoading(false);
-  });
-
-  useEffect(() => {
-    if (!isSubmitting && loading) setLoading(false);
-  }, [isSubmitting, loading]);
+    setErrMsg(null);
+    try {
+      await loginWithEmail(email, password);
+      // TODO: ganti redirect sesuai role setelah claims siap
+      router.replace("/sysadmin");
+    } catch (err: any) {
+      setErrMsg(err?.message ?? "Gagal masuk. Periksa email & kata sandi.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <AuthLayout panelWidth={420}>
       <Stack gap="md">
-        <FormHeader title="Masuk" subtitle="Gunakan email atau username" />
+        <FormHeader title="Masuk" subtitle="Gunakan email dan kata sandi" />
 
-        <form onSubmit={onSubmit} noValidate>
+        {errMsg && (
+          <Alert color="red" variant="light">
+            {errMsg}
+          </Alert>
+        )}
+
+        <form onSubmit={handleEmailSignIn} noValidate>
           <Stack gap="sm">
-            <SSOButtons />
-            <Divider label="atau" my="xs" />
-
             <TextField
-              label="Email / Username"
-              placeholder="you@domain.com atau johndoe"
-              autoComplete="username"
-              autoFocus
-              error={errors.identifier?.message}
-              {...register("identifier")}
+              label="Email"
+              placeholder="you@domain.com"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.currentTarget.value)}
             />
 
             <PasswordField
               label="Kata sandi"
               placeholder="••••••••"
               autoComplete="current-password"
-              error={errors.password?.message}
-              showCapsLockHint
-              {...register("password")}
+              required
+              value={password}
+              onChange={(e) => setPassword(e.currentTarget.value)}
             />
 
-            <Group justify="space-between" mt="xs">
-              <Checkbox
-                label="Ingat saya"
-                {...register("remember")}
-                checked={watch("remember")}
-              />
-              <Anchor size="sm" href="/forgot-password">
-                Lupa kata sandi?
-              </Anchor>
-            </Group>
-
-            <Button
-              type="submit"
-              loading={loading || isSubmitting}
-              mt="sm"
-              fullWidth
-              disabled={!isValid}
-            >
+            <Button type="submit" loading={loading} mt="sm" fullWidth>
               Masuk
             </Button>
+
+            <Text c="dimmed" size="sm" ta="center">
+              <Anchor href="/forgot-password" size="sm">
+                Lupa kata sandi?
+              </Anchor>
+              {" · "}
+              Belum punya akun?{" "}
+              <Anchor href="/sign-up" size="sm">
+                Daftar
+              </Anchor>
+            </Text>
           </Stack>
         </form>
-
-        <Text size="sm" ta="center">
-          Belum punya akun?{" "}
-          <Anchor size="sm" href="/sign-up">
-            Daftar
-          </Anchor>
-        </Text>
       </Stack>
     </AuthLayout>
   );

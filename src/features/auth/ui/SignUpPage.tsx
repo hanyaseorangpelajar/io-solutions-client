@@ -7,38 +7,42 @@ import {
   Anchor,
   Button,
   Checkbox,
-  Divider,
   List,
   Progress,
   Stack,
   Text,
+  Alert,
 } from "@mantine/core";
 import AuthLayout from "./AuthLayout";
 import FormHeader from "./FormHeader";
-import SSOButtons from "./SSOButtons";
 import TextField from "@/shared/ui/inputs/TextField";
 import PasswordField from "@/shared/ui/inputs/PasswordField";
 import { SignUpSchema } from "../model/schema";
 import type { SignUpInput } from "../model/types";
 
-/** Skor kekuatan password untuk UI */
-function scorePassword(pw: string) {
+// Firebase helpers
+import { updateProfile } from "firebase/auth";
+
+/** Skor kekuatan password untuk UI – aman terhadap null/undefined */
+function scorePassword(pw?: string | null) {
+  const s = pw ?? "";
   let score = 0;
-  if (pw.length >= 8) score++;
-  if (/[a-z]/.test(pw)) score++;
-  if (/[A-Z]/.test(pw)) score++;
-  if (/\d/.test(pw)) score++;
-  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  if (s.length >= 8) score++;
+  if (/[a-z]/.test(s)) score++;
+  if (/[A-Z]/.test(s)) score++;
+  if (/\d/.test(s)) score++;
+  if (/[^A-Za-z0-9]/.test(s)) score++;
   return score; // 0..5
 }
 
 export function SignUpPage() {
   const [loading, setLoading] = useState(false);
+  const [errMsg, setErrMsg] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isValid, isSubmitting },
+    formState: { errors, isSubmitting },
     watch,
     trigger,
   } = useForm<SignUpInput>({
@@ -50,9 +54,13 @@ export function SignUpPage() {
       confirmPassword: "",
       acceptTerms: false,
     },
-    mode: "onChange",
+    // Lebih ramah: error muncul setelah blur/touched
+    mode: "onTouched",
+    reValidateMode: "onChange",
   });
 
+  const name = watch("name");
+  const email = watch("email");
   const password = watch("password");
   const confirmPassword = watch("confirmPassword");
 
@@ -60,17 +68,24 @@ export function SignUpPage() {
   const pwPercent = (pwScore / 5) * 100;
   const pwColor = pwScore <= 2 ? "red" : pwScore === 3 ? "yellow" : "green";
 
-  const onSubmit = handleSubmit(async () => {
+  const onSubmit = handleSubmit(async ({ name, email, password }) => {
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setLoading(false);
+    setErrMsg(null);
+    try {
+      const user = await registerWithEmail(email, password);
+      if (user && name) {
+        await updateProfile(user, { displayName: name });
+      }
+      window.location.replace("/sysadmin");
+    } catch (err: any) {
+      setErrMsg(err?.message ?? "Gagal membuat akun. Coba lagi.");
+    } finally {
+      setLoading(false);
+    }
   });
 
   useEffect(() => {
-    if (!isSubmitting && loading) setLoading(false);
-  }, [isSubmitting, loading]);
-
-  useEffect(() => {
+    // Saat password berubah, validasi ulang konfirmasi agar pesan sinkron
     void trigger("confirmPassword");
   }, [password, trigger]);
 
@@ -82,11 +97,14 @@ export function SignUpPage() {
           subtitle="Buat akun baru untuk melanjutkan."
         />
 
+        {errMsg && (
+          <Alert color="red" variant="light">
+            {errMsg}
+          </Alert>
+        )}
+
         <form onSubmit={onSubmit} noValidate>
           <Stack gap="sm">
-            <SSOButtons />
-            <Divider label="atau" my="xs" />
-
             <TextField
               label="Nama lengkap"
               placeholder="Nama kamu"
@@ -163,28 +181,28 @@ export function SignUpPage() {
                 </Text>
               }
               error={errors.acceptTerms?.message}
+              // biar dikontrol oleh react-hook-form; jangan pasang `checked={...}`
               {...register("acceptTerms")}
-              checked={watch("acceptTerms")}
             />
 
+            {/* Tombol selalu aktif; validasi dijalankan saat submit */}
             <Button
               type="submit"
               loading={loading || isSubmitting}
               mt="sm"
               fullWidth
-              disabled={!isValid}
             >
               Buat akun
             </Button>
+
+            <Text size="sm" ta="center">
+              Sudah punya akun?{" "}
+              <Anchor size="sm" href="/sign-in">
+                Masuk
+              </Anchor>
+            </Text>
           </Stack>
         </form>
-
-        <Text size="sm" ta="center">
-          Sudah punya akun?{" "}
-          <Anchor size="sm" href="/sign-in">
-            Masuk
-          </Anchor>
-        </Text>
       </Stack>
     </AuthLayout>
   );

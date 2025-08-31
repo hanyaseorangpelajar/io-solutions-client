@@ -1,9 +1,4 @@
-import { SignInPage } from "@/features/auth";
-
-export const metadata = {
-  title: "Masuk — I/O SOLUTIONS",
-};
-
+import { SignInPage } from "@/features/auth/index";
 export default function Page() {
   return <SignInPage />;
 }
