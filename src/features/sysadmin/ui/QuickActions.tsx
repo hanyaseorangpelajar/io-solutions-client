@@ -7,7 +7,7 @@ import {
   IconBolt,
   IconShieldLock,
 } from "@tabler/icons-react";
-import ActionButton from "@/shared/ui/buttons/ActionButton";
+import { ActionButton } from "@/shared/ui";
 
 export default function QuickActions() {
   return (
