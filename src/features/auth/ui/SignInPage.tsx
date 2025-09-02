@@ -9,8 +9,6 @@ import FormHeader from "./FormHeader";
 import TextField from "@/shared/ui/inputs/TextField";
 import PasswordField from "@/shared/ui/inputs/PasswordField";
 
-// Firebase Auth helpers
-
 export function SignInPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -23,8 +21,10 @@ export function SignInPage() {
     setLoading(true);
     setErrMsg(null);
     try {
-      await loginWithEmail(email, password);
-      // TODO: ganti redirect sesuai role setelah claims siap
+      // Logic otentikasi akan ditambahkan di sini
+      console.log("Attempting to sign in with:", { email, password });
+      setLoading(false);
+      // Simulasikan login berhasil
       router.replace("/sysadmin");
     } catch (err: any) {
       setErrMsg(err?.message ?? "Gagal masuk. Periksa email & kata sandi.");

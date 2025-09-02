@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import {
@@ -19,9 +19,6 @@ import TextField from "@/shared/ui/inputs/TextField";
 import PasswordField from "@/shared/ui/inputs/PasswordField";
 import { SignUpSchema } from "../model/schema";
 import type { SignUpInput } from "../model/types";
-
-// Firebase helpers
-import { updateProfile } from "firebase/auth";
 
 /** Skor kekuatan password untuk UI – aman terhadap null/undefined */
 function scorePassword(pw?: string | null) {
@@ -44,7 +41,6 @@ export function SignUpPage() {
     handleSubmit,
     formState: { errors, isSubmitting },
     watch,
-    trigger,
   } = useForm<SignUpInput>({
     resolver: zodResolver(SignUpSchema),
     defaultValues: {
@@ -68,26 +64,21 @@ export function SignUpPage() {
   const pwPercent = (pwScore / 5) * 100;
   const pwColor = pwScore <= 2 ? "red" : pwScore === 3 ? "yellow" : "green";
 
-  const onSubmit = handleSubmit(async ({ name, email, password }) => {
+  const onSubmit = handleSubmit(async (data) => {
     setLoading(true);
     setErrMsg(null);
     try {
-      const user = await registerWithEmail(email, password);
-      if (user && name) {
-        await updateProfile(user, { displayName: name });
-      }
-      window.location.replace("/sysadmin");
+      // Logic pendaftaran akan ditambahkan di sini
+      console.log("Form submitted:", data);
+      setLoading(false);
+      // Simulasikan pendaftaran berhasil
+      setErrMsg(null);
     } catch (err: any) {
       setErrMsg(err?.message ?? "Gagal membuat akun. Coba lagi.");
     } finally {
       setLoading(false);
     }
   });
-
-  useEffect(() => {
-    // Saat password berubah, validasi ulang konfirmasi agar pesan sinkron
-    void trigger("confirmPassword");
-  }, [password, trigger]);
 
   return (
     <AuthLayout panelWidth={520}>
