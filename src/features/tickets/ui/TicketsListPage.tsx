@@ -10,6 +10,7 @@ import {
   Stack,
   Text,
   Title,
+  LoadingOverlay,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { notifications } from "@mantine/notifications";
@@ -20,18 +21,22 @@ import {
   IconPlus,
   IconTrash,
 } from "@tabler/icons-react";
-import Link from "next/link";
-import { useMemo, useState } from "react";
-import { MOCK_TICKETS } from "../model/mock";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { TicketResolutionInput } from "../model/schema";
 import type { Ticket, TicketPriority, TicketStatus } from "../model/types";
 import { formatDateTime } from "../utils/format";
 import ResolveTicketModal from "./ResolveTicketModal";
 import TicketFormModal from "./TicketFormModal";
 import TicketPriorityBadge from "./TicketPriorityBadge";
-import TicketRowActionsMenu from "./TicketRowActionsMenu";
 import TicketStatusBadge from "./TicketStatusBadge";
 import { ActionsDropdown } from "@/shared/ui/menus";
+import {
+  createTicket,
+  deleteTicket,
+  listTickets,
+  resolveTicket,
+  updateTicket,
+} from "../api/tickets";
 
 type RangeValue = [Date | null, Date | null];
 
@@ -46,7 +51,8 @@ export function TicketsListPage() {
   const [range, setRange] = useState<RangeValue>([null, null]); // createdAt range
 
   // data
-  const [rows, setRows] = useState<Ticket[]>(MOCK_TICKETS);
+  const [rows, setRows] = useState<Ticket[]>([]);
+  const [loading, setLoading] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [editOpen, setEditOpen] = useState<null | Ticket>(null);
 
@@ -55,6 +61,45 @@ export function TicketsListPage() {
 
   // selection for bulk actions
   const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  // fetch helper
+  const fetchRows = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [from, to] = range;
+      const res = await listTickets({
+        q: q || undefined,
+        status: status === "all" ? undefined : status,
+        priority: priority === "all" ? undefined : priority,
+        assignee: assignee,
+        from: from ? from.toISOString() : undefined,
+        to: to ? to.toISOString() : undefined,
+        sortBy: "updatedAt",
+        order: "desc",
+        page: 1,
+        limit: 100,
+      });
+      setRows(res.data);
+    } catch (e: any) {
+      notifications.show({
+        color: "red",
+        title: "Gagal memuat",
+        message: e.message,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [q, status, priority, assignee, range]);
+
+  useEffect(() => {
+    fetchRows();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // initial load
+
+  // refetch saat filter berubah (opsional: debounce)
+  useEffect(() => {
+    fetchRows();
+  }, [fetchRows]);
 
   // dynamic options: assignee list (from current rows)
   const assigneeOptions = useMemo(() => {
@@ -69,40 +114,8 @@ export function TicketsListPage() {
     ];
   }, [rows]);
 
-  const filtered = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    const [start, end] = range;
-    const startMs = start ? new Date(start).setHours(0, 0, 0, 0) : null;
-    const endMs = end ? new Date(end).setHours(23, 59, 59, 999) : null;
-
-    return rows.filter((r) => {
-      const matchQ =
-        term.length === 0 ||
-        r.code.toLowerCase().includes(term) ||
-        r.subject.toLowerCase().includes(term) ||
-        r.requester.toLowerCase().includes(term);
-
-      const matchS = status === "all" ? true : r.status === status;
-      const matchP = priority === "all" ? true : r.priority === priority;
-
-      const matchA =
-        assignee === "all"
-          ? true
-          : assignee === "unassigned"
-          ? !r.assignee
-          : r.assignee === assignee;
-
-      const createdMs = Date.parse(r.createdAt);
-      const matchD =
-        (startMs === null || createdMs >= startMs) &&
-        (endMs === null || createdMs <= endMs);
-
-      return matchQ && matchS && matchP && matchA && matchD;
-    });
-  }, [rows, q, status, priority, assignee, range]);
-
   // selection helpers
-  const filteredIds = filtered.map((r) => r.id);
+  const filteredIds = rows.map((r) => r.id); // karena server-side filter sudah diterapkan
   const allSelectedInFiltered =
     filteredIds.length > 0 && filteredIds.every((id) => selected.has(id));
   const someSelectedInFiltered =
@@ -125,37 +138,7 @@ export function TicketsListPage() {
     });
   };
 
-  /** Terapkan resolusi ke 1..n tiket. `resolvedBy` opsional:
-   * - Jika tidak diberikan, fallback ke assignee tiket atau "tech01".
-   */
-  const applyResolution = (
-    ids: string[],
-    payload: TicketResolutionInput,
-    resolvedBy?: string
-  ) => {
-    const now = new Date().toISOString();
-    setRows((prev) =>
-      prev.map((t) =>
-        ids.includes(t.id)
-          ? {
-              ...t,
-              status: "resolved",
-              updatedAt: now,
-              resolution: {
-                ...payload,
-                resolvedAt: now,
-                resolvedBy: resolvedBy ?? t.assignee ?? "tech01",
-              },
-            }
-          : t
-      )
-    );
-    notifications.show({
-      title: "Ticket resolved",
-      message: `${ids.length} tiket ditandai selesai`,
-    });
-  };
-
+  // columns
   const columns: Column<Ticket>[] = [
     {
       key: "select",
@@ -225,7 +208,7 @@ export function TicketsListPage() {
             {
               label: "Tandai selesai",
               icon: <IconCircleCheck size={16} />,
-              onClick: () => setResolveFor(r), // buka ResolveTicketModal (isi akar masalah, solusi, parts, foto, tag)
+              onClick: () => setResolveFor(r),
               disabled: r.status === "resolved" || r.status === "closed",
             },
             { type: "divider" },
@@ -238,13 +221,18 @@ export function TicketsListPage() {
                 message: r.code,
                 labels: { confirm: "Hapus", cancel: "Batal" },
               },
-              onClick: () => {
-                setRows((prev) => prev.filter((x) => x.id !== r.id));
-                setSelected((prev) => {
-                  const s = new Set(prev);
-                  s.delete(r.id);
-                  return s;
-                });
+              onClick: async () => {
+                try {
+                  await deleteTicket(r.id);
+                  notifications.show({ title: "Terhapus", message: r.code });
+                  fetchRows();
+                } catch (e: any) {
+                  notifications.show({
+                    color: "red",
+                    title: "Gagal hapus",
+                    message: e.message,
+                  });
+                }
               },
             },
           ]}
@@ -255,28 +243,32 @@ export function TicketsListPage() {
 
   // ---- Resolve modal wiring ----
   const resolveOpen = resolveFor !== null;
-
   const closeResolve = () => setResolveFor(null);
 
-  const handleResolveSubmit = (payload: TicketResolutionInput) => {
+  const handleResolveSubmit = async (payload: TicketResolutionInput) => {
     if (!resolveFor) return;
-
-    const ids = resolveFor === "bulk" ? Array.from(selected) : [resolveFor.id];
-
-    // Untuk single resolve, kita pakai assignee tiket tsb sebagai resolvedBy (fallback di applyResolution juga aman)
-    const resolvedBy =
-      resolveFor !== "bulk" ? resolveFor.assignee || undefined : undefined;
-
-    applyResolution(ids, payload, resolvedBy);
-
-    // Bersihkan selection yang telah diproses
-    setSelected((prev) => {
-      const s = new Set(prev);
-      ids.forEach((id) => s.delete(id));
-      return s;
-    });
-
-    closeResolve();
+    try {
+      if (resolveFor === "bulk") {
+        await Promise.all(
+          Array.from(selected).map((id) => resolveTicket(id, payload))
+        );
+      } else {
+        await resolveTicket(resolveFor.id, payload);
+      }
+      notifications.show({
+        title: "Ticket resolved",
+        message: "Perubahan tersimpan",
+      });
+      setSelected(new Set());
+      closeResolve();
+      fetchRows();
+    } catch (e: any) {
+      notifications.show({
+        color: "red",
+        title: "Gagal resolve",
+        message: e.message,
+      });
+    }
   };
 
   return (
@@ -371,38 +363,37 @@ export function TicketsListPage() {
         </Group>
       )}
 
-      <SimpleTable<Ticket>
-        dense="sm"
-        zebra
-        stickyHeader
-        maxHeight={520}
-        columns={columns}
-        data={filtered}
-        emptyText="Tidak ada tiket"
-      />
+      {/* Tabel + overlay loading */}
+      <div style={{ position: "relative" }}>
+        <LoadingOverlay visible={loading} />
+        <SimpleTable<Ticket>
+          dense="sm"
+          zebra
+          stickyHeader
+          maxHeight={520}
+          columns={columns}
+          data={rows}
+          emptyText="Tidak ada tiket"
+        />
+      </div>
 
       {/* Modal Create */}
       <TicketFormModal
         opened={formOpen}
         onClose={() => setFormOpen(false)}
-        onSubmit={(v) => {
-          const now = new Date().toISOString();
-          const id = (Math.random() * 1e9).toFixed(0);
-          setRows((prev) => [
-            {
-              id,
-              code: `TCK-${new Date().getFullYear()}-${id}`,
-              subject: v.subject,
-              requester: v.requester,
-              priority: v.priority,
-              status: v.status,
-              assignee: v.assignee || undefined,
-              description: v.description || undefined,
-              createdAt: now,
-              updatedAt: now,
-            },
-            ...prev,
-          ]);
+        onSubmit={async (v) => {
+          try {
+            await createTicket(v);
+            notifications.show({ title: "Tiket dibuat", message: v.subject });
+            setFormOpen(false);
+            fetchRows();
+          } catch (e: any) {
+            notifications.show({
+              color: "red",
+              title: "Gagal membuat",
+              message: e.message,
+            });
+          }
         }}
       />
 
@@ -412,21 +403,20 @@ export function TicketsListPage() {
         onClose={() => setEditOpen(null)}
         mode="edit"
         initial={editOpen ?? undefined}
-        onSubmit={(v) => {
-          const now = new Date().toISOString();
-          setRows((prev) =>
-            prev.map((t) =>
-              t.id === editOpen?.id
-                ? {
-                    ...t,
-                    ...v,
-                    assignee: v.assignee || undefined,
-                    description: v.description || undefined,
-                    updatedAt: now,
-                  }
-                : t
-            )
-          );
+        onSubmit={async (v) => {
+          try {
+            if (!editOpen) return;
+            await updateTicket(editOpen.id, v);
+            notifications.show({ title: "Tiket diubah", message: v.subject });
+            setEditOpen(null);
+            fetchRows();
+          } catch (e: any) {
+            notifications.show({
+              color: "red",
+              title: "Gagal mengubah",
+              message: e.message,
+            });
+          }
         }}
       />
 

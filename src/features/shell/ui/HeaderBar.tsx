@@ -24,6 +24,9 @@ import {
   IconSun,
   IconUser,
 } from "@tabler/icons-react";
+// --- BARIS BARU ---
+import { useRouter } from "next/navigation"; // 1. Impor useRouter
+// --- AKHIR BARIS BARU ---
 
 type HeaderBarProps = {
   opened: boolean;
@@ -36,6 +39,7 @@ type HeaderBarProps = {
   href?: string;
 };
 
+// ... (Komponen ThemeToggle tetap sama) ...
 function ThemeToggle() {
   const { setColorScheme } = useMantineColorScheme();
   const computed = useComputedColorScheme("dark", {
@@ -56,11 +60,11 @@ function ThemeToggle() {
   );
 }
 
-/** Blok brand minimalis: kotak I/O + title + tagline */
+// ... (Komponen BrandBar tetap sama) ...
 function BrandBar({
   title = "I/O SOLUTIONS",
   tagline = "DATA • INFORMATION • KNOWLEDGE • WISDOM",
-  href = "/(dashboard)/sysadmin",
+  href = "/(dashboard)/sysadmin", // Sesuaikan jika perlu
 }: {
   title?: string;
   tagline?: string;
@@ -137,18 +141,33 @@ export default function HeaderBar({
   tagline,
   href,
 }: HeaderBarProps) {
+  // --- BARIS BARU ---
+  const router = useRouter(); // 2. Inisialisasi router
+
+  // 3. Buat fungsi handleLogout
+  const handleLogout = () => {
+    // Hapus token dari localStorage
+    localStorage.removeItem("authToken");
+    // Hapus data user jika ada
+    // localStorage.removeItem("userData");
+    // Redirect ke halaman sign-in
+    router.replace("/sign-in");
+  };
+  // --- AKHIR BARIS BARU ---
+
   return (
     <Group h="100%" px="md" justify="space-between" wrap="nowrap">
+      {/* Bagian Kiri: Burger & Brand */}
       <Group gap="sm" wrap="nowrap">
         <Burger
           opened={opened}
           onClick={() => setOpened(!opened)}
           hiddenFrom="sm"
         />
-
         <BrandBar title={title} tagline={tagline} href={href} />
       </Group>
 
+      {/* Bagian Kanan: Search, Theme, Notif, Profile */}
       <Group gap="sm" wrap="nowrap">
         <Box visibleFrom="sm">
           <TextInput
@@ -180,9 +199,16 @@ export default function HeaderBar({
           </Menu.Target>
           <Menu.Dropdown>
             <Menu.Item leftSection={<IconUser size={16} />}>Profil</Menu.Item>
-            <Menu.Item leftSection={<IconLogout size={16} />} color="red">
+            {/* --- BARIS DIUBAH --- */}
+            {/* 4. Tambahkan onClick ke Menu.Item Keluar */}
+            <Menu.Item
+              leftSection={<IconLogout size={16} />}
+              color="red"
+              onClick={handleLogout}
+            >
               Keluar
             </Menu.Item>
+            {/* --- AKHIR BARIS DIUBAH --- */}
           </Menu.Dropdown>
         </Menu>
       </Group>

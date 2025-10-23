@@ -1,12 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   ActionIcon,
   Badge,
   Divider,
   Group,
-  List,
   Paper,
   SimpleGrid,
   Stack,
@@ -15,21 +14,21 @@ import {
   Title,
   Tooltip,
 } from "@mantine/core";
-// Icon
 import { IconX } from "@tabler/icons-react";
-// Next
 import { useParams, useRouter } from "next/navigation";
-// Data & utils
-import { getMockTicketById, type Ticket } from "@/features/tickets";
+import type { Ticket } from "../model/types";
 import TicketPriorityBadge from "./TicketPriorityBadge";
 import TicketStatusBadge from "./TicketStatusBadge";
-import { formatDateTime } from "@/features/tickets/utils/format";
+import { formatDateTime } from "../utils/format";
+import { getTicket } from "../api/tickets";
 
 export default function TicketDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const id = String(params?.id ?? "");
-  const ticket: Ticket | undefined = getMockTicketById(id);
+
+  const [ticket, setTicket] = useState<Ticket | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const closeDetail = () => {
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -38,6 +37,42 @@ export default function TicketDetailPage() {
       router.push("/views/tickets");
     }
   };
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const t = await getTicket(id);
+        if (active) setTicket(t);
+      } catch {
+        if (active) setTicket(null);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <Paper withBorder p="lg" radius="md">
+        <Group justify="space-between" mb="sm">
+          <Title order={3}>Ticket</Title>
+          <ActionIcon
+            variant="light"
+            radius="xl"
+            onClick={closeDetail}
+            aria-label="Tutup"
+          >
+            <IconX size={18} />
+          </ActionIcon>
+        </Group>
+        <Text>Memuat...</Text>
+      </Paper>
+    );
+  }
 
   if (!ticket) {
     return (
@@ -75,9 +110,9 @@ export default function TicketDetailPage() {
 
   const hasResolution = !!resolution;
 
-  // Ringkas parts untuk tabel
   const partLines = useMemo(
-    () => resolution?.parts?.map((p) => ({ name: p.name, qty: p.qty })) ?? [],
+    () =>
+      resolution?.parts?.map((p: any) => ({ name: p.name, qty: p.qty })) ?? [],
     [resolution]
   );
 
@@ -155,9 +190,11 @@ export default function TicketDetailPage() {
         <Paper withBorder radius="md" p="md">
           <Group justify="space-between" mb="xs">
             <Text fw={700}>Ringkasan Penyelesaian</Text>
-            <Badge variant="light" color="green">
-              Selesai {formatDateTime(resolution!.resolvedAt)}
-            </Badge>
+            {resolution?.resolvedAt && (
+              <Badge variant="light" color="green">
+                Selesai {formatDateTime(String(resolution.resolvedAt))}
+              </Badge>
+            )}
           </Group>
 
           <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg" mb="md">
@@ -165,31 +202,36 @@ export default function TicketDetailPage() {
               <Text size="sm" c="dimmed">
                 Akar masalah
               </Text>
-              <Text>{resolution!.rootCause}</Text>
+              <Text>
+                {(resolution as any).rootCause ||
+                  (resolution as any).note ||
+                  "-"}
+              </Text>
             </Stack>
             <Stack gap={6}>
               <Text size="sm" c="dimmed">
                 Solusi
               </Text>
-              <Text>{resolution!.solution}</Text>
+              <Text>{(resolution as any).solution || "-"}</Text>
             </Stack>
           </SimpleGrid>
 
-          {resolution!.tags && resolution!.tags.length > 0 && (
-            <>
-              <Divider my="sm" />
-              <Group gap="xs" wrap="wrap">
-                <Text size="sm" c="dimmed">
-                  Tags:
-                </Text>
-                {resolution!.tags.map((t) => (
-                  <Badge key={t} variant="outline">
-                    #{t}
-                  </Badge>
-                ))}
-              </Group>
-            </>
-          )}
+          {Array.isArray((resolution as any).tags) &&
+            (resolution as any).tags.length > 0 && (
+              <>
+                <Divider my="sm" />
+                <Group gap="xs" wrap="wrap">
+                  <Text size="sm" c="dimmed">
+                    Tags:
+                  </Text>
+                  {(resolution as any).tags.map((t: string) => (
+                    <Badge key={t} variant="outline">
+                      #{t}
+                    </Badge>
+                  ))}
+                </Group>
+              </>
+            )}
 
           {partLines.length > 0 && (
             <>
@@ -216,56 +258,34 @@ export default function TicketDetailPage() {
             </>
           )}
 
-          {resolution!.photos && resolution!.photos.length > 0 && (
-            <>
-              <Divider my="sm" />
-              <Stack gap="xs">
-                <Text fw={600}>Dokumentasi Foto</Text>
-                <SimpleGrid cols={{ base: 2, sm: 4 }}>
-                  {resolution!.photos.map((src, i) => (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      key={i}
-                      src={src}
-                      alt={`photo-${i}`}
-                      style={{
-                        width: "100%",
-                        height: 140,
-                        objectFit: "cover",
-                        borderRadius: 8,
-                        border: "1px solid var(--mantine-color-gray-4)",
-                      }}
-                    />
-                  ))}
-                </SimpleGrid>
-              </Stack>
-            </>
-          )}
-
-          {resolution!.extraCosts && resolution!.extraCosts.length > 0 && (
-            <>
-              <Divider my="sm" />
-              <Stack gap={6}>
-                <Text fw={600}>Biaya Tambahan</Text>
-                <List spacing={4}>
-                  {resolution!.extraCosts.map((c, i) => (
-                    <List.Item key={`${c.label}-${i}`}>
-                      <Text>
-                        {c.label}:{" "}
-                        <Text span fw={600}>
-                          {new Intl.NumberFormat("id-ID", {
-                            style: "currency",
-                            currency: "IDR",
-                            maximumFractionDigits: 0,
-                          }).format(c.amount)}
-                        </Text>
-                      </Text>
-                    </List.Item>
-                  ))}
-                </List>
-              </Stack>
-            </>
-          )}
+          {Array.isArray((resolution as any).photos) &&
+            (resolution as any).photos.length > 0 && (
+              <>
+                <Divider my="sm" />
+                <Stack gap="xs">
+                  <Text fw={600}>Dokumentasi Foto</Text>
+                  <SimpleGrid cols={{ base: 2, sm: 4 }}>
+                    {(resolution as any).photos.map(
+                      (src: string, i: number) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          key={i}
+                          src={src}
+                          alt={`photo-${i}`}
+                          style={{
+                            width: "100%",
+                            height: 140,
+                            objectFit: "cover",
+                            borderRadius: 8,
+                            border: "1px solid var(--mantine-color-gray-4)",
+                          }}
+                        />
+                      )
+                    )}
+                  </SimpleGrid>
+                </Stack>
+              </>
+            )}
         </Paper>
       ) : (
         <Paper withBorder radius="md" p="md">
