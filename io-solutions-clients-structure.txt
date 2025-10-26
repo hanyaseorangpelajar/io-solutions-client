@@ -1,6 +1,6 @@
 .
 |-- README.md
-|-- io-solutions-clients-frontend
+|-- io-solutions-clients-structure.txt
 |-- next-env.d.ts
 |-- next.config.mjs
 |-- package-lock.json
@@ -136,6 +136,7 @@
 |   |   |-- favicon.ico
 |   |   |-- globals.css
 |   |   |-- layout.tsx
+|   |   |-- not-found.module.css
 |   |   |-- not-found.tsx
 |   |   `-- page.tsx
 |   |-- features
@@ -152,6 +153,7 @@
 |   |   |       |-- AuditResolveEditorModal.tsx
 |   |   |       `-- RepositoryCard.tsx
 |   |   |-- auth
+|   |   |   |-- AuthContext.tsx
 |   |   |   |-- index.ts
 |   |   |   |-- model
 |   |   |   |   |-- schema.ts
@@ -160,6 +162,7 @@
 |   |   |       |-- AuthLayout.tsx
 |   |   |       |-- ForgotPasswordPage.tsx
 |   |   |       |-- FormHeader.tsx
+|   |   |       |-- SignInForm.tsx
 |   |   |       |-- SignInPage.tsx
 |   |   |       `-- SignUpPage.tsx
 |   |   |-- inventory
@@ -277,7 +280,9 @@
 |   |       `-- utils
 |   |           `-- format.ts
 |   |-- lib
+|   |   |-- apiClient.ts
 |   |   `-- data.ts
+|   |-- middleware.ts
 |   |-- mocks
 |   |   `-- index.ts
 |   |-- providers.tsx
@@ -299,10 +304,11 @@
 |   |   |   `-- table
 |   |   |       `-- SimpleTable.tsx
 |   |   `-- utils
-|   |       `-- csv.ts
+|   |       |-- csv.ts
+|   |       `-- formatters.ts
 |   `-- theme
 |       `-- mantine.ts
 |-- tailwind.config.ts
 `-- tsconfig.json
 
-92 directories, 213 files
+92 directories, 219 files

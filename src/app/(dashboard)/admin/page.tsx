@@ -14,56 +14,34 @@ import {
   Title,
 } from "@mantine/core";
 
-// Pakai data mock yang sudah ada di fitur terkait
-import { MOCK_TICKETS } from "@/features/tickets";
-import { INVENTORY_ITEMS } from "@/features/inventory";
-import { MOCK_RMAS } from "@/features/rma";
+import { MOCK_TICKETS, type Ticket } from "@/features/tickets";
+import { INVENTORY_ITEMS, type Part } from "@/features/inventory";
+import { MOCK_RMAS, type Rma } from "@/features/rma";
+import {
+  getAssigneeName,
+  priorityColor,
+  statusColor,
+} from "@/shared/utils/formatters";
+import { formatDateTime } from "@/features/tickets/utils/format";
 
 // --- helpers kecil ---
 function isOpenStatus(s: any) {
   const v = String(s ?? "").toLowerCase();
   return !(v.includes("closed") || v.includes("resolved"));
 }
-function priorityColor(p: string) {
-  const v = (p ?? "").toString().toLowerCase();
-  if (v.includes("urgent") || v.includes("critical")) return "red";
-  if (v.includes("high")) return "orange";
-  if (v.includes("medium")) return "yellow";
-  if (v.includes("low")) return "green";
-  return "gray";
-}
-function statusColor(s: string) {
-  const v = (s ?? "").toString().toLowerCase();
-  if (v.includes("new") || v.includes("open")) return "blue";
-  if (v.includes("progress") || v.includes("work")) return "indigo";
-  if (v.includes("hold") || v.includes("pending")) return "yellow";
-  if (v.includes("resolved")) return "teal";
-  if (v.includes("closed") || v.includes("done")) return "green";
-  if (v.includes("cancel")) return "red";
-  return "gray";
-}
-function assigneeName(t: any): string {
-  const a = t?.assignee;
-  if (!a) return "Unassigned";
-  if (typeof a === "string") return a || "Unassigned";
-  if (typeof a === "object" && "name" in a && (a as any).name) {
-    return String((a as any).name);
-  }
-  return "Unassigned";
-}
 
 export default function AdminDashboardPage() {
-  const tickets = (MOCK_TICKETS ?? []) as any[];
-  const parts = (INVENTORY_ITEMS ?? []) as any[];
-  const rmas = (MOCK_RMAS ?? []) as any[];
+  const tickets: Ticket[] = MOCK_TICKETS ?? [];
+  const parts: Part[] = INVENTORY_ITEMS ?? [];
+  const rmas: Rma[] = MOCK_RMAS ?? [];
 
   // KPI ringkas
   const kpi = {
     openTickets: tickets.filter((t) => isOpenStatus(t.status)).length,
     lowStock:
       parts.filter((p) => {
-        const stock = Number(p?.stock ?? p?.qty ?? 0) || 0;
-        const min = Number(p?.minStock ?? p?.reorderPoint ?? 0) || 0;
+        const stock = p.stock ?? 0;
+        const min = p.minStock ?? 0;
         return stock <= Math.max(0, min);
       }).length || 0,
     pendingRma:
@@ -76,12 +54,12 @@ export default function AdminDashboardPage() {
   // Tiket terbaru (max 8)
   const recentTickets = [...tickets]
     .map((t) => ({
-      id: t?.id ?? t?.code ?? "",
-      title: t?.title ?? t?.subject ?? "(Tanpa judul)",
-      status: t?.status ?? "UNKNOWN",
-      priority: t?.priority ?? "—",
-      assignee: assigneeName(t),
-      createdAt: t?.createdAt ?? Date.now(),
+      id: t.id,
+      title: t.subject,
+      status: t.status,
+      priority: t.priority,
+      assignee: getAssigneeName(t),
+      createdAt: t.createdAt,
     }))
     .sort((a, b) => {
       const da = new Date(a.createdAt).getTime();
@@ -93,10 +71,10 @@ export default function AdminDashboardPage() {
   // RMA terbaru (max 8) — jika dataset tersedia
   const recentRma = [...rmas]
     .map((r) => ({
-      code: r?.code ?? r?.id ?? "",
-      customer: r?.customer?.name ?? r?.customer ?? "—",
-      status: r?.status ?? "UNKNOWN",
-      createdAt: r?.createdAt ?? Date.now(),
+      code: r.code,
+      customer: r.customer.name,
+      status: r.status,
+      createdAt: r.createdAt,
     }))
     .sort((a, b) => {
       const da = new Date(a.createdAt).getTime();
@@ -198,15 +176,15 @@ export default function AdminDashboardPage() {
                 <Table.Td>{t.assignee}</Table.Td>
                 <Table.Td>
                   <Badge color={priorityColor(String(t.priority))}>
-                    {String(t.priority)}
+                    {t.priority}
                   </Badge>
                 </Table.Td>
                 <Table.Td>
                   <Badge color={statusColor(String(t.status))}>
-                    {String(t.status)}
+                    {t.status}
                   </Badge>
                 </Table.Td>
-                <Table.Td>{new Date(t.createdAt).toLocaleString()}</Table.Td>
+                <Table.Td>{formatDateTime(t.createdAt)}</Table.Td>
               </Table.Tr>
             ))}
             {recentTickets.length === 0 && (
@@ -251,11 +229,9 @@ export default function AdminDashboardPage() {
                 <Table.Td>{r.code}</Table.Td>
                 <Table.Td>{r.customer}</Table.Td>
                 <Table.Td>
-                  <Badge color={statusColor(String(r.status))}>
-                    {String(r.status)}
-                  </Badge>
+                  <Badge color={statusColor(r.status)}>{r.status}</Badge>
                 </Table.Td>
-                <Table.Td>{new Date(r.createdAt).toLocaleString()}</Table.Td>
+                <Table.Td>{formatDateTime(r.createdAt)}</Table.Td>
               </Table.Tr>
             ))}
             {recentRma.length === 0 && (

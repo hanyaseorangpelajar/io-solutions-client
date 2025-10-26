@@ -1,0 +1,31 @@
+.root {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  background-color: var(--mantine-color-body);
+}
+
+.label {
+  text-align: center;
+  font-weight: 900;
+  font-size: clamp(6rem, 20vw, 18rem);
+  line-height: 1;
+  margin-bottom: calc(var(--mantine-spacing-xl) * 1.5);
+  color: var(--mantine-color-text);
+  letter-spacing: -0.04em;
+}
+
+.title {
+  font-family:
+    Greycliff CF,
+    var(--mantine-font-family);
+  text-align: center;
+  font-weight: 900;
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+}
+
+.description {
+  max-width: 540px;
+  margin: var(--mantine-spacing-xl) auto 0;
+}

@@ -37,40 +37,21 @@ apiClient.interceptors.response.use(
     // Jika response sukses (status 2xx), langsung kembalikan datanya
     return response.data;
   },
-  (error) => {
-    // --- Penanganan Error Dasar ---
-    let errorMessage = "Terjadi kesalahan pada server.";
-
+  (error: any) => {
+    // Let Axios errors pass through, so they can be handled in try/catch blocks.
+    // The previous implementation was creating a new error, which lost the
+    // original context like `error.response`.
     if (error.response) {
-      // Request dibuat dan server merespons dengan status error (4xx, 5xx)
-      console.error("API Error Response:", error.response.data);
-      errorMessage =
-        error.response.data?.message ||
-        error.response.statusText ||
-        errorMessage;
-
-      // Contoh: Jika error 401 (Unauthorized), mungkin token expired, paksa logout
-      if (error.response.status === 401 && typeof window !== "undefined") {
-        // Hapus token lama
-        localStorage.removeItem("authToken");
-        // Redirect ke halaman login (Anda mungkin perlu cara lain di Next.js)
-        // window.location.href = '/sign-in';
-        console.warn("Token tidak valid atau kedaluwarsa. Mohon login ulang.");
-      }
-    } else if (error.request) {
-      // Request dibuat tapi tidak ada respons diterima (masalah jaringan?)
-      console.error("API No Response:", error.request);
-      errorMessage =
-        "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.";
-    } else {
-      // Sesuatu terjadi saat menyiapkan request
-      console.error("API Request Setup Error:", error.message);
-      errorMessage = error.message;
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx.
+      // We will just forward the original Axios error.
+      return Promise.reject(error);
     }
-
-    // Kembalikan error agar bisa ditangani di komponen/tempat pemanggilan
-    // Anda bisa juga melempar error kustom di sini
-    return Promise.reject(new Error(errorMessage));
+    return Promise.reject(
+      new Error(
+        "Terjadi kesalahan jaringan atau koneksi. Silakan periksa internet Anda."
+      )
+    );
   }
 );
 

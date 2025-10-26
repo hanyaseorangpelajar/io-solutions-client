@@ -13,6 +13,8 @@ import {
   Text,
   Alert,
 } from "@mantine/core";
+import { useRouter } from "next/navigation";
+import apiClient from "@/lib/apiClient";
 import AuthLayout from "./AuthLayout";
 import FormHeader from "./FormHeader";
 import TextField from "@/shared/ui/inputs/TextField";
@@ -20,7 +22,6 @@ import PasswordField from "@/shared/ui/inputs/PasswordField";
 import { SignUpSchema } from "../model/schema";
 import type { SignUpInput } from "../model/types";
 
-/** Skor kekuatan password untuk UI – aman terhadap null/undefined */
 function scorePassword(pw?: string | null) {
   const s = pw ?? "";
   let score = 0;
@@ -29,12 +30,14 @@ function scorePassword(pw?: string | null) {
   if (/[A-Z]/.test(s)) score++;
   if (/\d/.test(s)) score++;
   if (/[^A-Za-z0-9]/.test(s)) score++;
-  return score; // 0..5
+  return score;
 }
 
 export function SignUpPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [errMsg, setErrMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const {
     register,
@@ -45,17 +48,18 @@ export function SignUpPage() {
     resolver: zodResolver(SignUpSchema),
     defaultValues: {
       name: "",
+      username: "",
       email: "",
       password: "",
       confirmPassword: "",
       acceptTerms: false,
     },
-    // Lebih ramah: error muncul setelah blur/touched
     mode: "onTouched",
     reValidateMode: "onChange",
   });
 
   const name = watch("name");
+  const username = watch("username");
   const email = watch("email");
   const password = watch("password");
   const confirmPassword = watch("confirmPassword");
@@ -67,15 +71,35 @@ export function SignUpPage() {
   const onSubmit = handleSubmit(async (data) => {
     setLoading(true);
     setErrMsg(null);
+    setSuccessMsg(null);
+
     try {
-      // Logic pendaftaran akan ditambahkan di sini
-      console.log("Form submitted:", data);
+      const payload = {
+        name: data.name,
+        username: data.username,
+        email: data.email,
+        password: data.password,
+      };
+
+      console.log("Mengirim data registrasi:", payload);
+
+      const response = await apiClient.post("/auth/register", payload);
+
+      console.log("Registrasi berhasil:", response.data);
+      setSuccessMsg(
+        "Registrasi berhasil! Anda akan diarahkan ke halaman login."
+      );
       setLoading(false);
-      // Simulasikan pendaftaran berhasil
-      setErrMsg(null);
+
+      setTimeout(() => {
+        router.push("/sign-in");
+      }, 2000);
     } catch (err: any) {
-      setErrMsg(err?.message ?? "Gagal membuat akun. Coba lagi.");
-    } finally {
+      console.error("Registrasi gagal:", err);
+      const apiError = err.response?.data?.message;
+      setErrMsg(
+        apiError || err?.message || "Gagal membuat akun. Silakan coba lagi."
+      );
       setLoading(false);
     }
   });
@@ -89,8 +113,14 @@ export function SignUpPage() {
         />
 
         {errMsg && (
-          <Alert color="red" variant="light">
+          <Alert color="red" variant="light" title="Registrasi Gagal">
             {errMsg}
+          </Alert>
+        )}
+
+        {successMsg && (
+          <Alert color="green" variant="light">
+            {successMsg}
           </Alert>
         )}
 
@@ -103,6 +133,14 @@ export function SignUpPage() {
               autoFocus
               error={errors.name?.message}
               {...register("name")}
+            />
+
+            <TextField
+              label="Username"
+              placeholder="username_unik"
+              autoComplete="username"
+              error={errors.username?.message}
+              {...register("username")}
             />
 
             <TextField
@@ -123,15 +161,6 @@ export function SignUpPage() {
                 {...register("password")}
               />
               <Progress value={pwPercent} color={pwColor} size="sm" />
-              <Text size="xs" c="dimmed">
-                Kriteria yang disarankan:
-              </Text>
-              <List size="xs" c="dimmed" withPadding>
-                <List.Item>≥ 8 karakter</List.Item>
-                <List.Item>Huruf kecil & huruf besar</List.Item>
-                <List.Item>Angka</List.Item>
-                <List.Item>Simbol (mis. ! @ #)</List.Item>
-              </List>
             </Stack>
 
             <PasswordField
@@ -159,29 +188,18 @@ export function SignUpPage() {
                   >
                     Syarat & Ketentuan
                   </Anchor>{" "}
-                  dan{" "}
-                  <Anchor
-                    href="/privacy"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    size="sm"
-                  >
-                    Kebijakan Privasi
-                  </Anchor>
-                  .
                 </Text>
               }
               error={errors.acceptTerms?.message}
-              // biar dikontrol oleh react-hook-form; jangan pasang `checked={...}`
               {...register("acceptTerms")}
             />
 
-            {/* Tombol selalu aktif; validasi dijalankan saat submit */}
             <Button
               type="submit"
               loading={loading || isSubmitting}
               mt="sm"
               fullWidth
+              disabled={!!successMsg}
             >
               Buat akun
             </Button>

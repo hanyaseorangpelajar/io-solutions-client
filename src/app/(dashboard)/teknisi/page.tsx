@@ -14,8 +14,13 @@ import {
   Title,
 } from "@mantine/core";
 
-// Ambil mock dari fitur yang sudah ada (ikuti barrel kamu saat ini)
-import { MOCK_TICKETS } from "@/features/tickets";
+import { MOCK_TICKETS, type Ticket } from "@/features/tickets";
+import {
+  getAssigneeName,
+  priorityColor,
+  statusColor,
+} from "@/shared/utils/formatters";
+import { formatDateTime } from "@/features/tickets/utils/format";
 
 // ———————————————————————————————————————————————
 // GANTI fungsi ini ke integrasi auth milikmu (mis. NextAuth/getServerSession)
@@ -29,54 +34,30 @@ function getSessionUser() {
 }
 // ———————————————————————————————————————————————
 
-function normalizeAssigneeName(t: any): string {
-  const a = t?.assignee;
-  if (!a) return "Unassigned";
-  if (typeof a === "string") return a || "Unassigned";
-  if (typeof a === "object" && "name" in a && (a as any).name) {
-    return String((a as any).name);
-  }
-  return "Unassigned";
-}
 function normalizeAssigneeId(t: any): string | null {
   const a = t?.assignee;
   if (!a) return null;
+  // Asumsi assignee bisa berupa string (id) atau object { id, name }
+  if (typeof a === "string") return a;
   if (typeof a === "object" && "id" in a && (a as any).id) {
     return String((a as any).id);
   }
   return null;
 }
+
 function isOpenStatus(s: any) {
   const v = String(s ?? "").toLowerCase();
   return !(v.includes("closed") || v.includes("resolved"));
 }
-function statusColor(s: string) {
-  const v = (s ?? "").toString().toLowerCase();
-  if (v.includes("new") || v.includes("open")) return "blue";
-  if (v.includes("progress") || v.includes("work")) return "indigo";
-  if (v.includes("hold") || v.includes("pending")) return "yellow";
-  if (v.includes("resolved")) return "teal";
-  if (v.includes("closed") || v.includes("done")) return "green";
-  if (v.includes("cancel")) return "red";
-  return "gray";
-}
-function priorityColor(p: string) {
-  const v = (p ?? "").toString().toLowerCase();
-  if (v.includes("urgent") || v.includes("critical")) return "red";
-  if (v.includes("high")) return "orange";
-  if (v.includes("medium")) return "yellow";
-  if (v.includes("low")) return "green";
-  return "gray";
-}
 
 export default function TechnicianDashboardPage() {
   const user = getSessionUser();
-  const tickets = (MOCK_TICKETS ?? []) as any[];
+  const tickets: Ticket[] = MOCK_TICKETS ?? [];
 
   // Tickets yang ditugaskan ke teknisi yang sedang login (match by id atau by name)
   const myTickets = tickets.filter((t) => {
     const aid = normalizeAssigneeId(t);
-    const aname = normalizeAssigneeName(t);
+    const aname = getAssigneeName(t);
     return aid === user.id || aname === user.name;
   });
 
@@ -100,11 +81,11 @@ export default function TechnicianDashboardPage() {
 
   const recentAssigned = [...myOpen]
     .map((t) => ({
-      id: t?.id ?? t?.code ?? "",
-      title: t?.title ?? t?.subject ?? "(Tanpa judul)",
-      status: t?.status ?? "UNKNOWN",
-      priority: t?.priority ?? "—",
-      createdAt: t?.createdAt ?? Date.now(),
+      id: t.id,
+      title: t.subject,
+      status: t.status,
+      priority: t.priority,
+      createdAt: t.createdAt,
     }))
     .sort((a, b) => {
       const da = new Date(a.createdAt).getTime();
@@ -115,10 +96,10 @@ export default function TechnicianDashboardPage() {
 
   const recentResolved = [...myResolved]
     .map((t) => ({
-      id: t?.id ?? t?.code ?? "",
-      title: t?.title ?? t?.subject ?? "(Tanpa judul)",
-      resolvedAt: t?.resolution?.resolvedAt ?? Date.now(),
-      priority: t?.priority ?? "—",
+      id: t.id,
+      title: t.subject,
+      resolvedAt: t.resolution?.resolvedAt ?? new Date().toISOString(),
+      priority: t.priority,
     }))
     .sort((a, b) => {
       const da = new Date(a.resolvedAt).getTime();
@@ -220,16 +201,12 @@ export default function TechnicianDashboardPage() {
                 </Table.Td>
                 <Table.Td>{t.title}</Table.Td>
                 <Table.Td>
-                  <Badge color={priorityColor(String(t.priority))}>
-                    {String(t.priority)}
-                  </Badge>
+                  <Badge color={priorityColor(t.priority)}>{t.priority}</Badge>
                 </Table.Td>
                 <Table.Td>
-                  <Badge color={statusColor(String(t.status))}>
-                    {String(t.status)}
-                  </Badge>
+                  <Badge color={statusColor(t.status)}>{t.status}</Badge>
                 </Table.Td>
-                <Table.Td>{new Date(t.createdAt).toLocaleString()}</Table.Td>
+                <Table.Td>{formatDateTime(t.createdAt)}</Table.Td>
               </Table.Tr>
             ))}
             {recentAssigned.length === 0 && (
@@ -278,11 +255,9 @@ export default function TechnicianDashboardPage() {
                 </Table.Td>
                 <Table.Td>{t.title}</Table.Td>
                 <Table.Td>
-                  <Badge color={priorityColor(String(t.priority))}>
-                    {String(t.priority)}
-                  </Badge>
+                  <Badge color={priorityColor(t.priority)}>{t.priority}</Badge>
                 </Table.Td>
-                <Table.Td>{new Date(t.resolvedAt).toLocaleString()}</Table.Td>
+                <Table.Td>{formatDateTime(t.resolvedAt)}</Table.Td>
               </Table.Tr>
             ))}
             {recentResolved.length === 0 && (

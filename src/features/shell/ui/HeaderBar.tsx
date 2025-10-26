@@ -24,8 +24,7 @@ import {
   IconSun,
   IconUser,
 } from "@tabler/icons-react";
-// --- BARIS BARU ---
-import { useRouter } from "next/navigation"; // 1. Impor useRouter
+import { useAuth } from "@/features/auth/AuthContext";
 // --- AKHIR BARIS BARU ---
 
 type HeaderBarProps = {
@@ -141,18 +140,7 @@ export default function HeaderBar({
   tagline,
   href,
 }: HeaderBarProps) {
-  // --- BARIS BARU ---
-  const router = useRouter(); // 2. Inisialisasi router
-
-  // 3. Buat fungsi handleLogout
-  const handleLogout = () => {
-    // Hapus token dari localStorage
-    localStorage.removeItem("authToken");
-    // Hapus data user jika ada
-    // localStorage.removeItem("userData");
-    // Redirect ke halaman sign-in
-    router.replace("/sign-in");
-  };
+  const { logout } = useAuth();
   // --- AKHIR BARIS BARU ---
 
   return (
@@ -204,7 +192,7 @@ export default function HeaderBar({
             <Menu.Item
               leftSection={<IconLogout size={16} />}
               color="red"
-              onClick={handleLogout}
+              onClick={logout}
             >
               Keluar
             </Menu.Item>

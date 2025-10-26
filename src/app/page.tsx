@@ -1,5 +1,7 @@
-import { AuthLayout, SignInPage } from "@/features/auth";
+// Middleware akan menangani pengalihan dari halaman root.
+// Komponen ini secara teknis tidak akan pernah ditampilkan kepada pengguna.
+// Anda bisa membiarkannya kosong atau menampilkan loading indicator.
 
 export default function Homepage() {
-  return <SignInPage />;
+  return null;
 }

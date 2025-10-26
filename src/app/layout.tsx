@@ -1,5 +1,5 @@
-// src/app/layout.tsx
 import Providers from "@/providers";
+import { AuthProvider } from "@/features/auth/AuthContext";
 import { ColorSchemeScript } from "@mantine/core";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
@@ -29,7 +29,9 @@ export default function RootLayout({
         <ColorSchemeScript defaultColorScheme={DEFAULT_SCHEME} />
       </head>
       <body>
-        <Providers>{children}</Providers>
+        <AuthProvider>
+          <Providers>{children}</Providers>
+        </AuthProvider>
       </body>
     </html>
   );
