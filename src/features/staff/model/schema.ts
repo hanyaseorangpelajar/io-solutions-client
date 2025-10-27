@@ -1,10 +1,46 @@
 import { z } from "zod";
 
-export const StaffFormSchema = z.object({
-  name: z.string().min(2, "Nama minimal 2 karakter"),
-  email: z.string().email("Email tidak valid"),
-  phone: z.string().optional(),
-  roleIds: z.array(z.string()).min(1, "Pilih minimal 1 role"),
-  active: z.boolean().default(true),
-});
+const ROLES = ["Teknisi", "Admin", "SysAdmin"] as const;
+
+export const StaffFormSchema = z
+  .object({
+    id: z.string().optional(),
+
+    fullName: z.string().min(2, "Nama lengkap minimal 2 karakter"),
+
+    username: z.string().min(3, "Username minimal 3 karakter"),
+
+    email: z.string().email("Email tidak valid"),
+
+    password: z.string().optional(),
+    confirmPassword: z.string().optional(),
+
+    role: z.enum(ROLES, {
+      required_error: "Pilih role",
+    }),
+
+    active: z.boolean().default(true),
+  })
+  .refine(
+    (data) => {
+      if (!data.id && (!data.password || data.password.length < 8)) {
+        return false;
+      }
+      return true;
+    },
+    { message: "Password minimal 8 karakter", path: ["password"] }
+  )
+  .refine(
+    (data) => {
+      if (data.password) {
+        return data.password === data.confirmPassword;
+      }
+      return true;
+    },
+    {
+      message: "Password tidak cocok",
+      path: ["confirmPassword"],
+    }
+  );
+
 export type StaffFormInput = z.infer<typeof StaffFormSchema>;

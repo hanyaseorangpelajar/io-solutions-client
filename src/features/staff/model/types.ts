@@ -1,8 +1,16 @@
+export const ROLES = ["Teknisi", "Admin", "SysAdmin"] as const;
+export type StaffRole = (typeof ROLES)[number];
+
 export type Staff = {
   id: string;
   name: string;
+  username: string;
   email: string;
   phone?: string;
   active: boolean;
-  roleIds: string[]; // refer ke Role.id
+  role: StaffRole;
+  department?: string;
+  avatarUrl?: string;
+  createdAt: string;
+  updatedAt: string;
 };

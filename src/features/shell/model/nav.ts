@@ -13,8 +13,6 @@ export function isGroup(
 
 export const SYSADMIN_NAV: NavItem[] = [
   { label: "Dashboard", href: "/sysadmin" },
-  { label: "Dashboard", href: "/admin" },
-  { label: "Dashboard", href: "/teknisi" },
   {
     group: true,
     label: "Access Control",

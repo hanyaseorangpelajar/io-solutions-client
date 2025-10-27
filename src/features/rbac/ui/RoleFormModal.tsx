@@ -13,19 +13,20 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { RoleFormInput } from "../model/schema";
 import { RoleFormSchema } from "../model/schema";
-import { PERMISSIONS } from "../model/mock";
 
 export default function RoleFormModal({
   opened,
   onClose,
   onSubmit,
   initial,
+  permissions: allPermissions,
   title = "Buat Role",
 }: {
   opened: boolean;
   onClose: () => void;
   onSubmit: (v: RoleFormInput) => void;
   initial?: Partial<RoleFormInput>;
+  permissions: string[];
   title?: string;
 }) {
   const {
@@ -78,7 +79,7 @@ export default function RoleFormModal({
           <MultiSelect
             label="Permissions"
             withAsterisk
-            data={PERMISSIONS.map((p) => ({ value: p, label: p }))}
+            data={allPermissions.map((p) => ({ value: p, label: p }))}
             value={permissions}
             onChange={(vals) =>
               setValue("permissions", vals, { shouldValidate: true })

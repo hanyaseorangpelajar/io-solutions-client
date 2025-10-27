@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (credentials: { email: string; password: string }) => {
       // Map the form's `email` field to the API's `identifier` field.
       const apiCredentials = {
-        identifier: credentials.email || credentials.identifier,
+        identifier: credentials.email,
         password: credentials.password,
       };
 
@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           "/auth/login",
           apiCredentials
         );
-        const { user, token } = response;
+        const { user, token } = response.data;
 
         if (token) {
           localStorage.setItem("authToken", token);

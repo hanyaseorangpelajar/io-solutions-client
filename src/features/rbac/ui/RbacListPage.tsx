@@ -15,14 +15,16 @@ import {
 } from "@mantine/core";
 import { IconDots, IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
 import type { Role } from "../model/types";
-import { MOCK_ROLES, PERMISSIONS } from "../model/mock";
 import RoleFormModal from "./RoleFormModal";
 
 export default function RbacListPage() {
-  const [rows, setRows] = useState<Role[]>(() => [...MOCK_ROLES]);
+  const [rows, setRows] = useState<Role[]>([]);
   const [q, setQ] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Role | null>(null);
+
+  // TODO: fetch permissions from server
+  const [permissions] = useState<string[]>([]);
 
   const filtered = useMemo(() => {
     const qq = q.trim().toLowerCase();
@@ -150,6 +152,7 @@ export default function RbacListPage() {
         onClose={() => setModalOpen(false)}
         title={editing ? `Edit Role — ${editing.name}` : "Buat Role"}
         initial={editing ?? undefined}
+        permissions={permissions}
         onSubmit={(v) => {
           if (editing) {
             setRows((prev) =>

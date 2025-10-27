@@ -83,6 +83,7 @@
 |   |   |   |-- admin
 |   |   |   |   `-- page.tsx
 |   |   |   |-- layout.tsx
+|   |   |   |-- page.tsx
 |   |   |   |-- sysadmin
 |   |   |   |   `-- page.tsx
 |   |   |   |-- teknisi
@@ -143,7 +144,6 @@
 |   |   |-- audit
 |   |   |   |-- index.ts
 |   |   |   |-- model
-|   |   |   |   |-- mock.ts
 |   |   |   |   |-- schema.ts
 |   |   |   |   `-- types.ts
 |   |   |   `-- ui
@@ -163,12 +163,10 @@
 |   |   |       |-- ForgotPasswordPage.tsx
 |   |   |       |-- FormHeader.tsx
 |   |   |       |-- SignInForm.tsx
-|   |   |       |-- SignInPage.tsx
 |   |   |       `-- SignUpPage.tsx
 |   |   |-- inventory
 |   |   |   |-- index.ts
 |   |   |   |-- model
-|   |   |   |   |-- mock.ts
 |   |   |   |   |-- schema.ts
 |   |   |   |   `-- types.ts
 |   |   |   `-- ui
@@ -181,9 +179,10 @@
 |   |   |-- rbac
 |   |   |   |-- index.ts
 |   |   |   |-- model
-|   |   |   |   |-- mock.ts
 |   |   |   |   |-- schema.ts
 |   |   |   |   `-- types.ts
+|   |   |   |-- roles.ts
+|   |   |   |-- staff.ts
 |   |   |   `-- ui
 |   |   |       |-- RbacListPage.tsx
 |   |   |       `-- RoleFormModal.tsx
@@ -200,7 +199,6 @@
 |   |   |-- rma
 |   |   |   |-- index.ts
 |   |   |   |-- model
-|   |   |   |   |-- mock.ts
 |   |   |   |   |-- schema.ts
 |   |   |   |   `-- types.ts
 |   |   |   `-- ui
@@ -228,9 +226,10 @@
 |   |   |       |-- HeaderBar.tsx
 |   |   |       `-- SidebarNav.tsx
 |   |   |-- staff
+|   |   |   |-- api
+|   |   |   |   `-- staff.ts
 |   |   |   |-- index.ts
 |   |   |   |-- model
-|   |   |   |   |-- mock.ts
 |   |   |   |   |-- schema.ts
 |   |   |   |   `-- types.ts
 |   |   |   `-- ui
@@ -249,7 +248,6 @@
 |   |   |-- system-builder
 |   |   |   |-- index.ts
 |   |   |   |-- model
-|   |   |   |   |-- mock.ts
 |   |   |   |   |-- pricing.ts
 |   |   |   |   |-- schema.ts
 |   |   |   |   `-- types.ts
@@ -264,7 +262,6 @@
 |   |       |   `-- tickets.ts
 |   |       |-- index.ts
 |   |       |-- model
-|   |       |   |-- mock.ts
 |   |       |   |-- schema.ts
 |   |       |   `-- types.ts
 |   |       |-- ui
@@ -280,11 +277,8 @@
 |   |       `-- utils
 |   |           `-- format.ts
 |   |-- lib
-|   |   |-- apiClient.ts
-|   |   `-- data.ts
+|   |   `-- apiClient.ts
 |   |-- middleware.ts
-|   |-- mocks
-|   |   `-- index.ts
 |   |-- providers.tsx
 |   |-- shared
 |   |   |-- ui
@@ -311,4 +305,4 @@
 |-- tailwind.config.ts
 `-- tsconfig.json
 
-92 directories, 219 files
+92 directories, 213 files
