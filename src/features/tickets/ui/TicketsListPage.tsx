@@ -11,15 +11,19 @@ import {
   Text,
   Title,
   LoadingOverlay,
+  Menu, // Impor Menu
+  ActionIcon, // Impor ActionIcon
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { notifications } from "@mantine/notifications";
 import {
   IconCircleCheck,
   IconEye,
-  IconPencil,
   IconPlus,
-  IconTrash,
+  IconUser,
+  IconChevronRight,
+  IconArrowsExchange,
+  IconDots, // Impor IconDots
 } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { TicketResolutionInput } from "../model/schema";
@@ -29,18 +33,44 @@ import ResolveTicketModal from "./ResolveTicketModal";
 import TicketFormModal from "./TicketFormModal";
 import TicketPriorityBadge from "./TicketPriorityBadge";
 import TicketStatusBadge from "./TicketStatusBadge";
-import { ActionsDropdown } from "@/shared/ui/menus";
+// Kita tidak akan gunakan ActionsDropdown lagi untuk sel ini
+// import { ActionsDropdown } from "@/shared/ui/menus";
+
 import {
   createTicket,
-  deleteTicket,
   listTickets,
   resolveTicket,
-  updateTicket,
+  assignTicket,
+  updateTicketStatus,
 } from "../api/tickets";
+
+import { getStaffList } from "@/features/staff/api/staff";
+import type { Staff } from "@/features/staff/model/types";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 type RangeValue = [Date | null, Date | null];
 
+const STATUS_OPTIONS = [
+  { value: "all", label: "Semua" },
+  { value: "open", label: "Open" },
+  { value: "in_progress", label: "In progress" },
+  { value: "resolved", label: "Resolved" },
+  { value: "closed", label: "Closed" },
+];
+const PRIORITY_OPTIONS = [
+  { value: "all", label: "Semua" },
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
+  { value: "urgent", label: "Urgent" },
+];
+
+// Map helper untuk nama status
+const statusLabelMap = new Map(STATUS_OPTIONS.map((s) => [s.value, s.label]));
+
 export function TicketsListPage() {
+  const queryClient = useQueryClient();
+
   // filters
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<TicketStatus | "all">("all");
@@ -48,18 +78,14 @@ export function TicketsListPage() {
   const [assignee, setAssignee] = useState<string | "all" | "unassigned">(
     "all"
   );
-  const [range, setRange] = useState<RangeValue>([null, null]); // createdAt range
+  const [range, setRange] = useState<RangeValue>([null, null]);
 
   // data
   const [rows, setRows] = useState<Ticket[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState<Staff[]>([]);
+  const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState<null | Ticket>(null);
-
-  // resolve modal (single/bulk)
   const [resolveFor, setResolveFor] = useState<null | "bulk" | Ticket>(null);
-
-  // selection for bulk actions
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   // fetch helper
@@ -79,43 +105,62 @@ export function TicketsListPage() {
         page: 1,
         limit: 100,
       });
-      setRows(res.data);
+      const data = res.data ?? []; // Pastikan array
+      setRows(data);
+      queryClient.setQueryData(["tickets", "list"], data);
     } catch (e: any) {
       notifications.show({
         color: "red",
-        title: "Gagal memuat",
+        title: "Gagal memuat tiket",
         message: e.message,
       });
     } finally {
       setLoading(false);
     }
-  }, [q, status, priority, assignee, range]);
+  }, [q, status, priority, assignee, range, queryClient]);
 
   useEffect(() => {
-    fetchRows();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // initial load
+    async function fetchInitialData() {
+      setLoading(true);
+      try {
+        const userRes = await getStaffList();
+        const usersData = userRes ?? []; // Pastikan array
+        setUsers(usersData);
+        queryClient.setQueryData(["staff", "list"], usersData);
+        await fetchRows();
+      } catch (e: any) {
+        notifications.show({
+          color: "red",
+          title: "Gagal memuat data",
+          message: e.message,
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchInitialData();
+  }, [fetchRows, queryClient]);
 
-  // refetch saat filter berubah (opsional: debounce)
-  useEffect(() => {
-    fetchRows();
-  }, [fetchRows]);
-
-  // dynamic options: assignee list (from current rows)
+  // Opsi assignee dari 'users' state
   const assigneeOptions = useMemo(() => {
-    const set = new Set<string>();
-    rows.forEach((r) => r.assignee && set.add(r.assignee));
     return [
       { value: "all", label: "Semua teknisi" },
       { value: "unassigned", label: "Tidak ditetapkan" },
-      ...Array.from(set)
-        .sort()
-        .map((a) => ({ value: a, label: a })),
+      ...users
+        .filter((u) => u.role === "Teknisi" || u.role === "Admin")
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((u) => ({ value: u.id, label: u.name })),
     ];
-  }, [rows]);
+  }, [users]);
+
+  // Map untuk lookup nama teknisi
+  const userNameMap = useMemo(
+    () => new Map(users.map((u) => [u.id, u.name])),
+    [users]
+  );
 
   // selection helpers
-  const filteredIds = rows.map((r) => r.id); // karena server-side filter sudah diterapkan
+  const filteredIds = rows.map((r) => r.id);
   const allSelectedInFiltered =
     filteredIds.length > 0 && filteredIds.every((id) => selected.has(id));
   const someSelectedInFiltered =
@@ -137,6 +182,96 @@ export function TicketsListPage() {
       return s;
     });
   };
+
+  // ---- Mutasi (useMutation) ----
+
+  const createMutation = useMutation({
+    mutationFn: createTicket,
+    onSuccess: (newTicket) => {
+      notifications.show({ title: "Tiket dibuat", message: newTicket.subject });
+      setFormOpen(false);
+      fetchRows();
+    },
+    onError: (e: any) => {
+      notifications.show({
+        color: "red",
+        title: "Gagal membuat",
+        message: e.message,
+      });
+    },
+  });
+
+  const resolveMutation = useMutation({
+    mutationFn: (vars: { id: string; payload: TicketResolutionInput }) =>
+      resolveTicket(vars.id, vars.payload),
+    onSuccess: () => {
+      notifications.show({
+        title: "Ticket resolved",
+        message: "Perubahan tersimpan",
+      });
+      setSelected(new Set());
+      closeResolve();
+      fetchRows();
+    },
+    onError: (e: any) => {
+      notifications.show({
+        color: "red",
+        title: "Gagal resolve",
+        message: e.message,
+      });
+    },
+  });
+
+  const assignMutation = useMutation({
+    mutationFn: (vars: { ticketId: string; userId: string | null }) =>
+      assignTicket(vars.ticketId, vars.userId),
+    onSuccess: (updatedTicket) => {
+      notifications.show({
+        title: "Teknisi diubah",
+        message: `Tiket #${updatedTicket.code} ditugaskan.`,
+      });
+      setRows((prevRows) =>
+        prevRows.map((t) => (t.id === updatedTicket.id ? updatedTicket : t))
+      );
+      queryClient.setQueryData(["tickets", "list"], (old: Ticket[] = []) =>
+        old.map((t) => (t.id === updatedTicket.id ? updatedTicket : t))
+      );
+    },
+    onError: (e: any) => {
+      notifications.show({
+        color: "red",
+        title: "Gagal assign",
+        message: e.message,
+      });
+    },
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: (vars: { ticketId: string; status: TicketStatus }) =>
+      updateTicketStatus(vars.ticketId, vars.status),
+    onSuccess: (updatedTicket) => {
+      notifications.show({
+        title: "Status diubah",
+        message: `Tiket #${updatedTicket.code} menjadi ${statusLabelMap.get(
+          updatedTicket.status
+        )}.`,
+      });
+      setRows((prevRows) =>
+        prevRows.map((t) => (t.id === updatedTicket.id ? updatedTicket : t))
+      );
+      queryClient.setQueryData(["tickets", "list"], (old: Ticket[] = []) =>
+        old.map((t) => (t.id === updatedTicket.id ? updatedTicket : t))
+      );
+    },
+    onError: (e: any) => {
+      notifications.show({
+        color: "red",
+        title: "Gagal ubah status",
+        message: e.message,
+      });
+    },
+  });
+  // ------------------------------------
 
   // columns
   const columns: Column<Ticket>[] = [
@@ -160,13 +295,14 @@ export function TicketsListPage() {
       width: 40,
       align: "center",
     },
-    { key: "code", header: "Kode", cell: (r) => r.code },
+    { key: "code", header: "Kode", cell: (r) => r.code, width: 140 },
     { key: "subject", header: "Subjek", cell: (r) => r.subject, width: "26%" },
     { key: "requester", header: "Pemohon", cell: (r) => r.requester },
     {
       key: "assignee",
       header: "Teknisi",
-      cell: (r) => r.assignee ?? "-",
+      // PERBAIKAN: Cek null/undefined sebelum 'get'
+      cell: (r) => (r.assignee ? userNameMap.get(r.assignee) : null) ?? "-",
       align: "center",
     },
     {
@@ -190,53 +326,112 @@ export function TicketsListPage() {
     {
       key: "actions",
       header: "",
-      width: 160,
+      width: 56, // Perkecil lebar
       align: "right",
+      // PERBAIKAN: Gunakan <Menu> standar Mantine, bukan ActionsDropdown
       cell: (r) => (
-        <ActionsDropdown
-          items={[
-            {
-              label: "Lihat detail",
-              icon: <IconEye size={16} />,
-              href: `/views/tickets/${encodeURIComponent(r.id)}`,
-            },
-            {
-              label: "Ubah",
-              icon: <IconPencil size={16} />,
-              onClick: () => setEditOpen(r),
-            },
-            {
-              label: "Tandai selesai",
-              icon: <IconCircleCheck size={16} />,
-              onClick: () => setResolveFor(r),
-              disabled: r.status === "resolved" || r.status === "closed",
-            },
-            { type: "divider" },
-            {
-              label: "Hapus",
-              icon: <IconTrash size={16} />,
-              color: "red",
-              confirm: {
-                title: "Hapus ticket?",
-                message: r.code,
-                labels: { confirm: "Hapus", cancel: "Batal" },
-              },
-              onClick: async () => {
-                try {
-                  await deleteTicket(r.id);
-                  notifications.show({ title: "Terhapus", message: r.code });
-                  fetchRows();
-                } catch (e: any) {
-                  notifications.show({
-                    color: "red",
-                    title: "Gagal hapus",
-                    message: e.message,
-                  });
-                }
-              },
-            },
-          ]}
-        />
+        <Menu withinPortal position="bottom-end" shadow="sm">
+          <Menu.Target>
+            <ActionIcon variant="subtle" color="gray">
+              <IconDots size={16} />
+            </ActionIcon>
+          </Menu.Target>
+          <Menu.Dropdown>
+            <Menu.Item
+              leftSection={<IconEye size={14} />}
+              component="a" // Asumsi Anda pakai Next.js Link atau <a>
+              href={`/views/tickets/${encodeURIComponent(r.id)}`} // Sesuaikan path
+            >
+              Lihat detail
+            </Menu.Item>
+
+            {/* Submenu Assign */}
+            <Menu position="right-start" withArrow shadow="sm">
+              <Menu.Target>
+                <Menu.Item
+                  leftSection={<IconUser size={14} />}
+                  rightSection={<IconChevronRight size={14} />}
+                >
+                  Tugaskan Teknisi
+                </Menu.Item>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item
+                  onClick={() =>
+                    assignMutation.mutate({ ticketId: r.id, userId: null })
+                  }
+                  disabled={assignMutation.isPending}
+                >
+                  Unassigned
+                </Menu.Item>
+                <Menu.Divider />
+                {users
+                  .filter((u) => u.role === "Teknisi" || u.role === "Admin")
+                  .map((user) => (
+                    <Menu.Item
+                      key={user.id}
+                      onClick={() =>
+                        assignMutation.mutate({
+                          ticketId: r.id,
+                          userId: user.id,
+                        })
+                      }
+                      disabled={
+                        assignMutation.isPending || r.assignee === user.id
+                      }
+                    >
+                      {user.name}
+                    </Menu.Item>
+                  ))}
+              </Menu.Dropdown>
+            </Menu>
+
+            {/* Submenu Status */}
+            <Menu position="right-start" withArrow shadow="sm">
+              <Menu.Target>
+                <Menu.Item
+                  leftSection={<IconArrowsExchange size={14} />}
+                  rightSection={<IconChevronRight size={14} />} // PERBAIKAN: Typo 1LED -> 14
+                >
+                  Ubah Status
+                </Menu.Item>
+              </Menu.Target>
+              <Menu.Dropdown>
+                {STATUS_OPTIONS.filter((s) => s.value !== "all").map((opt) => (
+                  <Menu.Item
+                    key={opt.value}
+                    onClick={() =>
+                      statusMutation.mutate({
+                        ticketId: r.id,
+                        status: opt.value as TicketStatus,
+                      })
+                    }
+                    disabled={
+                      statusMutation.isPending || r.status === opt.value
+                    }
+                  >
+                    {opt.label}
+                  </Menu.Item>
+                ))}
+              </Menu.Dropdown>
+            </Menu>
+
+            <Menu.Divider />
+
+            {/* Tombol Resolve */}
+            <Menu.Item
+              leftSection={<IconCircleCheck size={14} />}
+              onClick={() => setResolveFor(r)}
+              disabled={
+                r.status === "resolved" ||
+                r.status === "closed" ||
+                resolveMutation.isPending
+              }
+            >
+              Tandai selesai
+            </Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
       ),
     },
   ];
@@ -250,26 +445,23 @@ export function TicketsListPage() {
     try {
       if (resolveFor === "bulk") {
         await Promise.all(
-          Array.from(selected).map((id) => resolveTicket(id, payload))
+          Array.from(selected).map((id) =>
+            resolveMutation.mutateAsync({ id, payload })
+          )
         );
       } else {
-        await resolveTicket(resolveFor.id, payload);
+        await resolveMutation.mutateAsync({ id: resolveFor.id, payload });
       }
-      notifications.show({
-        title: "Ticket resolved",
-        message: "Perubahan tersimpan",
-      });
-      setSelected(new Set());
-      closeResolve();
-      fetchRows();
-    } catch (e: any) {
-      notifications.show({
-        color: "red",
-        title: "Gagal resolve",
-        message: e.message,
-      });
+    } catch (e) {
+      // Error dihandle oleh mutasi
     }
   };
+
+  const isMutating =
+    createMutation.isPending ||
+    resolveMutation.isPending ||
+    assignMutation.isPending ||
+    statusMutation.isPending;
 
   return (
     <Stack gap="md">
@@ -298,26 +490,14 @@ export function TicketsListPage() {
 
         <Select
           label="Status"
-          data={[
-            { value: "all", label: "Semua" },
-            { value: "open", label: "Open" },
-            { value: "in_progress", label: "In progress" },
-            { value: "resolved", label: "Resolved" },
-            { value: "closed", label: "Closed" },
-          ]}
+          data={STATUS_OPTIONS}
           value={status}
           onChange={(v) => setStatus((v as any) ?? "all")}
         />
 
         <Select
           label="Prioritas"
-          data={[
-            { value: "all", label: "Semua" },
-            { value: "low", label: "Low" },
-            { value: "medium", label: "Medium" },
-            { value: "high", label: "High" },
-            { value: "urgent", label: "Urgent" },
-          ]}
+          data={PRIORITY_OPTIONS}
           value={priority}
           onChange={(v) => setPriority((v as any) ?? "all")}
         />
@@ -365,7 +545,7 @@ export function TicketsListPage() {
 
       {/* Tabel + overlay loading */}
       <div style={{ position: "relative" }}>
-        <LoadingOverlay visible={loading} />
+        <LoadingOverlay visible={loading || isMutating} />
         <SimpleTable<Ticket>
           dense="sm"
           zebra
@@ -381,42 +561,9 @@ export function TicketsListPage() {
       <TicketFormModal
         opened={formOpen}
         onClose={() => setFormOpen(false)}
+        users={users}
         onSubmit={async (v) => {
-          try {
-            await createTicket(v);
-            notifications.show({ title: "Tiket dibuat", message: v.subject });
-            setFormOpen(false);
-            fetchRows();
-          } catch (e: any) {
-            notifications.show({
-              color: "red",
-              title: "Gagal membuat",
-              message: e.message,
-            });
-          }
-        }}
-      />
-
-      {/* Modal Edit */}
-      <TicketFormModal
-        opened={!!editOpen}
-        onClose={() => setEditOpen(null)}
-        mode="edit"
-        initial={editOpen ?? undefined}
-        onSubmit={async (v) => {
-          try {
-            if (!editOpen) return;
-            await updateTicket(editOpen.id, v);
-            notifications.show({ title: "Tiket diubah", message: v.subject });
-            setEditOpen(null);
-            fetchRows();
-          } catch (e: any) {
-            notifications.show({
-              color: "red",
-              title: "Gagal mengubah",
-              message: e.message,
-            });
-          }
+          await createMutation.mutateAsync(v);
         }}
       />
 
@@ -425,6 +572,7 @@ export function TicketsListPage() {
         opened={resolveOpen}
         onClose={closeResolve}
         onSubmit={handleResolveSubmit}
+        ticket={resolveFor === "bulk" ? null : resolveFor}
       />
     </Stack>
   );

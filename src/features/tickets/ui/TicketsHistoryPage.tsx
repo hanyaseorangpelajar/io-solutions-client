@@ -1,109 +1,71 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
-import { Group, Stack, Title } from "@mantine/core";
+import {
+  Group,
+  Stack,
+  Title,
+  LoadingOverlay,
+  Text,
+  Badge,
+} from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import TextField from "@/shared/ui/inputs/TextField";
 import { SimpleTable, type Column } from "@/shared/ui/table/SimpleTable";
 import { formatDateTime } from "../utils/format";
 
-/** Item riwayat global (UI-only) */
-type HistoryItem = {
-  id: string;
-  at: string; // ISO time
-  who: string; // aktor (user/teknisi)
-  ticketId: string;
-  ticketCode: string;
-  action: "created" | "status_changed" | "resolved" | "commented" | "updated";
-  description: string; // ringkas
-};
+import { useQuery } from "@tanstack/react-query";
+import { getGlobalAuditLog, type AuditLogEvent } from "../api/tickets";
+import { notifications } from "@mantine/notifications";
 
-type RangeValue = [Date | null, Date | null];
+type Row = AuditLogEvent;
 
-// Mock UI-only
-const MOCK_HISTORY: HistoryItem[] = [
-  {
-    id: "h4",
-    at: "2025-08-27T10:33:00Z",
-    who: "tech03",
-    ticketId: "3",
-    ticketCode: "TCK-2025-000125",
-    action: "resolved",
-    description: "Ticket diselesaikan (instalasi software).",
-  },
-  {
-    id: "h2",
-    at: "2025-08-27T08:01:00Z",
-    who: "tech02",
-    ticketId: "2",
-    ticketCode: "TCK-2025-000124",
-    action: "status_changed",
-    description: "Status berpindah: Open → In progress.",
-  },
-  {
-    id: "h1",
-    at: "2025-08-26T09:12:00Z",
-    who: "Andi",
-    ticketId: "1",
-    ticketCode: "TCK-2025-000123",
-    action: "created",
-    description: "Ticket dibuat (Keyboard tidak berfungsi).",
-  },
-  {
-    id: "h3",
-    at: "2025-08-27T16:47:00Z",
-    who: "Dewi",
-    ticketId: "4",
-    ticketCode: "TCK-2025-000126",
-    action: "created",
-    description: "Ticket dibuat (Monitor berkedip).",
-  },
-];
-
-function actionLabel(a: HistoryItem["action"]) {
-  switch (a) {
-    case "created":
-      return "Created";
-    case "status_changed":
-      return "Status changed";
-    case "resolved":
-      return "Resolved";
-    case "commented":
-      return "Commented";
-    case "updated":
-      return "Updated";
+function auditActionLabel(action: Row["action"]): {
+  label: string;
+  color: string;
+} {
+  switch (action) {
+    case "approved":
+      return { label: "Approved", color: "green" };
+    case "rejected":
+      return { label: "Rejected", color: "red" };
+    case "draft":
+      return { label: "Draft", color: "gray" };
     default:
-      return a;
+      return { label: action, color: "dark" };
   }
 }
 
+type RangeValue = [Date | null, Date | null];
+
 export function TicketsHistoryPage() {
-  // filter toolbar
   const [q, setQ] = useState("");
   const [range, setRange] = useState<RangeValue>([null, null]);
 
-  const filtered = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    const [start, end] = range;
-    const startMs = start ? new Date(start).setHours(0, 0, 0, 0) : null;
-    const endMs = end ? new Date(end).setHours(23, 59, 59, 999) : null;
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["audits", "list", { q, range }],
+    queryFn: () => {
+      const [from, to] = range;
+      return getGlobalAuditLog({
+        q: q || undefined,
+        from: from ? from.toISOString() : undefined,
+        to: to ? to.toISOString() : undefined,
+      });
+    },
+  });
 
-    return MOCK_HISTORY.filter((h) => {
-      const t = Date.parse(h.at);
-      const matchDate =
-        (startMs === null || t >= startMs) && (endMs === null || t <= endMs);
-      const matchQ =
-        term.length === 0 ||
-        h.ticketCode.toLowerCase().includes(term) ||
-        h.who.toLowerCase().includes(term) ||
-        h.description.toLowerCase().includes(term) ||
-        actionLabel(h.action).toLowerCase().includes(term);
-      return matchDate && matchQ;
-    }).sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
-  }, [q, range]);
+  useEffect(() => {
+    if (error) {
+      notifications.show({
+        color: "red",
+        title: "Gagal memuat riwayat audit",
+        message: (error as Error).message,
+      });
+    }
+  }, [error]);
 
-  type Row = HistoryItem;
+  const rows: Row[] = data?.data ?? [];
   const columns: Column<Row>[] = [
     {
       key: "at",
@@ -121,16 +83,23 @@ export function TicketsHistoryPage() {
         </Link>
       ),
     },
-    { key: "who", header: "Aktor", width: 140, cell: (r) => r.who },
+    { key: "who", header: "Reviewer", width: 140, cell: (r) => r.who },
     {
       key: "action",
-      header: "Aksi",
+      header: "Status Audit",
       width: 160,
-      cell: (r) => actionLabel(r.action),
+      cell: (r) => {
+        const { label, color } = auditActionLabel(r.action);
+        return (
+          <Badge color={color} variant="light">
+            {label}
+          </Badge>
+        );
+      },
     },
     {
       key: "description",
-      header: "Deskripsi",
+      header: "Catatan (Notes)",
       cell: (r) => r.description,
       width: "40%",
     },
@@ -139,14 +108,13 @@ export function TicketsHistoryPage() {
   return (
     <Stack gap="md">
       <Group justify="space-between" align="center">
-        <Title order={3}>Tickets History</Title>
+        <Title order={3}>Audit Log</Title>
       </Group>
 
-      {/* Toolbar: cari & rentang tanggal */}
       <Group align="end" wrap="wrap" gap="sm">
         <TextField
           label="Cari"
-          placeholder="Kode / aktor / deskripsi / aksi"
+          placeholder="Kode tiket / catatan"
           value={q}
           onChange={(e) => setQ(e.currentTarget.value)}
           style={{ minWidth: 260 }}
@@ -161,15 +129,18 @@ export function TicketsHistoryPage() {
         />
       </Group>
 
-      <SimpleTable<Row>
-        dense="sm"
-        zebra
-        stickyHeader
-        maxHeight={520}
-        columns={columns}
-        data={filtered}
-        emptyText="Belum ada riwayat"
-      />
+      <div style={{ position: "relative" }}>
+        <LoadingOverlay visible={isLoading} />
+        <SimpleTable<Row>
+          dense="sm"
+          zebra
+          stickyHeader
+          maxHeight={520}
+          columns={columns}
+          data={rows}
+          emptyText="Belum ada riwayat audit"
+        />
+      </div>
     </Stack>
   );
 }

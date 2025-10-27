@@ -3,7 +3,6 @@
 // ---- Model
 export * from "./model/types";
 export * from "./model/schema";
-export { MOCK_TICKETS, getMockTicketById } from "./model/mock";
 
 // ---- Pages (List & History = named; lainnya default)
 export { TicketsListPage } from "./ui/TicketsListPage";
@@ -15,7 +14,6 @@ export { default as TicketDetailPage } from "./ui/TicketDetailPage";
 export { default as ResolveTicketModal } from "./ui/ResolveTicketModal";
 export { default as TicketFormModal } from "./ui/TicketFormModal";
 export { default as TicketPriorityBadge } from "./ui/TicketPriorityBadge";
-export { default as TicketRowActionsMenu } from "./ui/TicketRowActionsMenu";
 export { default as TicketStatusBadge } from "./ui/TicketStatusBadge";
 
 // ---- Utils

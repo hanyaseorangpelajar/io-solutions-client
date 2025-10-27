@@ -3,30 +3,32 @@
 import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button, Group, Modal, Select, Stack, Textarea } from "@mantine/core";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import TextField from "@/shared/ui/inputs/TextField";
 import { TicketFormSchema, type TicketFormInput } from "../model/schema";
-import type { Ticket } from "../model/types";
+// Kita perlu tipe data User (Staff) untuk props
+import type { Staff } from "@/features/staff/model/types";
 
 export default function TicketFormModal({
   opened,
   onClose,
   onSubmit,
-  initial,
-  mode = "create",
+  // PERBAIKAN: Tambahkan prop 'users' untuk mengisi <Select> Teknisi
+  users,
 }: {
   opened: boolean;
   onClose: () => void;
   onSubmit: (data: TicketFormInput) => Promise<void> | void;
-  initial?: Partial<Ticket>;
-  mode?: "create" | "edit";
+  // PERBAIKAN: Hapus 'initial' dan 'mode'
+  users: Pick<Staff, "id" | "name">[]; // Terima daftar user (Teknisi)
 }) {
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting, isValid },
-    setValue,
+    // PERBAIKAN: Kita butuh 'control' untuk Mantine Select
+    control,
   } = useForm<TicketFormInput>({
     resolver: zodResolver(TicketFormSchema),
     mode: "onChange",
@@ -34,30 +36,26 @@ export default function TicketFormModal({
       subject: "",
       requester: "",
       priority: "medium",
-      status: "open",
+      // PERBAIKAN: Hapus 'status'
       assignee: "",
       description: "",
     },
   });
 
+  // PERBAIKAN: Hapus logic 'useEffect' yang menggunakan 'initial'
+  // Cukup reset form saat dibuka
   useEffect(() => {
     if (opened) {
-      reset({
-        subject: initial?.subject ?? "",
-        requester: initial?.requester ?? "",
-        priority: initial?.priority ?? "medium",
-        status: initial?.status ?? "open",
-        assignee: initial?.assignee ?? "",
-        description: initial?.description ?? "",
-      });
+      reset(); // Reset ke defaultValues
     }
-  }, [opened, reset, initial]);
+  }, [opened, reset]);
 
   return (
     <Modal
       opened={opened}
       onClose={onClose}
-      title={mode === "create" ? "Buat Ticket" : "Ubah Ticket"}
+      // PERBAIKAN: Judul 'Create Only'
+      title="Buat Ticket Baru"
       radius="lg"
       size="lg"
       centered
@@ -86,45 +84,51 @@ export default function TicketFormModal({
           />
 
           <Group grow>
-            <Select
-              label="Prioritas"
-              data={[
-                { value: "low", label: "Low" },
-                { value: "medium", label: "Medium" },
-                { value: "high", label: "High" },
-                { value: "urgent", label: "Urgent" },
-              ]}
-              defaultValue="medium"
-              onChange={(v) =>
-                setValue("priority", (v as any) ?? "medium", {
-                  shouldValidate: true,
-                })
-              }
-              value={undefined}
-              // Mantine Select uncontrolled by default; we push into RHF via setValue
+            {/* PERBAIKAN: Gunakan 'Controller' untuk Mantine Select */}
+            <Controller
+              name="priority"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  {...field}
+                  label="Prioritas"
+                  data={[
+                    { value: "low", label: "Low" },
+                    { value: "medium", label: "Medium" },
+                    { value: "high", label: "High" },
+                    { value: "urgent", label: "Urgent" },
+                  ]}
+                  error={errors.priority?.message}
+                />
+              )}
             />
-            <Select
-              label="Status"
-              data={[
-                { value: "open", label: "Open" },
-                { value: "in_progress", label: "In progress" },
-                { value: "resolved", label: "Resolved" },
-                { value: "closed", label: "Closed" },
-              ]}
-              defaultValue="open"
-              onChange={(v) =>
-                setValue("status", (v as any) ?? "open", {
-                  shouldValidate: true,
-                })
-              }
-              value={undefined}
-            />
+
+            {/* PERBAIKAN: Hapus <Select> untuk Status */}
           </Group>
 
-          <TextField
-            label="Teknisi (opsional)"
-            placeholder="Nama teknisi"
-            {...register("assignee")}
+          {/* PERBAIKAN: Ganti TextField Teknisi dengan Select */}
+          <Controller
+            name="assignee"
+            control={control}
+            render={({ field }) => (
+              <Select
+                {...field}
+                label="Teknisi (opsional)"
+                placeholder="Pilih teknisi..."
+                data={[
+                  // Tambahkan opsi "Unassigned"
+                  { value: "", label: "Unassigned" },
+                  // Map dari props 'users'
+                  ...users.map((user) => ({
+                    value: user.id,
+                    label: user.name,
+                  })),
+                ]}
+                error={errors.assignee?.message}
+                searchable
+                clearable
+              />
+            )}
           />
 
           <Textarea
@@ -139,7 +143,7 @@ export default function TicketFormModal({
               Batal
             </Button>
             <Button type="submit" loading={isSubmitting} disabled={!isValid}>
-              {mode === "create" ? "Buat" : "Simpan"}
+              Buat Tiket
             </Button>
           </Group>
         </Stack>

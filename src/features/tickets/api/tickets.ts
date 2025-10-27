@@ -1,7 +1,10 @@
-// src/features/tickets/api/tickets.ts
-import { http } from "./http";
+import apiClient from "@/lib/apiClient";
 import type { Ticket } from "../model/types";
-import type { TicketFormInput, TicketResolutionInput } from "../model/schema";
+import type {
+  TicketFormInput,
+  TicketResolutionInput,
+  PartUsageInput,
+} from "../model/schema";
 
 export type Paginated<T> = {
   data: T[];
@@ -16,73 +19,113 @@ function qs(params: Record<string, any>): string {
   return q ? `?${q}` : "";
 }
 
-// ---- Tickets
-export async function listTickets(params: {
-  q?: string;
-  status?: string;         // open | in_progress | resolved | closed | all
-  priority?: string;       // low | medium | high | urgent | all
-  assignee?: string | "unassigned" | "all";
-  from?: string;           // ISO date
-  to?: string;             // ISO date
-  page?: number;
-  limit?: number;
-  sortBy?: "createdAt" | "updatedAt" | "priority" | "status" | "subject";
-  order?: "asc" | "desc";
-}): Promise<Paginated<Ticket>> {
+export async function listTickets(params: {}): Promise<Paginated<Ticket>> {
   const p: any = { ...params };
   if (p.assignee === "unassigned") {
-    // backend filter 'assignee' kosong → kita ambil semua lalu filter client-side,
-    // atau gunakan konvensi: kirim assignee="" dan backend treat sebagai empty.
-    p.assignee = ""; // backend kita treat: string kosong artinya unassigned
+    p.assignee = "";
   }
-  return http<Paginated<Ticket>>(`/api/v1/tickets${qs(p)}`);
+  const response = await apiClient.get<Paginated<Ticket>>(
+    `/api/v1/tickets${qs(p)}`
+  );
+  return response.data;
 }
 
 export async function getTicket(id: string): Promise<Ticket> {
-  return http<Ticket>(`/api/v1/tickets/${encodeURIComponent(id)}`);
+  const response = await apiClient.get<Ticket>(
+    `/api/v1/tickets/${encodeURIComponent(id)}`
+  );
+  return response.data;
 }
 
 export async function createTicket(input: TicketFormInput): Promise<Ticket> {
-  // Backend menerima subject, requester, priority, status, assignee, description
-  return http<Ticket>("/api/v1/tickets", { method: "POST", body: input });
+  const response = await apiClient.post<Ticket>("/api/v1/tickets", input);
+  return response.data;
 }
 
-export async function updateTicket(id: string, patch: Partial<TicketFormInput>): Promise<Ticket> {
-  return http<Ticket>(`/api/v1/tickets/${encodeURIComponent(id)}`, { method: "PUT", body: patch });
+export async function assignTicket(
+  id: string,
+  userId: string | null
+): Promise<Ticket> {
+  const response = await apiClient.put<Ticket>(
+    `/api/v1/tickets/${encodeURIComponent(id)}/assign`,
+    { userId: userId || null }
+  );
+  return response.data;
 }
 
-export async function updateTicketStatus(id: string, status: "open"|"in_progress"|"resolved"|"closed"): Promise<Ticket> {
-  return http<Ticket>(`/api/v1/tickets/${encodeURIComponent(id)}/status`, {
-    method: "PATCH",
-    body: { status },
-  });
+export async function updateTicketStatus(
+  id: string,
+  status: "open" | "in_progress" | "resolved" | "closed"
+): Promise<Ticket> {
+  const response = await apiClient.put<Ticket>(
+    `/api/v1/tickets/${encodeURIComponent(id)}/status`,
+    { status }
+  );
+  return response.data;
 }
 
-export async function resolveTicket(id: string, payload: TicketResolutionInput): Promise<Ticket> {
-  // FE punya: { rootCause, solution, parts[], photos[], tags[], extraCosts[], ... }
-  // BE kita saat ini menerima apa pun dan menyimpan yang dikenalnya; ke depan model BE sudah kita siapkan untuk diperluas.
-  return http<Ticket>(`/api/v1/tickets/${encodeURIComponent(id)}/resolve`, {
-    method: "PATCH",
-    body: payload,
-  });
+export async function resolveTicket(
+  id: string,
+  payload: TicketResolutionInput
+): Promise<Ticket> {
+  const response = await apiClient.put<Ticket>(
+    `/api/v1/tickets/${encodeURIComponent(id)}/resolve`,
+    payload
+  );
+  return response.data;
 }
 
-export async function deleteTicket(id: string): Promise<{ message: string; id: string }> {
-  return http<{ message: string; id: string }>(`/api/v1/tickets/${encodeURIComponent(id)}`, {
-    method: "DELETE",
-  });
+export async function addDiagnosis(
+  id: string,
+  payload: { symptom: string; diagnosis: string }
+): Promise<Ticket> {
+  const response = await apiClient.put<Ticket>(
+    `/api/v1/tickets/${encodeURIComponent(id)}/diagnose`,
+    payload
+  );
+  return response.data;
 }
 
-// ---- History (per-ticket)
-export type TicketEvent = {
+export async function addAction(
+  id: string,
+  payload: { actionTaken: string; partsUsed: PartUsageInput[] }
+): Promise<Ticket> {
+  const response = await apiClient.put<Ticket>(
+    `/api/v1/tickets/${encodeURIComponent(id)}/action`,
+    payload
+  );
+  return response.data;
+}
+
+export type AuditLogEvent = {
   id: string;
+  at: string;
+  who: string;
   ticketId: string;
-  type: "created" | "updated" | "status_changed" | "resolved" | "deleted";
-  payload: Record<string, unknown>;
-  actor: string | null;
-  createdAt: string;
+  ticketCode: string;
+  action: "draft" | "approved" | "rejected";
+  description: string;
 };
 
-export async function getTicketHistory(id: string): Promise<TicketEvent[]> {
-  return http<TicketEvent[]>(`/api/v1/tickets/${encodeURIComponent(id)}/history`);
+/**
+ * Mengambil riwayat untuk SATU tiket
+ */
+export async function getTicketHistory(id: string): Promise<AuditLogEvent[]> {
+  const response = await apiClient.get<AuditLogEvent[]>(
+    `/api/v1/tickets/${encodeURIComponent(id)}/history`
+  );
+  return response.data;
+}
+
+/**
+ * PERBAIKAN: Fungsi ini sekarang memanggil endpoint /audits
+ * dan mengharapkan data paginasi
+ */
+export async function getGlobalAuditLog(
+  params: Record<string, any>
+): Promise<Paginated<AuditLogEvent>> {
+  const response = await apiClient.get<Paginated<AuditLogEvent>>(
+    `/api/v1/audits${qs(params)}`
+  );
+  return response.data;
 }
