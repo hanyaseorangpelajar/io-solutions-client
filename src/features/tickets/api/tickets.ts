@@ -24,21 +24,19 @@ export async function listTickets(params: {}): Promise<Paginated<Ticket>> {
   if (p.assignee === "unassigned") {
     p.assignee = "";
   }
-  const response = await apiClient.get<Paginated<Ticket>>(
-    `/api/v1/tickets${qs(p)}`
-  );
+  const response = await apiClient.get<Paginated<Ticket>>(`/tickets${qs(p)}`);
   return response.data;
 }
 
 export async function getTicket(id: string): Promise<Ticket> {
   const response = await apiClient.get<Ticket>(
-    `/api/v1/tickets/${encodeURIComponent(id)}`
+    `/tickets/${encodeURIComponent(id)}`
   );
   return response.data;
 }
 
 export async function createTicket(input: TicketFormInput): Promise<Ticket> {
-  const response = await apiClient.post<Ticket>("/api/v1/tickets", input);
+  const response = await apiClient.post<Ticket>("/tickets", input);
   return response.data;
 }
 
@@ -47,7 +45,7 @@ export async function assignTicket(
   userId: string | null
 ): Promise<Ticket> {
   const response = await apiClient.put<Ticket>(
-    `/api/v1/tickets/${encodeURIComponent(id)}/assign`,
+    `/tickets/${encodeURIComponent(id)}/assign`,
     { userId: userId || null }
   );
   return response.data;
@@ -58,7 +56,7 @@ export async function updateTicketStatus(
   status: "open" | "in_progress" | "resolved" | "closed"
 ): Promise<Ticket> {
   const response = await apiClient.put<Ticket>(
-    `/api/v1/tickets/${encodeURIComponent(id)}/status`,
+    `/tickets/${encodeURIComponent(id)}/status`,
     { status }
   );
   return response.data;
@@ -69,7 +67,7 @@ export async function resolveTicket(
   payload: TicketResolutionInput
 ): Promise<Ticket> {
   const response = await apiClient.put<Ticket>(
-    `/api/v1/tickets/${encodeURIComponent(id)}/resolve`,
+    `/tickets/${encodeURIComponent(id)}/resolve`,
     payload
   );
   return response.data;
@@ -80,7 +78,7 @@ export async function addDiagnosis(
   payload: { symptom: string; diagnosis: string }
 ): Promise<Ticket> {
   const response = await apiClient.put<Ticket>(
-    `/api/v1/tickets/${encodeURIComponent(id)}/diagnose`,
+    `/tickets/${encodeURIComponent(id)}/diagnose`,
     payload
   );
   return response.data;
@@ -91,7 +89,7 @@ export async function addAction(
   payload: { actionTaken: string; partsUsed: PartUsageInput[] }
 ): Promise<Ticket> {
   const response = await apiClient.put<Ticket>(
-    `/api/v1/tickets/${encodeURIComponent(id)}/action`,
+    `/tickets/${encodeURIComponent(id)}/action`,
     payload
   );
   return response.data;
@@ -112,7 +110,7 @@ export type AuditLogEvent = {
  */
 export async function getTicketHistory(id: string): Promise<AuditLogEvent[]> {
   const response = await apiClient.get<AuditLogEvent[]>(
-    `/api/v1/tickets/${encodeURIComponent(id)}/history`
+    `/tickets/${encodeURIComponent(id)}/history`
   );
   return response.data;
 }
@@ -125,7 +123,7 @@ export async function getGlobalAuditLog(
   params: Record<string, any>
 ): Promise<Paginated<AuditLogEvent>> {
   const response = await apiClient.get<Paginated<AuditLogEvent>>(
-    `/api/v1/audits${qs(params)}`
+    `/audits${qs(params)}`
   );
   return response.data;
 }

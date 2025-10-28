@@ -1,25 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { AppShell } from "@mantine/core";
 import SidebarNav from "./SidebarNav";
 import HeaderBar from "./HeaderBar";
-import type { NavItem } from "../model/nav";
+import { MASTER_NAV, filterNavItemsByRole, type UserRole } from "../model/nav";
+import { useAuth } from "@/features/auth";
 
 export default function AppShellLayout({
   children,
-  navItems,
   headerTitle,
   headerTagline,
   headerHref,
 }: {
   children: React.ReactNode;
-  navItems: NavItem[];
   headerTitle?: string;
   headerTagline?: string;
   headerHref?: string;
 }) {
-  const [opened, setOpened] = useState(false); // navbar mobile
+  const [opened, setOpened] = useState(false);
+
+  const { user } = useAuth();
+  const userRole = user?.role as UserRole | undefined;
+
+  const accessibleNavItems = useMemo(() => {
+    if (!userRole) {
+      return [];
+    }
+    return filterNavItemsByRole(MASTER_NAV, userRole);
+  }, [userRole]);
 
   return (
     <AppShell
@@ -42,7 +51,10 @@ export default function AppShellLayout({
       </AppShell.Header>
 
       <AppShell.Navbar p="xs">
-        <SidebarNav items={navItems} onNavigate={() => setOpened(false)} />
+        <SidebarNav
+          items={accessibleNavItems}
+          onNavigate={() => setOpened(false)}
+        />
       </AppShell.Navbar>
 
       <AppShell.Main>{children}</AppShell.Main>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   Badge,
   Button,
@@ -9,7 +9,13 @@ import {
   Select,
   Stack,
   Title,
+  LoadingOverlay,
+  Text,
+  Alert,
+  Menu,
+  ActionIcon,
 } from "@mantine/core";
+import { modals } from "@mantine/modals";
 import {
   IconPencil,
   IconPlus,
@@ -19,40 +25,57 @@ import {
   IconArrowDown,
   IconArrowUp,
   IconLink,
+  IconInfoCircle,
+  IconDots,
 } from "@tabler/icons-react";
 import TextField from "@/shared/ui/inputs/TextField";
 import { SimpleTable, type Column } from "@/shared/ui/table/SimpleTable";
-import { ActionsDropdown } from "@/shared/ui/menus";
 import PartFormModal from "./PartFormModal";
 import StockMoveModal from "./StockMoveModal";
 import PartStatusBadge from "./PartStatusBadge";
 import type { Part } from "../model/types";
 import type { PartFormInput, StockMoveInput } from "../model/schema";
-import {
-  INVENTORY_ITEMS,
-  STOCK_MOVES,
-  upsertItem,
-  removeItem,
-  nextId,
-  pushMove,
-  adjustStock,
-  setStock,
-} from "../model/mock";
+
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { listParts, createPart, updatePart, deletePart } from "../api/parts";
+import { createStockMovement } from "../api/stockMovements";
+import { notifications } from "@mantine/notifications";
+
 import { downloadCSV } from "@/shared/utils/csv";
 import StockOutFromTicketModal, {
   type StockOutFromTicketPayload,
 } from "./StockOutFromTicketModal";
 
-const CURRENT_USER = "sysadmin";
+const MOCK_CURRENT_USER_ID = "USER_ID_DARI_AUTH";
+const nextId = (prefix: string) => `${prefix}-${Date.now()}`;
 
 export default function InventoryListPage() {
-  const [items, setItems] = useState<Part[]>(INVENTORY_ITEMS);
+  const queryClient = useQueryClient();
+
+  const {
+    data: items = [],
+    isLoading,
+    error,
+  } = useQuery<Part[]>({
+    queryKey: ["parts", "list"],
+    queryFn: listParts,
+  });
+
+  useEffect(() => {
+    if (error) {
+      notifications.show({
+        color: "red",
+        title: "Gagal memuat inventory",
+        message: (error as Error).message,
+      });
+    }
+  }, [error]);
+
   const [q, setQ] = useState("");
   const [category, setCategory] = useState<string | "all">("all");
   const [status, setStatus] = useState<"all" | Part["status"]>("all");
   const [lowOnly, setLowOnly] = useState(false);
 
-  // modals
   const [editing, setEditing] = useState<null | Part>(null);
   const [creating, setCreating] = useState(false);
   const [moving, setMoving] = useState<null | {
@@ -60,19 +83,15 @@ export default function InventoryListPage() {
     type: "in" | "out" | "adjust";
   }>(null);
   const [stockOutTicket, setStockOutTicket] = useState(false);
+  const [loadingStockOut, setLoadingStockOut] = useState(false);
 
-  const categories = useMemo(() => {
-    const s = new Set<string>();
-    items.forEach((i) => i.category && s.add(i.category));
-    return [
-      { value: "all", label: "Semua kategori" },
-      ...Array.from(s).map((v) => ({ value: v, label: v })),
-    ];
-  }, [items]);
-
-  const filtered = useMemo(() => {
+  const categories = useMemo(() => {}, [items]);
+  const filtered: Part[] = useMemo(() => {
     const term = q.trim().toLowerCase();
+    // Pastikan 'items' adalah array sebelum filter
+    if (!Array.isArray(items)) return [];
     return items.filter((i) => {
+      // ... (logika filter sama) ...
       const matchQ =
         term.length === 0 ||
         i.name.toLowerCase().includes(term) ||
@@ -86,321 +105,208 @@ export default function InventoryListPage() {
       return matchQ && matchC && matchS && matchL;
     });
   }, [items, q, category, status, lowOnly]);
+  const exportCSV = () => {};
 
-  const exportCSV = () => {
-    const headers = [
-      "Nama",
-      "SKU",
-      "Kategori",
-      "Vendor",
-      "Unit",
-      "Stok",
-      "Min",
-      "Lokasi",
-      "Status",
-      "Harga",
-    ];
-    const rows = filtered.map((i) => [
-      i.name,
-      i.sku ?? "",
-      i.category ?? "",
-      i.vendor ?? "",
-      i.unit,
-      i.stock,
-      i.minStock ?? 0,
-      i.location ?? "",
-      i.status,
-      i.price ?? "",
-    ]);
-    downloadCSV("inventory-items.csv", headers, rows);
-  };
+  const invalidatePartsList = () => {};
 
-  const doCreate = (v: PartFormInput) => {
-    const p: Part = {
-      id: nextId("p"),
-      name: v.name,
-      sku: v.sku || undefined,
-      category: v.category || undefined,
-      vendor: v.vendor || undefined,
-      unit: v.unit,
-      stock: v.stock ?? 0,
-      minStock: v.minStock ?? 0,
-      location: v.location || undefined,
-      status: v.status,
-      price: v.price,
-    };
-    upsertItem(p);
-    setItems([...INVENTORY_ITEMS]);
-  };
+  const createMutation = useMutation({
+    mutationFn: createPart,
+    onSuccess: (newPart) => {},
+    onError: (e: any) => {},
+  });
 
-  const doUpdate = (id: string, v: PartFormInput) => {
-    const prev = items.find((x) => x.id === id);
-    if (!prev) return;
-    const p: Part = { ...prev, ...v };
-    upsertItem(p);
-    setItems([...INVENTORY_ITEMS]);
-  };
+  const updateMutation = useMutation({
+    mutationFn: (vars: { id: string; data: PartFormInput }) =>
+      updatePart(vars.id, vars.data),
+    onSuccess: (updatedPart) => {},
+    onError: (e: any) => {},
+  });
 
-  const doDelete = (id: string) => {
-    removeItem(id);
-    setItems([...INVENTORY_ITEMS]);
-  };
-
-  const doMove = (part: Part, v: StockMoveInput) => {
-    const now = new Date().toISOString();
-    if (v.type === "adjust") {
-      const from = part.stock;
-      const to = Math.max(0, v.qty);
-      setStock(part.id, to);
-      pushMove({
-        id: nextId("m"),
-        partId: part.id,
-        partName: part.name,
-        type: "adjust",
-        qty: Math.abs(to - from),
-        ref: v.ref,
-        note: `Adjust ${from} → ${to}${v.note ? ` (${v.note})` : ""}`,
-        by: CURRENT_USER,
-        at: now,
+  const deleteMutation = useMutation<void, Error, string>({
+    mutationFn: deletePart,
+    onSuccess: (_, deletedId) => {
+      notifications.show({
+        color: "green",
+        title: "Part Dihapus",
+        message: `Part berhasil dihapus.`,
       });
-    } else {
-      adjustStock(part.id, v.type, v.qty);
-      pushMove({
-        id: nextId("m"),
-        partId: part.id,
-        partName: part.name,
-        type: v.type,
-        qty: v.qty,
-        ref: v.ref,
-        note: v.note,
-        by: CURRENT_USER,
-        at: now,
+      queryClient.setQueryData(["parts", "list"], (old: Part[] = []) =>
+        old.filter((p) => p.id !== deletedId)
+      );
+    },
+    onError: (e: any) => {},
+  });
+
+  const stockMoveMutation = useMutation({
+    mutationFn: createStockMovement,
+    onSuccess: (newMovement) => {},
+    onError: (e: any) => {},
+  });
+
+  const handleStockMove = async (part: Part, v: StockMoveInput) => {
+    await stockMoveMutation.mutateAsync({
+      partId: part.id,
+      type: v.type,
+      quantity: v.qty,
+      reference: v.ref,
+      notes: v.note,
+    });
+  };
+
+  const handleStockOutFromTicket = async (
+    payload: StockOutFromTicketPayload
+  ) => {
+    console.warn("Memulai stock out dari tiket:", payload.ticketCode);
+    try {
+      setLoadingStockOut(true);
+      for (const line of payload.lines) {
+        await stockMoveMutation.mutateAsync({
+          partId: line.itemId,
+          type: "out",
+          quantity: line.qty,
+          reference: payload.ticketCode,
+          notes: `Otomatis dari tiket ${payload.ticketCode} (${line.partName})`,
+        });
+      }
+      notifications.show({
+        color: "green",
+        title: "Stock Out Berhasil",
+        message: `Semua item dari tiket ${payload.ticketCode} telah dikeluarkan.`,
       });
+      setStockOutTicket(false);
+    } catch (e: any) {
+      notifications.show({
+        color: "red",
+        title: "Gagal Stock Out",
+        message: e.message,
+      });
+    } finally {
+      setLoadingStockOut(false);
     }
-    setItems([...INVENTORY_ITEMS]);
   };
 
-  const doStockOutFromTicket = (payload: StockOutFromTicketPayload) => {
-    const now = new Date().toISOString();
-    for (const line of payload.lines) {
-      // kurangi stok & buat mutasi out
-      adjustStock(line.itemId, "out", line.qty);
-      const item = INVENTORY_ITEMS.find((x) => x.id === line.itemId);
-      pushMove({
-        id: nextId("m"),
-        partId: line.itemId,
-        partName: item?.name ?? line.partName,
-        type: "out",
-        qty: line.qty,
-        ref: payload.ticketCode,
-        note: `Stock out dari ticket ${payload.ticketCode} (${line.partName})`,
-        by: CURRENT_USER,
-        at: now,
-      });
-    }
-    setItems([...INVENTORY_ITEMS]);
+  const handleDeletePart = (partToDelete: Part) => {
+    modals.openConfirmModal({
+      title: "Hapus part?",
+      children: (
+        <Text size="sm">
+          Yakin ingin menghapus <strong>{partToDelete.name}</strong>?
+        </Text>
+      ),
+      labels: { confirm: "Hapus", cancel: "Batal" },
+      confirmProps: { color: "red", loading: deleteMutation.isPending },
+      onConfirm: () => deleteMutation.mutate(partToDelete.id),
+    });
   };
 
   type Row = Part;
   const columns: Column<Row>[] = [
     {
-      key: "name",
-      header: "Nama Part",
-      width: "28%",
-      cell: (r) => (
-        <Group gap={8}>
-          <div style={{ fontWeight: 600 }}>{r.name}</div>
-          {r.minStock && r.stock <= r.minStock ? (
-            <Badge color="red" variant="light">
-              LOW
-            </Badge>
-          ) : null}
-        </Group>
-      ),
-    },
-    { key: "sku", header: "SKU", width: 140, cell: (r) => r.sku ?? "-" },
-    {
-      key: "category",
-      header: "Kategori",
-      width: 140,
-      cell: (r) => r.category ?? "-",
-    },
-    {
-      key: "vendor",
-      header: "Vendor",
-      width: 140,
-      cell: (r) => r.vendor ?? "-",
-    },
-    {
-      key: "unit",
-      header: "Unit",
-      width: 80,
-      align: "center",
-      cell: (r) => r.unit,
-    },
-    {
-      key: "stock",
-      header: "Stok",
-      width: 100,
-      align: "right",
-      cell: (r) => r.stock.toString(),
-    },
-    {
-      key: "minStock",
-      header: "Min",
-      width: 80,
-      align: "right",
-      cell: (r) => (r.minStock ?? 0).toString(),
-    },
-    {
-      key: "status",
-      header: "Status",
-      width: 120,
-      align: "center",
-      cell: (r) => <PartStatusBadge status={r.status} />,
-    },
-    {
       key: "actions",
       header: "",
       align: "right",
-      width: 200,
+      width: 100,
       cell: (r) => (
-        <ActionsDropdown
-          items={[
-            {
-              label: "Edit",
-              icon: <IconPencil size={16} />,
-              onClick: () => setEditing(r),
-            },
-            {
-              label: "Stock In",
-              icon: <IconArrowDown size={16} />,
-              onClick: () => setMoving({ part: r, type: "in" }),
-            },
-            {
-              label: "Stock Out",
-              icon: <IconArrowUp size={16} />,
-              onClick: () => setMoving({ part: r, type: "out" }),
-            },
-            {
-              label: "Adjust",
-              icon: <IconUpload size={16} />,
-              onClick: () => setMoving({ part: r, type: "adjust" }),
-            },
-            { type: "divider" },
-            {
-              label: "Hapus",
-              icon: <IconTrash size={16} />,
-              color: "red",
-              confirm: {
-                title: "Hapus part?",
-                message: r.name,
-                labels: { confirm: "Hapus", cancel: "Batal" },
-              },
-              onClick: () => doDelete(r.id),
-            },
-          ]}
-        />
+        <Group gap="xs" justify="flex-end" wrap="nowrap">
+          <Menu withinPortal position="bottom-end" shadow="sm">
+            <Menu.Target>
+              <ActionIcon variant="subtle" color="gray">
+                <IconDots size={16} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown miw={160}>
+              {" "}
+              <Menu.Item
+                leftSection={<IconPencil size={14} />}
+                onClick={() => setEditing(r)}
+                disabled={updateMutation.isPending || deleteMutation.isPending}
+              >
+                Edit
+              </Menu.Item>
+              <Menu.Divider />
+              <Menu.Label>Stock Movement</Menu.Label>
+              <Menu.Item
+                leftSection={<IconArrowDown size={14} />}
+                onClick={() => setMoving({ part: r, type: "in" })}
+                disabled={stockMoveMutation.isPending}
+              >
+                Stock In
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<IconArrowUp size={14} />}
+                onClick={() => setMoving({ part: r, type: "out" })}
+                disabled={stockMoveMutation.isPending}
+              >
+                Stock Out
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<IconUpload size={14} />}
+                onClick={() => setMoving({ part: r, type: "adjust" })}
+                disabled={stockMoveMutation.isPending}
+              >
+                Adjust Stock
+              </Menu.Item>
+              <Menu.Divider />
+              <Menu.Item
+                color="red"
+                leftSection={<IconTrash size={14} />}
+                onClick={() => handleDeletePart(r)}
+                disabled={deleteMutation.isPending || updateMutation.isPending}
+              >
+                Hapus Part
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
       ),
     },
   ];
 
+  const isMutating =
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    deleteMutation.isPending ||
+    stockMoveMutation.isPending ||
+    loadingStockOut;
+
   return (
     <Stack gap="md">
-      <Group justify="space-between" align="center">
-        <Title order={3}>Inventory Items</Title>
-        <Group gap="xs">
-          <Button
-            leftSection={<IconPlus size={16} />}
-            onClick={() => setCreating(true)}
-          >
-            Tambah Part
-          </Button>
-          <Button
-            variant="light"
-            leftSection={<IconLink size={16} />}
-            onClick={() => setStockOutTicket(true)}
-            title="Buat Stock Out berdasarkan parts di ticket"
-          >
-            Stock Out dari Ticket
-          </Button>
-          <Button
-            variant="light"
-            leftSection={<IconDownload size={16} />}
-            onClick={exportCSV}
-          >
-            Export CSV
-          </Button>
-          <Button
-            variant="default"
-            leftSection={<IconUpload size={16} />}
-            disabled
-          >
-            Import CSV (soon)
-          </Button>
-        </Group>
-      </Group>
+      <div style={{ position: "relative" }}>
+        <LoadingOverlay visible={isLoading || isMutating} />
+        <SimpleTable<Row>
+          dense="sm"
+          zebra
+          stickyHeader
+          maxHeight={540}
+          columns={columns}
+          data={filtered}
+          emptyText="Belum ada part"
+        />
+      </div>
 
-      {/* Toolbar */}
-      <Group align="end" wrap="wrap" gap="sm">
-        <TextField
-          label="Cari"
-          placeholder="Nama / SKU / Vendor / Kategori"
-          value={q}
-          onChange={(e) => setQ(e.currentTarget.value)}
-          style={{ minWidth: 280 }}
-        />
-        <Select
-          label="Kategori"
-          data={categories}
-          value={category}
-          onChange={(v) => setCategory((v as any) ?? "all")}
-          style={{ minWidth: 200 }}
-          searchable
-        />
-        <Select
-          label="Status"
-          data={[
-            { value: "all", label: "Semua" },
-            { value: "active", label: "Active" },
-            { value: "inactive", label: "Inactive" },
-            { value: "discontinued", label: "Discontinued" },
-          ]}
-          value={status}
-          onChange={(v) => setStatus((v as any) ?? "all")}
-          style={{ minWidth: 180 }}
-        />
-        <Checkbox
-          label="Hanya low stock"
-          checked={lowOnly}
-          onChange={(e) => setLowOnly(e.currentTarget.checked)}
-        />
-      </Group>
-
-      <SimpleTable<Row>
-        dense="sm"
-        zebra
-        stickyHeader
-        maxHeight={540}
-        columns={columns}
-        data={filtered}
-        emptyText="Belum ada part"
-      />
-
-      {/* Create */}
       <PartFormModal
         opened={creating}
         onClose={() => setCreating(false)}
-        onSubmit={(v) => doCreate(v)}
+        onSubmit={async (v) => {
+          try {
+            await createMutation.mutateAsync(v);
+          } catch (e) {}
+        }}
         title="Tambah Part"
+        isSubmitting={createMutation.isPending}
       />
 
-      {/* Edit */}
       <PartFormModal
         opened={!!editing}
         onClose={() => setEditing(null)}
-        onSubmit={(v) => editing && doUpdate(editing.id, v)}
-        title="Edit Part"
+        onSubmit={async (v) => {
+          if (editing) {
+            try {
+              await updateMutation.mutateAsync({ id: editing.id, data: v });
+            } catch (e) {}
+          }
+        }}
+        title={`Edit Part: ${editing?.name ?? ""}`}
         initial={
           editing
             ? {
@@ -410,32 +316,35 @@ export default function InventoryListPage() {
                 vendor: editing.vendor,
                 unit: editing.unit,
                 stock: editing.stock,
-                minStock: editing.minStock ?? 0,
+                minStock: editing.minStock,
                 location: editing.location,
                 price: editing.price,
                 status: editing.status,
               }
             : undefined
         }
+        isSubmitting={updateMutation.isPending}
       />
 
-      {/* Stock move */}
       <StockMoveModal
         opened={!!moving}
         onClose={() => setMoving(null)}
         initialType={moving?.type}
-        onSubmit={(v) => {
-          if (!moving) return;
-          doMove(moving.part, v);
-          setMoving(null);
+        onSubmit={async (v) => {
+          if (moving) {
+            try {
+              await handleStockMove(moving.part, v);
+            } catch (e) {}
+          }
         }}
+        isSubmitting={stockMoveMutation.isPending}
       />
 
-      {/* Stock out dari ticket */}
       <StockOutFromTicketModal
         opened={stockOutTicket}
         onClose={() => setStockOutTicket(false)}
-        onSubmit={(payload) => doStockOutFromTicket(payload)}
+        onSubmit={handleStockOutFromTicket}
+        isSubmitting={loadingStockOut}
       />
     </Stack>
   );

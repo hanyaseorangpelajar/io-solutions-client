@@ -3,7 +3,6 @@
 // ---- Model
 export * from "./model/types";
 export * from "./model/schema";
-export { INVENTORY_ITEMS, STOCK_MOVES } from "./model/mock";
 
 // ---- UI (default exports di-alias jadi named)
 export { default as InventoryListPage } from "./ui/InventoryListPage";

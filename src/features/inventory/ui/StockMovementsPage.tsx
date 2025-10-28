@@ -1,13 +1,24 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Group, Select, Stack, Title } from "@mantine/core";
+import { useMemo, useState, useEffect } from "react";
+import {
+  Group,
+  Select,
+  Stack,
+  Title,
+  LoadingOverlay,
+  Text,
+} from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import TextField from "@/shared/ui/inputs/TextField";
 import { SimpleTable, type Column } from "@/shared/ui/table/SimpleTable";
-import { STOCK_MOVES, INVENTORY_ITEMS } from "../model/mock";
 import type { StockMovement } from "../model/types";
 import { formatDateTime } from "@/features/tickets/utils/format";
+
+import { useQuery } from "@tanstack/react-query";
+import { listStockMovements } from "../api/stockMovements";
+import { listParts, type Part } from "../api/parts";
+import { notifications } from "@mantine/notifications";
 
 type RangeValue = [Date | null, Date | null];
 
@@ -16,37 +27,51 @@ export default function StockMovementsPage() {
   const [type, setType] = useState<"all" | "in" | "out" | "adjust">("all");
   const [partId, setPartId] = useState<string | "all">("all");
   const [range, setRange] = useState<RangeValue>([null, null]);
-  const [moves] = useState<StockMovement[]>(STOCK_MOVES);
+
+  const { data: parts = [], isLoading: isLoadingParts } = useQuery<Part[]>({
+    queryKey: ["parts", "list", "forFilter"],
+    queryFn: listParts,
+  });
 
   const partOptions = useMemo(() => {
     return [
       { value: "all", label: "Semua part" },
-      ...INVENTORY_ITEMS.map((p) => ({
+      ...parts.map((p) => ({
         value: p.id,
         label: `${p.name} ${p.sku ? `(${p.sku})` : ""}`,
       })),
     ];
-  }, []);
+  }, [parts]);
 
-  const filtered = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    const [start, end] = range;
-    const startMs = start ? new Date(start).setHours(0, 0, 0, 0) : null;
-    const endMs = end ? new Date(end).setHours(23, 59, 59, 999) : null;
-    return moves.filter((m) => {
-      const matchQ =
-        term.length === 0 ||
-        m.partName.toLowerCase().includes(term) ||
-        (m.ref ?? "").toLowerCase().includes(term) ||
-        (m.note ?? "").toLowerCase().includes(term);
-      const matchT = type === "all" ? true : m.type === type;
-      const matchP = partId === "all" ? true : m.partId === partId;
-      const t = Date.parse(m.at);
-      const matchD =
-        (startMs === null || t >= startMs) && (endMs === null || t <= endMs);
-      return matchQ && matchT && matchP && matchD;
-    });
-  }, [moves, q, type, partId, range]);
+  const {
+    data: movementsData,
+    isLoading: isLoadingMovements,
+    error,
+  } = useQuery({
+    queryKey: ["stockMovements", "list", { q, type, partId, range }],
+    queryFn: () => {
+      const [from, to] = range;
+      return listStockMovements({
+        q: q || undefined,
+        type: type === "all" ? undefined : type,
+        partId: partId === "all" ? undefined : partId,
+        from: from ? from.toISOString() : undefined,
+        to: to ? to.toISOString() : undefined,
+      });
+    },
+  });
+
+  useEffect(() => {
+    if (error) {
+      notifications.show({
+        color: "red",
+        title: "Gagal memuat pergerakan stok",
+        message: (error as Error).message,
+      });
+    }
+  }, [error]);
+
+  const rows: StockMovement[] = movementsData?.data ?? [];
 
   const columns: Column<StockMovement>[] = [
     {
@@ -55,7 +80,7 @@ export default function StockMovementsPage() {
       width: 180,
       cell: (r) => formatDateTime(r.at),
     },
-    { key: "part", header: "Part", width: "28%", cell: (r) => r.partName },
+    { key: "partName", header: "Part", width: "28%", cell: (r) => r.partName },
     {
       key: "type",
       header: "Jenis",
@@ -72,6 +97,7 @@ export default function StockMovementsPage() {
     },
     { key: "ref", header: "Ref", width: 140, cell: (r) => r.ref ?? "-" },
     { key: "note", header: "Catatan", cell: (r) => r.note ?? "-" },
+    { key: "by", header: "Oleh", width: 140, cell: (r) => r.by ?? "N/A" },
   ];
 
   return (
@@ -88,12 +114,7 @@ export default function StockMovementsPage() {
         />
         <Select
           label="Jenis"
-          data={[
-            { value: "all", label: "Semua" },
-            { value: "in", label: "Stock In" },
-            { value: "out", label: "Stock Out" },
-            { value: "adjust", label: "Adjust" },
-          ]}
+          data={[]}
           value={type}
           onChange={(v) => setType((v as any) ?? "all")}
           style={{ minWidth: 160 }}
@@ -104,6 +125,7 @@ export default function StockMovementsPage() {
           value={partId}
           onChange={(v) => setPartId((v as any) ?? "all")}
           searchable
+          disabled={isLoadingParts}
           style={{ minWidth: 240 }}
         />
         <DatePickerInput
@@ -116,15 +138,18 @@ export default function StockMovementsPage() {
         />
       </Group>
 
-      <SimpleTable<StockMovement>
-        dense="sm"
-        zebra
-        stickyHeader
-        maxHeight={540}
-        columns={columns}
-        data={filtered}
-        emptyText="Belum ada mutasi"
-      />
+      <div style={{ position: "relative" }}>
+        <LoadingOverlay visible={isLoadingMovements} />
+        <SimpleTable<StockMovement>
+          dense="sm"
+          zebra
+          stickyHeader
+          maxHeight={540}
+          columns={columns}
+          data={rows}
+          emptyText="Belum ada mutasi"
+        />
+      </div>
     </Stack>
   );
 }

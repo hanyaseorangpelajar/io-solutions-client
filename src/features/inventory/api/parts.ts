@@ -1,8 +1,6 @@
-// src/features/inventory/api/parts.ts
-// PERBAIKAN: Impor apiClient yang benar
 import apiClient from "@/lib/apiClient";
+import type { PartFormInput } from "../model/schema";
 
-// Tipe data Part berdasarkan part.model.js
 export type Part = {
   id: string;
   name: string;
@@ -10,20 +8,35 @@ export type Part = {
   sku?: string;
   category?: string;
   vendor?: string;
-  unit?: string;
+  unit: string;
   minStock?: number;
   location?: string;
   price?: number;
   status: "active" | "inactive" | "discontinued";
 };
 
-// Fungsi untuk mengambil daftar semua part
 export async function listParts(): Promise<Part[]> {
-  // TODO: Pastikan endpoint ini benar sesuai router utama Anda
-  const endpoint = "/api/v1/parts";
-
-  // PERBAIKAN: Gunakan apiClient dan asumsikan struktur { results: Part[] }
-  // seperti 'getStaffList'
+  const endpoint = "/parts";
   const response = await apiClient.get<Part[]>(endpoint);
-  return response.data; // response.data sekarang adalah array Part[]
+  return response.data;
+}
+
+export async function createPart(data: PartFormInput): Promise<Part> {
+  const endpoint = "/parts";
+  const response = await apiClient.post<Part>(endpoint, data);
+  return response.data;
+}
+
+export async function updatePart(
+  id: string,
+  data: PartFormInput
+): Promise<Part> {
+  const endpoint = `/parts/${encodeURIComponent(id)}`;
+  const response = await apiClient.put<Part>(endpoint, data);
+  return response.data;
+}
+
+export async function deletePart(id: string): Promise<void> {
+  const endpoint = `/parts/${encodeURIComponent(id)}`;
+  await apiClient.delete<void>(endpoint);
 }

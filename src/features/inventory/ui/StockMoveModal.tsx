@@ -17,9 +17,10 @@ import { StockMoveSchema, type StockMoveInput } from "../model/schema";
 type Props = {
   opened: boolean;
   onClose: () => void;
-  onSubmit: (v: StockMoveInput) => void;
+  onSubmit: (v: StockMoveInput) => Promise<void> | void; // Pastikan tipe onSubmit benar  title?: string;
   title?: string;
   initialType?: "in" | "out" | "adjust";
+  isSubmitting?: boolean; // <-- PASTIKAN BARIS INI ADA DI TYPE PROPS
 };
 
 export default function StockMoveModal({
@@ -28,12 +29,13 @@ export default function StockMoveModal({
   onSubmit,
   title = "Mutasi Stok",
   initialType = "in",
+  isSubmitting, // <-- PASTIKAN isSubmitting ADA DI SINI
 }: Props) {
   const {
     handleSubmit,
     setValue,
     reset,
-    formState: { isValid, isSubmitting },
+    formState: { isValid },
   } = useForm<StockMoveInput>({
     resolver: zodResolver(StockMoveSchema),
     mode: "onChange",

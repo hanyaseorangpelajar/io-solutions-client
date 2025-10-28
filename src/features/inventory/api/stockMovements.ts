@@ -1,0 +1,45 @@
+import apiClient from "@/lib/apiClient";
+import type { StockMovement, StockMoveType } from "../model/types";
+import type { Paginated } from "@/features/tickets/api/tickets";
+
+type CreateStockMovementInput = {
+  partId: string;
+  type: StockMoveType;
+  quantity: number;
+  reference?: string;
+  notes?: string;
+};
+
+/**
+ * Membuat record pergerakan stok baru.
+ * Memanggil POST /api/v1/stock-movements
+ */
+export async function createStockMovement(
+  data: CreateStockMovementInput
+): Promise<StockMovement> {
+  const endpoint = "/api/v1/stock-movements";
+  const response = await apiClient.post<StockMovement>(endpoint, data);
+  return response.data;
+}
+
+/**
+ * Mengambil daftar riwayat pergerakan stok (paginasi).
+ * Memanggil GET /api/v1/stock-movements
+ */
+export async function listStockMovements(
+  params: Record<string, any>
+): Promise<Paginated<StockMovement>> {
+  const qs = (params: Record<string, any>): string => {
+    const q = Object.entries(params)
+      .filter(
+        ([, v]) => v !== undefined && v !== null && v !== "" && v !== "all"
+      )
+      .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+      .join("&");
+    return q ? `?${q}` : "";
+  };
+
+  const endpoint = `/api/v1/stock-movements${qs(params)}`;
+  const response = await apiClient.get<Paginated<StockMovement>>(endpoint);
+  return response.data;
+}

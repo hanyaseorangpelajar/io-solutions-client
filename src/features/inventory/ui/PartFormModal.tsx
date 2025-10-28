@@ -20,6 +20,7 @@ type Props = {
   onSubmit: (v: PartFormInput) => void;
   title?: string;
   initial?: Partial<PartFormInput>;
+  isSubmitting?: boolean;
 };
 
 const categories = [
