@@ -1,42 +1,45 @@
 "use client";
 
+import type { Part } from "@/features/inventory/model/types";
 import { Alert, Card, Group, List, Text, Title } from "@mantine/core";
+import { idr, sum } from "../model/pricing";
 import type {
   BuilderSelection,
-  ComponentCategory,
   BuildId,
+  ComponentCategory,
 } from "../model/types";
 import { COMPONENT_LABEL, REQUIRED_BY_SYSTEM } from "../model/types";
-import { MARKET_ITEMS } from "../model/mock";
-import { INVENTORY_ITEMS } from "@/features/inventory/model/mock";
-import { idr, sum } from "../model/pricing";
 
 function getPriceFromSelection(
   cat: ComponentCategory,
-  sel: BuilderSelection
+  sel: BuilderSelection,
+  storeItems: Part[]
 ): number | null {
   const pick = sel[cat];
   if (!pick || !pick.itemId) return null;
 
   if (pick.source === "market") {
-    const item = MARKET_ITEMS.find((m) => m.id === pick.itemId);
-    return item?.price ?? null;
+    return null;
   }
-  const store = INVENTORY_ITEMS.find((p) => p.id === pick.itemId);
+  const store = storeItems.find((p) => p.id === pick.itemId);
   return store?.price ?? null;
 }
 
 export default function BuildSummary({
   systemId,
   selection,
+  storeItems,
 }: {
   systemId: BuildId;
   selection: BuilderSelection;
+  storeItems: Part[];
 }) {
   const required = (REQUIRED_BY_SYSTEM[systemId] ?? []) as ComponentCategory[];
   const missing = required.filter((cat) => !selection[cat]?.itemId);
 
-  const prices = required.map((cat) => getPriceFromSelection(cat, selection));
+  const prices = required.map((cat) =>
+    getPriceFromSelection(cat, selection, storeItems)
+  );
   const total = sum(prices);
 
   return (
@@ -72,10 +75,10 @@ export default function BuildSummary({
           }
           const label =
             pick.source === "market"
-              ? MARKET_ITEMS.find((m) => m.id === pick.itemId)?.name
-              : INVENTORY_ITEMS.find((p) => p.id === pick.itemId)?.name;
+              ? "Market Item (TBD)"
+              : storeItems.find((p) => p.id === pick.itemId)?.name;
 
-          const price = getPriceFromSelection(cat, selection);
+          const price = getPriceFromSelection(cat, selection, storeItems);
 
           return (
             <List.Item key={cat}>

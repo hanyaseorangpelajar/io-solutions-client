@@ -30,17 +30,15 @@ import {
   IconTopologyRing3,
   IconRouter,
 } from "@tabler/icons-react";
+import { useQuery } from "@tanstack/react-query";
+import apiClient from "@/lib/apiClient";
+import type { Part } from "@/features/inventory/model/types";
+import { LoadingOverlay } from "@mantine/core";
 
-// Harga dari inventory toko
-import { INVENTORY_ITEMS } from "@/features/inventory";
-
-// ———————————————————————————————————————————————————————————
-// Helper kecil
 const toNum = (v: any, fb = 0) => {
   const n = Number(v);
   return Number.isFinite(n) ? n : fb;
 };
-// ———————————————————————————————————————————————————————————
 
 const SYSTEMS: {
   id: BuildId;
@@ -88,10 +86,20 @@ const SYSTEMS: {
 
 export default function SystemBuilderPage() {
   const [systemId, setSystemId] = useState<BuildId>("desktop");
-  const [preferStore] = useState(true); // kalau nanti mau toggle, tinggal aktifkan
+  const [preferStore] = useState(true);
   const [budget, setBudget] = useState<number | "">("");
-
   const [selection, setSelection] = useState<BuilderSelection>({});
+
+  const { data: storeItems = [], isLoading: isLoadingStore } = useQuery<Part[]>(
+    {
+      queryKey: ["parts", "list", "forBuilder"],
+      queryFn: async () => {
+        // Kita asumsikan API parts mengembalikan { data: [...] }
+        const res = await apiClient.get("/parts");
+        return res.data?.data || [];
+      },
+    }
+  );
 
   const requiredCats = useMemo(
     () => (REQUIRED_BY_SYSTEM[systemId] ?? []) as ComponentCategory[],
@@ -104,40 +112,28 @@ export default function SystemBuilderPage() {
 
   const resetAll = () => setSelection({});
 
-  // Peta harga: INVENTORY TOKO
   const storePriceMap = useMemo(() => {
     const m = new Map<string, number>();
-    for (const it of (INVENTORY_ITEMS ?? []) as any[]) {
-      const id = String(it?.id ?? it?.partId ?? it?.code ?? it?.sku ?? "");
+    for (const it of storeItems) {
+      // <-- Ganti INVENTORY_ITEMS
+      const id = String(it?.id ?? ""); // <-- Gunakan 'id'
       if (!id) continue;
-      const price = toNum(it?.unitPrice ?? it?.price ?? it?.cost ?? 0);
+      const price = toNum(it?.price ?? 0);
       m.set(id, price);
     }
     return m;
-  }, []);
+  }, [storeItems]); // <-- Tambah dependensi storeItems
 
-  // Peta harga: MARKET (placeholder—kosong dulu sampai dataset siap)
   const marketPriceMap = useMemo(() => {
-    // TODO sambungkan ke dataset market kamu:
-    // const m = new Map<string, number>();
-    // for (const it of (MARKET_ITEMS ?? []) as any[]) {
-    //   const id = String(it?.id ?? it?.sku ?? it?.code ?? "");
-    //   if (!id) continue;
-    //   m.set(id, toNum(it?.price ?? it?.offerPrice ?? 0));
-    // }
-    // return m;
     return new Map<string, number>();
   }, []);
 
-  // Ambil harga yang paling “pasti” dari nilai picker
   function getPrice(val: ComponentPickerValue): number {
     if (!val) return 0;
 
-    // 1) Jika picker mengirimkan price langsung
     const override = (val as any)?.overridePrice ?? (val as any)?.price;
     if (override != null) return toNum(override);
 
-    // 2) Lookup berdasarkan source & itemId
     const itemId = val.itemId ? String(val.itemId) : null;
     if (!itemId) return 0;
 
@@ -150,7 +146,6 @@ export default function SystemBuilderPage() {
     return 0;
   }
 
-  // Total harga komponen terpilih (wajib + opsional), dukung qty jika ada
   const grandTotal = useMemo(() => {
     let sum = 0;
     for (const [, val] of Object.entries(selection) as [
@@ -162,7 +157,7 @@ export default function SystemBuilderPage() {
         (val as any)?.price == null &&
         (val as any)?.overridePrice == null
       ) {
-        continue; // belum memilih apa-apa
+        continue;
       }
       const qty = Math.max(1, toNum((val as any)?.qty ?? 1));
       sum += getPrice(val) * qty;
@@ -193,7 +188,6 @@ export default function SystemBuilderPage() {
         </Group>
       </Group>
 
-      {/* Pilihan sistem */}
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
         {SYSTEMS.map((s) => (
           <SystemTypeCard
@@ -209,9 +203,9 @@ export default function SystemBuilderPage() {
         ))}
       </SimpleGrid>
 
-      <Paper withBorder radius="md" p="md">
+      <Paper withBorder radius="md" p="md" style={{ position: "relative" }}>
+        <LoadingOverlay visible={isLoadingStore} />
         <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
-          {/* KIRI: picker komponen */}
           <Stack gap="lg">
             <Card withBorder radius="md" p="md">
               <Title order={6} mb="sm">
@@ -230,6 +224,7 @@ export default function SystemBuilderPage() {
                     }
                     onChange={updatePick(cat)}
                     preferStore={preferStore}
+                    storeItems={storeItems}
                   />
                 ))}
               </Stack>
@@ -254,13 +249,13 @@ export default function SystemBuilderPage() {
                       }
                       onChange={updatePick(cat)}
                       preferStore={preferStore}
+                      storeItems={storeItems}
                     />
                   ))}
               </Stack>
             </Card>
           </Stack>
 
-          {/* KANAN: budget + ringkasan */}
           <Stack gap="md">
             <Card withBorder radius="md" p="md">
               <Title order={6} mb="xs">
@@ -316,9 +311,7 @@ export default function SystemBuilderPage() {
             <BuildSummary
               systemId={systemId}
               selection={selection}
-              // opsional: oper budget ke BuildSummary bila diperlukan
-              // @ts-expect-error jika komponen belum definisikan prop-nya
-              budget={typeof budget === "number" ? budget : undefined}
+              storeItems={storeItems}
             />
 
             <Divider />

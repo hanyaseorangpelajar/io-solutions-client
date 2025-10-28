@@ -5,8 +5,7 @@ import { useMemo } from "react";
 import type { ComponentCategory, SourceType } from "../model/types";
 import { COMPONENT_LABEL } from "../model/types";
 import { toSelectData } from "../model/pricing";
-import { marketByCategory } from "../model/mock";
-import { INVENTORY_ITEMS } from "@/features/inventory/model/mock";
+import type { Part } from "@/features/inventory/model/types";
 
 export type ComponentPickerValue = {
   source: SourceType;
@@ -18,6 +17,7 @@ type Props = {
   value: ComponentPickerValue;
   onChange: (v: ComponentPickerValue) => void;
   preferStore?: boolean;
+  storeItems: Part[]; // 3. TAMBAHKAN 'storeItems' SEBAGAI PROP
 };
 
 /** Picker per komponen: pilih sumber (Store/Market), lalu pilih item. */
@@ -26,13 +26,15 @@ export default function ComponentPicker({
   value,
   onChange,
   preferStore,
+  storeItems,
 }: Props) {
   // Data store (Inventory) — filter berdasarkan category (string)
   const storeData = useMemo(() => {
-    // asumsi Inventory Part.category seragam (contoh: "cpu") — kalau berbeda, map-kan di sini
-    const list = INVENTORY_ITEMS.filter(
+    // Tipe 'p' sekarang otomatis 'Part' (memperbaiki error 'any')
+    const list = storeItems.filter(
       (p) => (p.category || "").toLowerCase() === category
     );
+    // Tipe 'p' di sini juga 'Part'
     return list.map((p) => ({
       value: p.id,
       label:
@@ -40,11 +42,11 @@ export default function ComponentPicker({
           ? `${p.name} — Rp ${p.price.toLocaleString("id-ID")}`
           : `${p.name} — (harga belum di-set)`,
     }));
-  }, [category]);
+  }, [category, storeItems]);
 
   // Data market
   const marketData = useMemo(
-    () => toSelectData(marketByCategory(category)),
+    () => toSelectData([]), // <-- Gunakan array kosong
     [category]
   );
 

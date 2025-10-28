@@ -15,7 +15,9 @@ export function isGroup(
 }
 
 export const MASTER_NAV: NavItem[] = [
-  { label: "Dashboard", href: "/sysadmin", roles: ["Admin", "SysAdmin"] },
+  { label: "Dashboard", href: "/sysadmin", roles: ["SysAdmin"] },
+  { label: "Dashboard", href: "/admin", roles: ["Admin"] },
+  { label: "Dashboard", href: "/teknisi", roles: ["Teknisi"] },
 
   {
     group: true,
@@ -34,17 +36,17 @@ export const MASTER_NAV: NavItem[] = [
   {
     group: true,
     label: "Audit",
-    roles: ["Admin", "SysAdmin"],
+    roles: ["Admin"],
     children: [
       {
         label: "Repository",
         href: "/views/audit/repository",
-        roles: ["Admin", "SysAdmin"],
+        roles: ["Admin"],
       },
       {
         label: "Ticket Audit Quality",
         href: "/views/audit/quality",
-        roles: ["Admin", "SysAdmin"],
+        roles: ["Admin"],
       },
     ],
   },
@@ -52,17 +54,17 @@ export const MASTER_NAV: NavItem[] = [
   {
     group: true,
     label: "Inventory",
-    roles: ["Teknisi", "Admin", "SysAdmin"],
+    roles: ["Teknisi", "Admin"],
     children: [
       {
         label: "Inventory Items",
         href: "/views/inventory/items",
-        roles: ["Teknisi", "Admin", "SysAdmin"],
+        roles: ["Teknisi", "Admin"],
       },
       {
         label: "Stock Movements",
         href: "/views/inventory/movements",
-        roles: ["Admin", "SysAdmin"],
+        roles: ["Admin"],
       },
     ],
   },
@@ -70,27 +72,27 @@ export const MASTER_NAV: NavItem[] = [
   {
     group: true,
     label: "Laporan",
-    roles: ["Admin", "SysAdmin"],
+    roles: ["Admin"],
     children: [
       {
         label: "Inventory",
         href: "/views/reports/inventory",
-        roles: ["Admin", "SysAdmin"],
+        roles: ["Admin"],
       },
       {
         label: "Ringkasan",
         href: "/views/reports/overview",
-        roles: ["Admin", "SysAdmin"],
+        roles: ["Admin"],
       },
       {
         label: "RMA & Warranty",
         href: "/views/reports/rma",
-        roles: ["Admin", "SysAdmin"],
+        roles: ["Admin"],
       },
       {
         label: "Tickets",
         href: "/views/reports/tickets",
-        roles: ["Admin", "SysAdmin"],
+        roles: ["Admin"],
       },
     ],
   },
@@ -98,22 +100,22 @@ export const MASTER_NAV: NavItem[] = [
   {
     group: true,
     label: "Tickets",
-    roles: ["Teknisi", "Admin", "SysAdmin"],
+    roles: ["Teknisi", "Admin"],
     children: [
       {
         label: "Tickets List",
         href: "/views/tickets/list",
-        roles: ["Teknisi", "Admin", "SysAdmin"],
+        roles: ["Admin"],
       },
       {
         label: "Audit Log",
         href: "/views/tickets/history",
-        roles: ["Admin", "SysAdmin"],
+        roles: ["Admin"],
       },
       {
         label: "My Work",
         href: "/views/tickets/works",
-        roles: ["Teknisi", "Admin"],
+        roles: ["Teknisi"],
       },
     ],
   },
@@ -121,17 +123,17 @@ export const MASTER_NAV: NavItem[] = [
   {
     group: true,
     label: "Miscellaneous",
-    roles: ["Teknisi", "Admin", "SysAdmin"],
+    roles: ["Teknisi", "Admin"],
     children: [
       {
         label: "RMA & Warranty",
         href: "/views/misc/rma",
-        roles: ["Teknisi", "Admin", "SysAdmin"],
+        roles: ["Admin"],
       },
       {
         label: "System Builder",
         href: "/views/misc/system-builder",
-        roles: ["Admin", "SysAdmin"],
+        roles: ["Teknisi"],
       },
     ],
   },

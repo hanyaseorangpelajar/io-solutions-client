@@ -3,7 +3,6 @@
 // ---- Model
 export * from "./model/types";
 export * from "./model/schema";
-export * from "./model/mock";
 export * from "./model/pricing";
 
 // ---- UI (default exports di-alias jadi named)
