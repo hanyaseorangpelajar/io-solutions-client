@@ -22,18 +22,20 @@ export default function RmaActionModal({
   onSubmit,
   initialType,
   title = "Catat aksi RMA",
+  isSubmitting,
 }: {
   opened: boolean;
   onClose: () => void;
-  onSubmit: (v: RmaActionInput) => void;
+  onSubmit: (v: RmaActionInput) => Promise<void> | void;
   initialType?: string;
   title?: string;
+  isSubmitting?: boolean;
 }) {
   const {
     register,
     handleSubmit,
     setValue,
-    formState: { isSubmitting, isValid, errors },
+    formState: { isValid, errors },
   } = useForm<RmaActionInput>({
     resolver: zodResolver(RmaActionSchema),
     mode: "onChange",
@@ -46,9 +48,13 @@ export default function RmaActionModal({
   return (
     <Modal opened={opened} onClose={onClose} title={title} radius="lg" centered>
       <form
-        onSubmit={handleSubmit((v) => {
-          onSubmit(v);
-          onClose();
+        onSubmit={handleSubmit(async (v) => {
+          try {
+            await onSubmit(v);
+            onClose();
+          } catch (e) {
+            console.error(e);
+          }
         })}
         noValidate
       >
@@ -56,7 +62,7 @@ export default function RmaActionModal({
           <Select
             label="Jenis aksi"
             data={ACTIONS}
-            value={undefined} // biar controlled oleh RHF via register
+            value={undefined}
             onChange={(v) =>
               setValue("type", (v as any) ?? "receive_unit", {
                 shouldValidate: true,

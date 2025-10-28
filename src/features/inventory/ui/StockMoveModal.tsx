@@ -17,10 +17,10 @@ import { StockMoveSchema, type StockMoveInput } from "../model/schema";
 type Props = {
   opened: boolean;
   onClose: () => void;
-  onSubmit: (v: StockMoveInput) => Promise<void> | void; // Pastikan tipe onSubmit benar  title?: string;
+  onSubmit: (v: StockMoveInput) => Promise<void> | void;
   title?: string;
   initialType?: "in" | "out" | "adjust";
-  isSubmitting?: boolean; // <-- PASTIKAN BARIS INI ADA DI TYPE PROPS
+  isSubmitting?: boolean;
 };
 
 export default function StockMoveModal({
@@ -29,7 +29,7 @@ export default function StockMoveModal({
   onSubmit,
   title = "Mutasi Stok",
   initialType = "in",
-  isSubmitting, // <-- PASTIKAN isSubmitting ADA DI SINI
+  isSubmitting,
 }: Props) {
   const {
     handleSubmit,
@@ -61,9 +61,13 @@ export default function StockMoveModal({
       centered
     >
       <form
-        onSubmit={handleSubmit((v) => {
-          onSubmit(v);
-          onClose();
+        onSubmit={handleSubmit(async (v) => {
+          try {
+            await onSubmit(v);
+            onClose();
+          } catch (e) {
+            console.error("Gagal submit stock move:", e);
+          }
         })}
         noValidate
       >

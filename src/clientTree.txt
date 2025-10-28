@@ -1,0 +1,239 @@
+.
+|-- app
+|   |-- (auth)
+|   |   |-- forgot-password
+|   |   |   `-- page.tsx
+|   |   |-- sign-in
+|   |   |   `-- page.tsx
+|   |   `-- sign-up
+|   |       `-- page.tsx
+|   |-- (dashboard)
+|   |   |-- admin
+|   |   |   `-- page.tsx
+|   |   |-- layout.tsx
+|   |   |-- page.tsx
+|   |   |-- sysadmin
+|   |   |   `-- page.tsx
+|   |   |-- teknisi
+|   |   |   `-- page.tsx
+|   |   `-- views
+|   |       |-- access
+|   |       |   |-- rbac
+|   |       |   |   `-- page.tsx
+|   |       |   `-- staff
+|   |       |       `-- page.tsx
+|   |       |-- audit
+|   |       |   |-- quality
+|   |       |   |   `-- page.tsx
+|   |       |   `-- repository
+|   |       |       `-- page.tsx
+|   |       |-- inventory
+|   |       |   |-- items
+|   |       |   |   `-- page.tsx
+|   |       |   `-- movements
+|   |       |       `-- page.tsx
+|   |       |-- misc
+|   |       |   |-- rma
+|   |       |   |   |-- [id]
+|   |       |   |   |   `-- page.tsx
+|   |       |   |   `-- page.tsx
+|   |       |   `-- system-builder
+|   |       |       `-- page.tsx
+|   |       |-- reports
+|   |       |   |-- inventory
+|   |       |   |   `-- page.tsx
+|   |       |   |-- overview
+|   |       |   |   `-- page.tsx
+|   |       |   |-- rma
+|   |       |   |   `-- page.tsx
+|   |       |   `-- tickets
+|   |       |       `-- page.tsx
+|   |       |-- settings
+|   |       |   |-- account
+|   |       |   |   `-- page.tsx
+|   |       |   `-- support
+|   |       |       `-- page.tsx
+|   |       `-- tickets
+|   |           |-- [id]
+|   |           |   `-- page.tsx
+|   |           |-- history
+|   |           |   `-- page.tsx
+|   |           |-- list
+|   |           |   `-- page.tsx
+|   |           `-- works
+|   |               `-- page.tsx
+|   |-- favicon.ico
+|   |-- globals.css
+|   |-- layout.tsx
+|   |-- not-found.module.css
+|   |-- not-found.tsx
+|   `-- page.tsx
+|-- clientTree.txt
+|-- features
+|   |-- audit
+|   |   |-- index.ts
+|   |   |-- model
+|   |   |   |-- schema.ts
+|   |   |   `-- types.ts
+|   |   `-- ui
+|   |       |-- AuditFormModal.tsx
+|   |       |-- AuditQualityPage.tsx
+|   |       |-- AuditRepositoryPage.tsx
+|   |       |-- AuditResolveEditorModal.tsx
+|   |       `-- RepositoryCard.tsx
+|   |-- auth
+|   |   |-- AuthContext.tsx
+|   |   |-- index.ts
+|   |   |-- model
+|   |   |   |-- schema.ts
+|   |   |   `-- types.ts
+|   |   `-- ui
+|   |       |-- AuthLayout.tsx
+|   |       |-- ForgotPasswordPage.tsx
+|   |       |-- FormHeader.tsx
+|   |       |-- SignInForm.tsx
+|   |       `-- SignUpPage.tsx
+|   |-- inventory
+|   |   |-- api
+|   |   |   |-- parts.ts
+|   |   |   `-- stockMovements.ts
+|   |   |-- index.ts
+|   |   |-- model
+|   |   |   |-- schema.ts
+|   |   |   `-- types.ts
+|   |   `-- ui
+|   |       |-- InventoryListPage.tsx
+|   |       |-- PartFormModal.tsx
+|   |       |-- PartStatusBadge.tsx
+|   |       |-- StockMoveModal.tsx
+|   |       |-- StockMovementsPage.tsx
+|   |       `-- StockOutFromTicketModal.tsx
+|   |-- rbac
+|   |   |-- index.ts
+|   |   |-- model
+|   |   |   |-- schema.ts
+|   |   |   `-- types.ts
+|   |   `-- ui
+|   |       |-- RbacListPage.tsx
+|   |       `-- RoleFormModal.tsx
+|   |-- reports
+|   |   |-- index.ts
+|   |   |-- model
+|   |   |   |-- derive.ts
+|   |   |   `-- types.ts
+|   |   `-- ui
+|   |       |-- InventoryReportPage.tsx
+|   |       |-- ReportsOverviewPage.tsx
+|   |       |-- RmaReportPage.tsx
+|   |       `-- TicketsReportPage.tsx
+|   |-- rma
+|   |   |-- index.ts
+|   |   |-- model
+|   |   |   |-- schema.ts
+|   |   |   `-- types.ts
+|   |   `-- ui
+|   |       |-- RmaActionModal.tsx
+|   |       |-- RmaDetailPage.tsx
+|   |       |-- RmaFormModal.tsx
+|   |       |-- RmaListPage.tsx
+|   |       `-- RmaStatusBadge.tsx
+|   |-- settings
+|   |   |-- account
+|   |   |   |-- model
+|   |   |   |   `-- types.ts
+|   |   |   `-- ui
+|   |   |       `-- AccountPage.tsx
+|   |   |-- index.ts
+|   |   `-- support
+|   |       `-- ui
+|   |           `-- SupportPage.tsx
+|   |-- shell
+|   |   |-- index.ts
+|   |   |-- model
+|   |   |   `-- nav.ts
+|   |   `-- ui
+|   |       |-- AppShellLayout.tsx
+|   |       |-- HeaderBar.tsx
+|   |       `-- SidebarNav.tsx
+|   |-- staff
+|   |   |-- api
+|   |   |   `-- staff.ts
+|   |   |-- index.ts
+|   |   |-- model
+|   |   |   |-- schema.ts
+|   |   |   `-- types.ts
+|   |   `-- ui
+|   |       |-- StaffFormModal.tsx
+|   |       `-- StaffListPage.tsx
+|   |-- sysadmin
+|   |   |-- index.ts
+|   |   |-- model
+|   |   |   `-- types.ts
+|   |   `-- ui
+|   |       |-- AuditTable.tsx
+|   |       |-- QuickActions.tsx
+|   |       |-- StatsCards.tsx
+|   |       |-- SysAdminPage.tsx
+|   |       `-- SystemParamsPanel.tsx
+|   |-- system-builder
+|   |   |-- index.ts
+|   |   |-- model
+|   |   |   |-- pricing.ts
+|   |   |   |-- schema.ts
+|   |   |   `-- types.ts
+|   |   `-- ui
+|   |       |-- BuildSummary.tsx
+|   |       |-- ComponentPicker.tsx
+|   |       |-- SystemBuilderPage.tsx
+|   |       `-- SystemTypeCard.tsx
+|   |-- teknisi
+|   |   `-- ui
+|   |       `-- TeknisiDashboard.tsx
+|   `-- tickets
+|       |-- api
+|       |   `-- tickets.ts
+|       |-- index.ts
+|       |-- model
+|       |   |-- schema.ts
+|       |   `-- types.ts
+|       |-- ui
+|       |   |-- AddActionModal.tsx
+|       |   |-- AddDiagnosisModal.tsx
+|       |   |-- ResolveTicketModal.tsx
+|       |   |-- TicketDetailPage.tsx
+|       |   |-- TicketFormModal.tsx
+|       |   |-- TicketPriorityBadge.tsx
+|       |   |-- TicketStatusBadge.tsx
+|       |   |-- TicketsHistoryPage.tsx
+|       |   |-- TicketsListPage.tsx
+|       |   `-- TicketsMyWorkPage.tsx
+|       `-- utils
+|           `-- format.ts
+|-- lib
+|   `-- apiClient.ts
+|-- middleware.ts
+|-- providers.tsx
+|-- shared
+|   |-- ui
+|   |   |-- buttons
+|   |   |   |-- ActionButton.tsx
+|   |   |   `-- index.ts
+|   |   |-- empty
+|   |   |   `-- NotFoundState.tsx
+|   |   |-- index.ts
+|   |   |-- inputs
+|   |   |   |-- PasswordField.tsx
+|   |   |   |-- TextField.tsx
+|   |   |   `-- index.ts
+|   |   |-- menus
+|   |   |   |-- ActionsDropdown.tsx
+|   |   |   `-- index.ts
+|   |   `-- table
+|   |       `-- SimpleTable.tsx
+|   `-- utils
+|       |-- csv.ts
+|       `-- formatters.ts
+`-- theme
+    `-- mantine.ts
+
+92 directories, 144 files

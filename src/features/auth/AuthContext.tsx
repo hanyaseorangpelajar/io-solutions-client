@@ -29,21 +29,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // This effect will run once on mount to check for an existing session
-    const token = localStorage.getItem("authToken");
-    if (token) {
-      // Here you might want to add a call to an API endpoint like `/auth/me`
-      // to verify the token and get fresh user data. For now, we'll assume
-      // the token means the user is authenticated.
-      setIsAuthenticated(true);
-      // You might need to fetch user data here and setUser()
-    }
-    setIsLoading(false);
+    const checkUser = async () => {
+      const token = localStorage.getItem("authToken");
+      if (token) {
+        try {
+          const response = await apiClient.get<{ user: User }>("/auth/me");
+
+          setUser(response.data.user);
+          setIsAuthenticated(true);
+        } catch (error) {
+          localStorage.removeItem("authToken");
+          setIsAuthenticated(false);
+          setUser(null);
+        }
+      }
+      setIsLoading(false);
+    };
+
+    checkUser();
   }, []);
 
   const login = useCallback(
     async (credentials: { email: string; password: string }) => {
-      // Map the form's `email` field to the API's `identifier` field.
       const apiCredentials = {
         identifier: credentials.email,
         password: credentials.password,
@@ -64,10 +71,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           router.push(`/${rolePath}`);
         }
       } catch (error: any) {
-        // Log the detailed error from the server to the console
         console.error("Login failed:", error.response?.data || error.message);
 
-        // Re-throw the error so the UI layer (e.g., the form) can catch it and display a message
         throw error;
       }
     },
@@ -80,12 +85,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Logout API call failed:", error);
     } finally {
-      // Immediately update the authentication state
       setIsAuthenticated(false);
       setUser(null);
-      // Clear the token from storage
       localStorage.removeItem("authToken");
-      // Redirect to the sign-in page
       router.push("/sign-in");
     }
   }, [router]);

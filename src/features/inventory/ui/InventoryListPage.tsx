@@ -88,10 +88,8 @@ export default function InventoryListPage() {
   const categories = useMemo(() => {}, [items]);
   const filtered: Part[] = useMemo(() => {
     const term = q.trim().toLowerCase();
-    // Pastikan 'items' adalah array sebelum filter
     if (!Array.isArray(items)) return [];
     return items.filter((i) => {
-      // ... (logika filter sama) ...
       const matchQ =
         term.length === 0 ||
         i.name.toLowerCase().includes(term) ||
@@ -139,8 +137,21 @@ export default function InventoryListPage() {
 
   const stockMoveMutation = useMutation({
     mutationFn: createStockMovement,
-    onSuccess: (newMovement) => {},
-    onError: (e: any) => {},
+    onSuccess: (newMovement) => {
+      notifications.show({
+        color: "green",
+        title: "Mutasi Stok Berhasil",
+        message: `Stok untuk part terkait telah diperbarui.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["parts", "list"] });
+    },
+    onError: (e: any) => {
+      notifications.show({
+        color: "red",
+        title: "Mutasi Gagal",
+        message: e.message || "Gagal menyimpan mutasi stok.",
+      });
+    },
   });
 
   const handleStockMove = async (part: Part, v: StockMoveInput) => {
@@ -201,6 +212,61 @@ export default function InventoryListPage() {
 
   type Row = Part;
   const columns: Column<Row>[] = [
+    {
+      key: "name",
+      header: "Nama Part",
+      width: "35%", // Beri porsi lebih
+      cell: (r) => (
+        <Stack gap={0}>
+          <Text fw={600} size="sm">
+            {r.name}
+          </Text>
+          {r.sku && (
+            <Text c="dimmed" size="xs">
+              SKU: {r.sku}
+            </Text>
+          )}
+        </Stack>
+      ),
+    },
+    {
+      key: "stock",
+      header: "Stok",
+      align: "right",
+      width: 100,
+      cell: (r) => (
+        <Text
+          fw={(r.minStock ?? 0) > 0 && r.stock <= (r.minStock ?? 0) ? 700 : 500}
+          c={
+            (r.minStock ?? 0) > 0 && r.stock <= (r.minStock ?? 0)
+              ? "red"
+              : undefined
+          }
+        >
+          {r.stock} {r.unit}
+        </Text>
+      ),
+    },
+    {
+      key: "category",
+      header: "Kategori",
+      width: 150,
+      cell: (r) => r.category ?? "-",
+    },
+    {
+      key: "vendor",
+      header: "Vendor",
+      width: 150,
+      cell: (r) => r.vendor ?? "-",
+    },
+    {
+      key: "status",
+      header: "Status",
+      align: "center",
+      width: 120,
+      // Pastikan PartStatusBadge sudah diimpor di atas
+      cell: (r) => <PartStatusBadge status={r.status} />,
+    },
     {
       key: "actions",
       header: "",
@@ -332,9 +398,7 @@ export default function InventoryListPage() {
         initialType={moving?.type}
         onSubmit={async (v) => {
           if (moving) {
-            try {
-              await handleStockMove(moving.part, v);
-            } catch (e) {}
+            await handleStockMove(moving.part, v);
           }
         }}
         isSubmitting={stockMoveMutation.isPending}

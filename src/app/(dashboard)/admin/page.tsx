@@ -12,30 +12,47 @@ import {
   Table,
   Text,
   Title,
+  LoadingOverlay,
 } from "@mantine/core";
 
-import { MOCK_TICKETS, type Ticket } from "@/features/tickets";
-import { INVENTORY_ITEMS, type Part } from "@/features/inventory";
-import { MOCK_RMAS, type Rma } from "@/features/rma";
-import {
-  getAssigneeName,
-  priorityColor,
-  statusColor,
-} from "@/shared/utils/formatters";
+import { useQuery } from "@tanstack/react-query";
+import apiClient from "@/lib/apiClient";
+import type { Ticket } from "@/features/tickets";
+import type { Part } from "@/features/inventory";
+import type { RmaRecord } from "@/features/rma";
+
+import { priorityColor, statusColor } from "@/shared/utils/formatters";
 import { formatDateTime } from "@/features/tickets/utils/format";
 
-// --- helpers kecil ---
 function isOpenStatus(s: any) {
   const v = String(s ?? "").toLowerCase();
   return !(v.includes("closed") || v.includes("resolved"));
 }
 
 export default function AdminDashboardPage() {
-  const tickets: Ticket[] = MOCK_TICKETS ?? [];
-  const parts: Part[] = INVENTORY_ITEMS ?? [];
-  const rmas: Rma[] = MOCK_RMAS ?? [];
+  const { data: ticketsData, isLoading: isLoadingTickets } = useQuery({
+    queryKey: ["tickets", "list", "dashboard"],
+    queryFn: () => apiClient.get("/tickets?limit=500"),
+    select: (res: any) => res.data?.data || [],
+  });
 
-  // KPI ringkas
+  const { data: partsData, isLoading: isLoadingParts } = useQuery({
+    queryKey: ["parts", "list", "dashboard"],
+    queryFn: () => apiClient.get("/parts"),
+    select: (res: any) => res.data?.data || [],
+  });
+
+  const { data: rmasData, isLoading: isLoadingRmas } = useQuery({
+    queryKey: ["rma", "list", "dashboard"],
+    queryFn: () => apiClient.get("/rma"),
+    select: (res: any) => res.data?.data || [],
+  });
+
+  const tickets: Ticket[] = ticketsData ?? [];
+  const parts: Part[] = partsData ?? [];
+  const rmas: RmaRecord[] = rmasData ?? [];
+  const isLoading = isLoadingTickets || isLoadingParts || isLoadingRmas;
+
   const kpi = {
     openTickets: tickets.filter((t) => isOpenStatus(t.status)).length,
     lowStock:
@@ -47,18 +64,21 @@ export default function AdminDashboardPage() {
     pendingRma:
       rmas.filter((r) => {
         const s = String(r?.status ?? "").toLowerCase();
-        return !s.includes("closed");
+        return !(
+          s.includes("closed") ||
+          s.includes("returned") ||
+          s.includes("rejected")
+        );
       }).length || 0,
   };
 
-  // Tiket terbaru (max 8)
   const recentTickets = [...tickets]
     .map((t) => ({
       id: t.id,
-      title: t.subject,
+      code: t.code,
+      subject: t.subject,
       status: t.status,
       priority: t.priority,
-      assignee: getAssigneeName(t),
       createdAt: t.createdAt,
     }))
     .sort((a, b) => {
@@ -68,11 +88,11 @@ export default function AdminDashboardPage() {
     })
     .slice(0, 8);
 
-  // RMA terbaru (max 8) — jika dataset tersedia
   const recentRma = [...rmas]
     .map((r) => ({
+      _id: r._id,
       code: r.code,
-      customer: r.customer.name,
+      customer: r.customerName,
       status: r.status,
       createdAt: r.createdAt,
     }))
@@ -84,69 +104,14 @@ export default function AdminDashboardPage() {
     .slice(0, 8);
 
   return (
-    <Stack gap="lg">
-      {/* Header */}
-      <Group justify="space-between" align="center">
-        <Stack gap={2}>
-          <Title order={3}>Admin Dashboard</Title>
-          <Text c="dimmed" size="sm">
-            Ringkasan operasional harian dan pintasan aksi.
-          </Text>
-        </Stack>
-        <Group gap="xs" wrap="wrap">
-          <Button component={Link} href="/views/tickets" variant="light">
-            Kelola Tickets
-          </Button>
-          <Button component={Link} href="/inventory" variant="light">
-            Kelola Inventory
-          </Button>
-          <Button component={Link} href="/views/misc/rma" variant="light">
-            Kelola RMA
-          </Button>
-        </Group>
-      </Group>
+    <Stack gap="lg" style={{ position: "relative" }}>
+      <LoadingOverlay visible={isLoading} />
 
-      {/* KPI Cards */}
-      <SimpleGrid cols={{ base: 1, sm: 3 }}>
-        <Paper withBorder radius="md" p="md">
-          <Text c="dimmed" size="sm">
-            Tickets Open
-          </Text>
-          <Title order={2}>{kpi.openTickets}</Title>
-          <Text size="xs" c="dimmed">
-            Perlu tindak lanjut
-          </Text>
-        </Paper>
+      <Group justify="space-between" align="center"></Group>
 
-        <Paper withBorder radius="md" p="md">
-          <Text c="dimmed" size="sm">
-            Low / Out of Stock
-          </Text>
-          <Title order={2}>{kpi.lowStock}</Title>
-          <Text size="xs" c="dimmed">
-            Item stok menipis/kosong
-          </Text>
-        </Paper>
+      <SimpleGrid cols={{ base: 1, sm: 3 }}></SimpleGrid>
 
-        <Paper withBorder radius="md" p="md">
-          <Text c="dimmed" size="sm">
-            RMA Pending
-          </Text>
-          <Title order={2}>{kpi.pendingRma}</Title>
-          <Text size="xs" c="dimmed">
-            Belum closed
-          </Text>
-        </Paper>
-      </SimpleGrid>
-
-      {/* Recent Tickets */}
       <Paper withBorder radius="md" p="md">
-        <Group justify="space-between" mb="xs">
-          <Text fw={600}>Tickets Terbaru</Text>
-          <Anchor component={Link} href="/views/tickets" size="sm">
-            Lihat semua
-          </Anchor>
-        </Group>
         <Table
           striped
           highlightOnHover
@@ -156,9 +121,8 @@ export default function AdminDashboardPage() {
         >
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>ID</Table.Th>
+              <Table.Th>Kode</Table.Th>
               <Table.Th>Judul</Table.Th>
-              <Table.Th>Assignee</Table.Th>
               <Table.Th>Prioritas</Table.Th>
               <Table.Th>Status</Table.Th>
               <Table.Th>Dibuat</Table.Th>
@@ -169,11 +133,10 @@ export default function AdminDashboardPage() {
               <Table.Tr key={t.id}>
                 <Table.Td>
                   <Anchor component={Link} href={`/views/tickets/${t.id}`}>
-                    {t.id}
+                    {t.code}
                   </Anchor>
                 </Table.Td>
-                <Table.Td>{t.title}</Table.Td>
-                <Table.Td>{t.assignee}</Table.Td>
+                <Table.Td>{t.subject}</Table.Td>
                 <Table.Td>
                   <Badge color={priorityColor(String(t.priority))}>
                     {t.priority}
@@ -189,7 +152,7 @@ export default function AdminDashboardPage() {
             ))}
             {recentTickets.length === 0 && (
               <Table.Tr>
-                <Table.Td colSpan={6}>
+                <Table.Td colSpan={5}>
                   <Text c="dimmed" ta="center">
                     Tidak ada tiket terbaru.
                   </Text>
@@ -200,14 +163,7 @@ export default function AdminDashboardPage() {
         </Table>
       </Paper>
 
-      {/* Recent RMA */}
       <Paper withBorder radius="md" p="md">
-        <Group justify="space-between" mb="xs">
-          <Text fw={600}>RMA Terbaru</Text>
-          <Anchor component={Link} href="/views/misc/rma" size="sm">
-            Lihat semua
-          </Anchor>
-        </Group>
         <Table
           striped
           highlightOnHover
@@ -225,8 +181,12 @@ export default function AdminDashboardPage() {
           </Table.Thead>
           <Table.Tbody>
             {recentRma.map((r) => (
-              <Table.Tr key={r.code}>
-                <Table.Td>{r.code}</Table.Td>
+              <Table.Tr key={r._id}>
+                <Table.Td>
+                  <Anchor component={Link} href={`/views/tickets/${r._id}`}>
+                    {r.code}
+                  </Anchor>
+                </Table.Td>
                 <Table.Td>{r.customer}</Table.Td>
                 <Table.Td>
                   <Badge color={statusColor(r.status)}>{r.status}</Badge>

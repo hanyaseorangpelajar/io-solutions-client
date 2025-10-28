@@ -16,17 +16,6 @@ export function SignInForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Redirect if user is already logged in
-    if (!isAuthLoading && user) {
-      const params = new URLSearchParams(window.location.search);
-      const redirectedFrom = params.get("redirectedFrom");
-      const rolePath = (user.role || "user").toLowerCase();
-      const targetPath = redirectedFrom || `/${rolePath}`;
-      router.replace(targetPath);
-    }
-  }, [user, isAuthLoading, router]);
-
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);

@@ -19,17 +19,19 @@ export default function RmaFormModal({
   onSubmit,
   initial,
   title = "Buat RMA",
+  isSubmitting, // 1. Tambahkan 'isSubmitting' di sini
 }: {
   opened: boolean;
   onClose: () => void;
   onSubmit: (v: RmaFormInput) => void;
   initial?: Partial<RmaFormInput>;
   title?: string;
+  isSubmitting?: boolean; // 2. Definisikan prop 'isSubmitting' di sini
 }) {
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
     reset,
   } = useForm<RmaFormInput>({
     resolver: zodResolver(RmaFormSchema),
@@ -62,9 +64,13 @@ export default function RmaFormModal({
       centered
     >
       <form
-        onSubmit={handleSubmit((v) => {
-          onSubmit(v);
-          onClose();
+        onSubmit={handleSubmit(async (v) => {
+          try {
+            await onSubmit(v);
+            onClose();
+          } catch (e) {
+            console.error(e);
+          }
         })}
         noValidate
       >

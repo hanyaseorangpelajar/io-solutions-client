@@ -10,47 +10,41 @@ import TicketStatusBadge from "./TicketStatusBadge";
 import ResolveTicketModal from "./ResolveTicketModal";
 import type { Ticket } from "../model/types";
 import type { TicketResolutionInput } from "../model/schema";
-// PERBAIKAN: Hapus Mock Data
-// import { MOCK_TICKETS } from "../model/mock";
 import { formatDateTime } from "../utils/format";
 import { ActionsDropdown } from "@/shared/ui/menus";
-
-// PERBAIKAN: Impor API dan hooks
+import { useAuth } from "@/features/auth/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { listTickets, resolveTicket } from "../api/tickets";
 import { notifications } from "@mantine/notifications";
-
-// TODO: Ganti ini dengan data user dari Auth Context/Session Anda
-const MOCK_CURRENT_USER_ID = "ID_TEKNISI_YANG_SEDANG_LOGIN";
 
 export default function TicketsMyWorkPage() {
   const queryClient = useQueryClient();
   const [q, setQ] = useState("");
   const [resolveFor, setResolveFor] = useState<null | Ticket>(null);
 
-  // PERBAIKAN: Ganti 'currentTech' dengan ID user asli
-  const currentTechId = MOCK_CURRENT_USER_ID;
+  const { user } = useAuth();
 
-  // PERBAIKAN: Gunakan useQuery untuk mengambil data
+  const currentTechId = user?._id;
+
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["tickets", "list", { assignee: currentTechId, q }],
     queryFn: async () => {
+      if (!currentTechId) return [];
+
       const res = await listTickets({
         q: q || undefined,
-        assignee: currentTechId, // Filter tiket untuk user ini
-        // Hanya tampilkan yang sedang dikerjakan
-        status: "in_progress", // atau "open" dan "in_progress"
+        assignee: currentTechId,
+        status: "in_progress",
         limit: 100,
       });
       return res.data;
     },
-    // Filter "myTickets" sekarang dilakukan di sisi server
-    // Kita hanya ambil yang statusnya 'open' atau 'in_progress'
     select: (data) =>
       data.filter((t) => t.status === "open" || t.status === "in_progress"),
+
+    enabled: !!currentTechId,
   });
 
-  // PERBAIKAN: Gunakan useMutation untuk resolve ticket
   const resolveMutation = useMutation({
     mutationFn: (vars: { id: string; payload: TicketResolutionInput }) =>
       resolveTicket(vars.id, vars.payload),
@@ -60,11 +54,9 @@ export default function TicketsMyWorkPage() {
         message: `Tiket #${updatedTicket.code} telah diselesaikan.`,
       });
       setResolveFor(null);
-      // Refresh query "My Work"
       queryClient.invalidateQueries({
         queryKey: ["tickets", "list", { assignee: currentTechId }],
       });
-      // Refresh query "All Tickets" jika ada
       queryClient.invalidateQueries({
         queryKey: ["tickets", "list"],
       });
@@ -77,8 +69,6 @@ export default function TicketsMyWorkPage() {
       });
     },
   });
-
-  // PERBAIKAN: Hapus fungsi 'applyResolved' lokal
 
   const columns: Column<Ticket>[] = [
     { key: "code", header: "Kode", width: 160, cell: (r) => r.code },
@@ -119,7 +109,7 @@ export default function TicketsMyWorkPage() {
               label: "Tandai selesai",
               icon: <IconCircleCheck size={16} />,
               onClick: () => setResolveFor(r),
-              disabled: resolveMutation.isPending, // PERBAIKAN: Disable saat mutasi
+              disabled: resolveMutation.isPending,
             },
           ]}
         />
@@ -140,7 +130,6 @@ export default function TicketsMyWorkPage() {
         />
       </Group>
 
-      {/* PERBAIKAN: Tambahkan LoadingOverlay */}
       <div style={{ position: "relative" }}>
         <LoadingOverlay visible={isLoading || resolveMutation.isPending} />
         <SimpleTable<Ticket>
@@ -149,24 +138,19 @@ export default function TicketsMyWorkPage() {
           stickyHeader
           maxHeight={520}
           columns={columns}
-          data={rows} // Data dari useQuery
+          data={rows}
           emptyText="Belum ada tiket yang sedang kamu tangani."
         />
       </div>
 
-      {/* Modal Resolve */}
       <ResolveTicketModal
         opened={!!resolveFor}
         onClose={() => setResolveFor(null)}
-        // PERBAIKAN: Hapus prop 'assignee'
-        // PERBAIKAN: Tambahkan prop 'ticket'
         ticket={resolveFor}
         onSubmit={async (payload) => {
           if (!resolveFor) return;
-          // PERBAIKAN: Panggil mutasi
           await resolveMutation.mutateAsync({ id: resolveFor.id, payload });
         }}
-        // title="Tandai selesai" // (Dihapus, modal sudah punya title default)
       />
     </Stack>
   );

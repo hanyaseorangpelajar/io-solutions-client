@@ -1,20 +1,24 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { getMockRmaById } from "../model/mock";
 import {
   ActionIcon,
+  Alert,
   Badge,
   Group,
   List,
+  LoadingOverlay,
   Paper,
   Stack,
   Text,
   Title,
   Tooltip,
 } from "@mantine/core";
-import { IconX } from "@tabler/icons-react";
+import { IconAlertTriangle, IconX } from "@tabler/icons-react";
 import RmaStatusBadge from "./RmaStatusBadge";
+import { useQuery } from "@tanstack/react-query";
+import apiClient from "@/lib/apiClient";
+import type { RmaRecord, RmaAction } from "../model/types";
 
 function dt(v: string | Date) {
   const d = typeof v === "string" ? new Date(v) : v;
@@ -28,7 +32,20 @@ export default function RmaDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const id = String(params?.id ?? "");
-  const rma = getMockRmaById(id);
+
+  const {
+    data: rma,
+    isLoading,
+    error,
+  } = useQuery<RmaRecord>({
+    queryKey: ["rma", "detail", id],
+    queryFn: async () => {
+      const res = await apiClient.get(`/rma/${id}`);
+      // UBAH BARIS INI JUGA:
+      return res.data?.data; // Asumsi data RMA ada di dalam properti 'data'
+    },
+    enabled: !!id,
+  });
 
   const closeDetail = () => {
     if (typeof window !== "undefined" && window.history.length > 1)
@@ -36,7 +53,20 @@ export default function RmaDetailPage() {
     else router.push("/misc/rma");
   };
 
-  if (!rma) {
+  if (isLoading) {
+    return (
+      <Paper
+        withBorder
+        p="lg"
+        radius="md"
+        style={{ position: "relative", minHeight: 200 }}
+      >
+        <LoadingOverlay visible />
+      </Paper>
+    );
+  }
+
+  if (error || !rma) {
     return (
       <Paper withBorder p="lg" radius="md">
         <Group justify="space-between" mb="sm">
@@ -52,7 +82,13 @@ export default function RmaDetailPage() {
             </ActionIcon>
           </Tooltip>
         </Group>
-        <Text>Data RMA tidak ditemukan.</Text>
+        <Alert
+          color="red"
+          icon={<IconAlertTriangle />}
+          title="Gagal Memuat Data"
+        >
+          {error ? (error as Error).message : "Data RMA tidak ditemukan."}
+        </Alert>
       </Paper>
     );
   }
@@ -126,8 +162,8 @@ export default function RmaDetailPage() {
           Timeline
         </Text>
         <List spacing={6}>
-          {rma.actions.map((a) => (
-            <List.Item key={a.id}>
+          {rma.actions.map((a: RmaAction) => (
+            <List.Item key={a._id ?? a.at}>
               <Text>
                 <Text span fw={600}>
                   {dt(a.at)}

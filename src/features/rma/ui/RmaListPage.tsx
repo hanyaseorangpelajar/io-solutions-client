@@ -13,14 +13,18 @@ import {
   Menu,
   ActionIcon,
   Badge,
+  LoadingOverlay,
 } from "@mantine/core";
 import { IconDots, IconEye, IconPlus } from "@tabler/icons-react";
 import Link from "next/link";
-import { MOCK_RMAS } from "../model/mock";
 import type { RmaRecord, RmaStatus } from "../model/types";
 import RmaStatusBadge from "./RmaStatusBadge";
 import RmaFormModal from "./RmaFormModal";
 import RmaActionModal from "./RmaActionModal";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import apiClient from "@/lib/apiClient";
+import { notifications } from "@mantine/notifications";
+import type { RmaFormInput, RmaActionInput } from "../model/schema";
 
 function dt(v: string | Date) {
   const d = typeof v === "string" ? new Date(v) : v;
@@ -44,13 +48,21 @@ const STATUS_OPTIONS: { value: RmaStatus | "all"; label: string }[] = [
 ];
 
 export default function RmaListPage() {
-  const [rows, setRows] = useState<RmaRecord[]>(() => [...MOCK_RMAS]);
+  const queryClient = useQueryClient();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<RmaStatus | "all">("all");
 
   const [createOpen, setCreateOpen] = useState(false);
   const [actionOpen, setActionOpen] = useState(false);
   const [actionTarget, setActionTarget] = useState<RmaRecord | null>(null);
+
+  const { data: rows = [], isLoading } = useQuery<RmaRecord[]>({
+    queryKey: ["rma", "list"],
+    queryFn: async () => {
+      const res = await apiClient.get("/rma");
+      return res.data?.data || [];
+    },
+  });
 
   const filtered = useMemo(() => {
     return rows.filter((r) => {
@@ -65,6 +77,46 @@ export default function RmaListPage() {
       return okStatus && okQ;
     });
   }, [rows, q, status]);
+
+  const createRmaMutation = useMutation({
+    mutationFn: (payload: RmaFormInput) => apiClient.post("/rma", payload),
+    onSuccess: () => {
+      notifications.show({
+        color: "green",
+        title: "RMA Dibuat",
+        message: "RMA baru telah berhasil dibuat.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["rma", "list"] });
+    },
+    onError: (e: any) => {
+      notifications.show({
+        color: "red",
+        title: "Gagal Membuat RMA",
+        message: e.message,
+      });
+    },
+  });
+
+  const addActionMutation = useMutation({
+    mutationFn: (vars: { id: string; payload: RmaActionInput }) =>
+      apiClient.post(`/rma/${vars.id}/actions`, vars.payload),
+    onSuccess: (data, vars) => {
+      notifications.show({
+        color: "green",
+        title: "Aksi Dicatat",
+        message: "Aksi RMA telah berhasil dicatat.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["rma", "list"] });
+      queryClient.invalidateQueries({ queryKey: ["rma", "detail", vars.id] });
+    },
+    onError: (e: any) => {
+      notifications.show({
+        color: "red",
+        title: "Gagal Mencatat Aksi",
+        message: e.message,
+      });
+    },
+  });
 
   const openAction = (row: RmaRecord) => {
     setActionTarget(row);
@@ -124,10 +176,9 @@ export default function RmaListPage() {
           </Table.Thead>
           <Table.Tbody>
             {filtered.map((r) => (
-              <Table.Tr key={r.id}>
+              <Table.Tr key={r._id}>
                 <Table.Td>
-                  {/* HREF konkret, TANPA [id] */}
-                  <Link href={`/views/misc/rma/${encodeURIComponent(r.id)}`}>
+                  <Link href={`/views/misc/rma/${encodeURIComponent(r._id)}`}>
                     {r.code}
                   </Link>
                 </Table.Td>
@@ -155,10 +206,9 @@ export default function RmaListPage() {
                       </ActionIcon>
                     </Menu.Target>
                     <Menu.Dropdown>
-                      {/* Di Menu.Item juga pakai href final */}
                       <Menu.Item
                         component={Link}
-                        href={detailHref(r.id)}
+                        href={detailHref(r._id)}
                         leftSection={<IconEye size={16} />}
                       >
                         Lihat detail
@@ -176,68 +226,27 @@ export default function RmaListPage() {
         </Table>
       </Paper>
 
-      {/* Modal: buat RMA */}
       <RmaFormModal
         opened={createOpen}
         onClose={() => setCreateOpen(false)}
-        onSubmit={(v) => {
-          const now = new Date().toISOString();
-          const newRow: RmaRecord = {
-            id: `rma-${Date.now()}`,
-            code: `RMA-${new Date().getFullYear()}-${(rows.length + 1)
-              .toString()
-              .padStart(4, "0")}`,
-            title: v.title,
-            customerName: v.customerName,
-            contact: v.contact,
-            productName: v.productName,
-            productSku: v.productSku,
-            ticketId: v.ticketId,
-            issueDesc: v.issueDesc,
-            warranty: v.warranty,
-            status: "new",
-            createdAt: now,
-            updatedAt: now,
-            actions: [],
-          };
-          setRows((prev) => [newRow, ...prev]);
+        onSubmit={async (v) => {
+          await createRmaMutation.mutateAsync(v);
         }}
+        isSubmitting={createRmaMutation.isPending}
       />
 
-      {/* Modal: aksi RMA */}
       <RmaActionModal
         opened={actionOpen}
         onClose={() => setActionOpen(false)}
-        onSubmit={(v) => {
+        onSubmit={async (v) => {
           if (!actionTarget) return;
-          const now = new Date().toISOString();
-          const next = { ...actionTarget };
-          next.actions = [
-            ...next.actions,
-            {
-              id: `act-${Date.now()}`,
-              type: v.type,
-              note: v.note,
-              by: "sysadmin",
-              at: now,
-            },
-          ];
-          const map: Record<string, RmaStatus> = {
-            receive_unit: "received",
-            send_to_vendor: "sent_to_vendor",
-            vendor_update: "in_vendor",
-            replace: "replaced",
-            repair: "repaired",
-            return_to_customer: "returned",
-            reject: "rejected",
-            cancel: "cancelled",
-          };
-          next.status = map[v.type] ?? next.status;
-          next.updatedAt = now;
-
-          setRows((prev) => prev.map((r) => (r.id === next.id ? next : r)));
+          await addActionMutation.mutateAsync({
+            id: actionTarget._id,
+            payload: v,
+          });
           setActionTarget(null);
         }}
+        isSubmitting={addActionMutation.isPending}
       />
     </Stack>
   );

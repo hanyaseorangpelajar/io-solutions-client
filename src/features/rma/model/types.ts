@@ -30,18 +30,18 @@ export type RmaActionType =
   | "cancel";
 
 export type RmaAction = {
-  id: string;
+  _id: string; // <-- UBAH DARI 'id'
   type: RmaActionType;
   note?: string;
   by: string; // user/operator
   at: string; // ISO datetime
-  payload?: Record<string, unknown>; // bebas (resi, biaya, dst.)
+  payload?: Record<string, unknown>;
 };
 
 export type RmaRecord = {
-  id: string;
+  _id: string; // <-- UBAH DARI 'id'
   code: string; // RMA-YYYY-XXXX
-  title: string; // ringkas: "Keyboard XYZ double typing"
+  title: string;
   customerName: string;
   contact?: string; // telp/email
   productName: string;

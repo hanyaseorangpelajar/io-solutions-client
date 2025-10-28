@@ -3,7 +3,6 @@
 // ---- Model
 export * from "./model/types";
 export * from "./model/schema";
-export { MOCK_RMAS, getMockRmaById } from "./model/mock";
 
 // ---- UI (default exports di-alias jadi named)
 export { default as RmaListPage } from "./ui/RmaListPage";
