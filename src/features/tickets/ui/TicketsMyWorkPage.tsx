@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useAuth, type User } from "@/features/auth";
 import { Group, Stack, Title, LoadingOverlay, Text } from "@mantine/core";
 import { IconCircleCheck, IconEye } from "@tabler/icons-react";
 import { SimpleTable, type Column } from "@/shared/ui/table/SimpleTable";
@@ -12,7 +13,6 @@ import type { Ticket } from "../model/types";
 import type { TicketResolutionInput } from "../model/schema";
 import { formatDateTime } from "../utils/format";
 import { ActionsDropdown } from "@/shared/ui/menus";
-import { useAuth } from "@/features/auth/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { listTickets, resolveTicket } from "../api/tickets";
 import { notifications } from "@mantine/notifications";
@@ -24,7 +24,7 @@ export default function TicketsMyWorkPage() {
 
   const { user } = useAuth();
 
-  const currentTechId = user?._id;
+  const currentTechId = (user as User & { id: string })?.id;
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["tickets", "list", { assignee: currentTechId, q }],
@@ -34,14 +34,16 @@ export default function TicketsMyWorkPage() {
       const res = await listTickets({
         q: q || undefined,
         assignee: currentTechId,
-        status: "in_progress",
+        // [PERBAIKAN 2] Pastikan filter 'status' sudah dihapus dari sini
         limit: 100,
       });
       return res.data;
     },
+    // [PERBAIKAN 3] Filter 'select' ini sudah benar, biarkan saja
     select: (data) =>
       data.filter((t) => t.status === "open" || t.status === "in_progress"),
 
+    // Sekarang `currentTechId` akan berisi ID, dan `enabled` akan menjadi `true`
     enabled: !!currentTechId,
   });
 

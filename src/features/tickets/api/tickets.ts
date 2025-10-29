@@ -1,3 +1,5 @@
+// File: features/tickets/api/tickets.ts
+
 import apiClient from "@/lib/apiClient";
 import type { Ticket } from "../model/types";
 import type {
@@ -6,9 +8,20 @@ import type {
   PartUsageInput,
 } from "../model/schema";
 
+// Tipe ini (Paginated) adalah standar internal frontend kita.
+// Ini yang DIHARAPKAN oleh komponen UI.
 export type Paginated<T> = {
   data: T[];
   meta: { page: number; limit: number; total: number; totalPages: number };
+};
+
+// [BARU] Tipe ini adalah apa yang DIKIRIM oleh server.
+type ServerPaginatedResponse<T> = {
+  results: T[];
+  page: number;
+  limit: number;
+  totalResults: number;
+  totalPages: number;
 };
 
 function qs(params: Record<string, any>): string {
@@ -19,14 +32,34 @@ function qs(params: Record<string, any>): string {
   return q ? `?${q}` : "";
 }
 
-export async function listTickets(params: {}): Promise<Paginated<Ticket>> {
+// [PERBAIKAN PADA FUNGSI INI]
+export async function listTickets(
+  params: Record<string, any> // Lebih baik gunakan Record<string, any> daripada {}
+): Promise<Paginated<Ticket>> {
   const p: any = { ...params };
   if (p.assignee === "unassigned") {
     p.assignee = "";
   }
-  const response = await apiClient.get<Paginated<Ticket>>(`/tickets${qs(p)}`);
-  return response.data;
+
+  // 1. Beri tahu Axios tipe data yang BENAR-BENAR dikirim server
+  const response = await apiClient.get<ServerPaginatedResponse<Ticket>>(
+    `/tickets${qs(p)}`
+  );
+
+  const serverData = response.data;
+
+  // 2. Terjemahkan/Mapelkan respons server ke tipe data internal frontend
+  return {
+    data: serverData.results, // <-- Map 'results' ke 'data'
+    meta: {
+      page: serverData.page,
+      limit: serverData.limit,
+      total: serverData.totalResults,
+      totalPages: serverData.totalPages,
+    },
+  };
 }
+// [AKHIR PERBAIKAN]
 
 export async function getTicket(id: string): Promise<Ticket> {
   const response = await apiClient.get<Ticket>(
@@ -105,9 +138,6 @@ export type AuditLogEvent = {
   description: string;
 };
 
-/**
- * Mengambil riwayat untuk SATU tiket
- */
 export async function getTicketHistory(id: string): Promise<AuditLogEvent[]> {
   const response = await apiClient.get<AuditLogEvent[]>(
     `/tickets/${encodeURIComponent(id)}/history`
@@ -115,15 +145,22 @@ export async function getTicketHistory(id: string): Promise<AuditLogEvent[]> {
   return response.data;
 }
 
-/**
- * PERBAIKAN: Fungsi ini sekarang memanggil endpoint /audits
- * dan mengharapkan data paginasi
- */
 export async function getGlobalAuditLog(
   params: Record<string, any>
 ): Promise<Paginated<AuditLogEvent>> {
-  const response = await apiClient.get<Paginated<AuditLogEvent>>(
+  // 3. Terapkan perbaikan yang sama di sini untuk global audit log
+  const response = await apiClient.get<ServerPaginatedResponse<AuditLogEvent>>(
     `/audits${qs(params)}`
   );
-  return response.data;
+
+  const serverData = response.data;
+  return {
+    data: serverData.results, // Map 'results' ke 'data'
+    meta: {
+      page: serverData.page,
+      limit: serverData.limit,
+      total: serverData.totalResults,
+      totalPages: serverData.totalPages,
+    },
+  };
 }

@@ -77,11 +77,11 @@ export const MASTER_NAV: NavItem[] = [
 
   {
     group: true,
-    label: "Laporan",
+    label: "Documents",
     roles: ["Admin"],
     children: [
       {
-        label: "Inventory",
+        label: "Tickets",
         href: "/views/reports/inventory",
         roles: ["Admin"],
       },

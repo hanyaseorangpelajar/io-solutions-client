@@ -39,15 +39,6 @@
 |   |       |   |   `-- page.tsx
 |   |       |   `-- system-builder
 |   |       |       `-- page.tsx
-|   |       |-- reports
-|   |       |   |-- inventory
-|   |       |   |   `-- page.tsx
-|   |       |   |-- overview
-|   |       |   |   `-- page.tsx
-|   |       |   |-- rma
-|   |       |   |   `-- page.tsx
-|   |       |   `-- tickets
-|   |       |       `-- page.tsx
 |   |       |-- settings
 |   |       |   |-- account
 |   |       |   |   `-- page.tsx
@@ -55,6 +46,8 @@
 |   |       |       `-- page.tsx
 |   |       `-- tickets
 |   |           |-- [id]
+|   |           |   |-- note
+|   |           |   |   `-- page.tsx
 |   |           |   `-- page.tsx
 |   |           |-- history
 |   |           |   `-- page.tsx
@@ -71,6 +64,8 @@
 |-- clientTree.txt
 |-- features
 |   |-- audit
+|   |   |-- api
+|   |   |   `-- audits.ts
 |   |   |-- index.ts
 |   |   |-- model
 |   |   |   |-- schema.ts
@@ -93,6 +88,9 @@
 |   |       |-- FormHeader.tsx
 |   |       |-- SignInForm.tsx
 |   |       `-- SignUpPage.tsx
+|   |-- document-generation
+|   |   `-- ui
+|   |       `-- TicketNote.tsx
 |   |-- inventory
 |   |   |-- api
 |   |   |   |-- parts.ts
@@ -116,16 +114,6 @@
 |   |   `-- ui
 |   |       |-- RbacListPage.tsx
 |   |       `-- RoleFormModal.tsx
-|   |-- reports
-|   |   |-- index.ts
-|   |   |-- model
-|   |   |   |-- derive.ts
-|   |   |   `-- types.ts
-|   |   `-- ui
-|   |       |-- InventoryReportPage.tsx
-|   |       |-- ReportsOverviewPage.tsx
-|   |       |-- RmaReportPage.tsx
-|   |       `-- TicketsReportPage.tsx
 |   |-- rma
 |   |   |-- index.ts
 |   |   |-- model
@@ -236,4 +224,4 @@
 `-- theme
     `-- mantine.ts
 
-92 directories, 144 files
+88 directories, 136 files

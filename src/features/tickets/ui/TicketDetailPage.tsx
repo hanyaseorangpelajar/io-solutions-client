@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
 import {
   ActionIcon,
   Badge,
@@ -17,7 +18,7 @@ import {
   Timeline,
   ThemeIcon,
 } from "@mantine/core";
-import { IconX, IconNotes, IconTool, IconPlus } from "@tabler/icons-react";
+import { IconX, IconNotes, IconTool, IconFileText } from "@tabler/icons-react";
 import { useParams, useRouter } from "next/navigation";
 import type { Ticket, Diagnostic, Action, PartUsage } from "../model/types";
 import TicketPriorityBadge from "./TicketPriorityBadge";
@@ -252,6 +253,17 @@ export default function TicketDetailPage() {
             disabled={status === "resolved" || status === "closed"}
           >
             Tambah Tindakan
+          </Button>
+          <Button
+            component={Link} // Use Next.js Link
+            href={`/views/tickets/${encodeURIComponent(id)}/note`} // Link to the new page
+            leftSection={<IconFileText size={16} />}
+            variant="light"
+            target="_blank" // Open in new tab (optional, good for printing)
+            rel="noopener noreferrer" // Security for target="_blank"
+            disabled={!ticket} // Disable if ticket data isn't loaded
+          >
+            Lihat Nota
           </Button>
         </Group>
       </Paper>
