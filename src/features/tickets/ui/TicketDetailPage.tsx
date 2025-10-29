@@ -31,9 +31,7 @@ import { notifications } from "@mantine/notifications";
 import AddDiagnosisModal from "./AddDiagnosisModal";
 import AddActionModal from "./AddActionModal";
 
-// Impor API dan Tipe Data Parts
 import { listParts, type Part } from "@/features/inventory/api/parts";
-// PERBAIKAN: Impor API dan Tipe Data Staff
 import { getStaffList } from "@/features/staff/api/staff";
 import type { Staff } from "@/features/staff/model/types";
 
@@ -45,7 +43,7 @@ export default function TicketDetailPage() {
 
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [inventoryParts, setInventoryParts] = useState<Part[]>([]);
-  const [users, setUsers] = useState<Staff[]>([]); // PERBAIKAN: State untuk staff/users
+  const [users, setUsers] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [diagModalOpen, setDiagModalOpen] = useState(false);
@@ -64,7 +62,6 @@ export default function TicketDetailPage() {
     (async () => {
       setLoading(true);
       try {
-        // Ambil semua data sekaligus
         const [ticketData, partsData, usersData] = await Promise.all([
           getTicket(id),
           listParts(),
@@ -74,7 +71,7 @@ export default function TicketDetailPage() {
         if (active) {
           setTicket(ticketData);
           setInventoryParts(partsData);
-          setUsers(usersData); // Simpan data staff
+          setUsers(usersData);
         }
       } catch (e: any) {
         if (active) {
@@ -94,13 +91,11 @@ export default function TicketDetailPage() {
     };
   }, [id]);
 
-  // PERBAIKAN: Buat Map untuk nama user
   const userNameMap = useMemo(
     () => new Map(users.map((u) => [u.id, u.name])),
     [users]
   );
 
-  // Mutasi untuk Diagnosis
   const diagnosisMutation = useMutation({
     mutationFn: (vars: {
       id: string;
@@ -124,7 +119,6 @@ export default function TicketDetailPage() {
     },
   });
 
-  // Mutasi untuk Tindakan
   const actionMutation = useMutation({
     mutationFn: (vars: {
       id: string;
@@ -148,6 +142,37 @@ export default function TicketDetailPage() {
     },
   });
 
+  const timelineEvents = useMemo(() => {
+    if (!ticket) return [];
+
+    const diags = (ticket.diagnostics || []).map((d: Diagnostic) => ({
+      ...d,
+      type: "diagnosis" as const,
+      timestamp: d.timestamp || ticket.createdAt,
+    }));
+    const acts = (ticket.actions || []).map((a: Action) => ({
+      ...a,
+      type: "action" as const,
+      timestamp: a.timestamp || ticket.createdAt,
+    }));
+
+    return [...diags, ...acts].sort(
+      (a, b) =>
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+  }, [ticket]);
+
+  const hasResolution = !!ticket?.resolution;
+
+  const partLines = useMemo(
+    () =>
+      ticket?.resolution?.parts?.map((p: PartUsage) => ({
+        name: p.name,
+        qty: p.qty,
+      })) ?? [],
+    [ticket?.resolution]
+  );
+
   if (loading) {
     return (
       <Paper withBorder p="lg" radius="md">
@@ -168,49 +193,17 @@ export default function TicketDetailPage() {
     code,
     subject,
     requester,
-    assignee, // Ini ID
+    assignee,
     priority,
     status,
     createdAt,
     updatedAt,
     description,
     resolution,
-    diagnostics,
-    actions,
   } = ticket;
-
-  const timelineEvents = useMemo(() => {
-    const diags = (diagnostics || []).map((d: Diagnostic) => ({
-      ...d,
-      type: "diagnosis" as const,
-      timestamp: d.timestamp || createdAt,
-    }));
-    const acts = (actions || []).map((a: Action) => ({
-      ...a,
-      type: "action" as const,
-      timestamp: a.timestamp || createdAt,
-    }));
-
-    return [...diags, ...acts].sort(
-      (a, b) =>
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    );
-  }, [diagnostics, actions, createdAt]);
-
-  const hasResolution = !!resolution;
-
-  const partLines = useMemo(
-    () =>
-      resolution?.parts?.map((p: PartUsage) => ({
-        name: p.name,
-        qty: p.qty,
-      })) ?? [],
-    [resolution]
-  );
 
   return (
     <Stack gap="md">
-      {/* Header */}
       <Group justify="space-between" align="center">
         <Stack gap={4}>
           <Group gap="xs" wrap="wrap">
@@ -235,7 +228,6 @@ export default function TicketDetailPage() {
         </Tooltip>
       </Group>
 
-      {/* Tombol Aksi Utama */}
       <Paper withBorder radius="md" p="sm">
         <Group>
           <Button
@@ -255,20 +247,19 @@ export default function TicketDetailPage() {
             Tambah Tindakan
           </Button>
           <Button
-            component={Link} // Use Next.js Link
-            href={`/views/tickets/${encodeURIComponent(id)}/note`} // Link to the new page
+            component={Link}
+            href={`/views/tickets/${encodeURIComponent(id)}/note`}
             leftSection={<IconFileText size={16} />}
             variant="light"
-            target="_blank" // Open in new tab (optional, good for printing)
-            rel="noopener noreferrer" // Security for target="_blank"
-            disabled={!ticket} // Disable if ticket data isn't loaded
+            target="_blank"
+            rel="noopener noreferrer"
+            disabled={!ticket}
           >
             Lihat Nota
           </Button>
         </Group>
       </Paper>
 
-      {/* Info Detail Tiket */}
       <Paper withBorder radius="md" p="md">
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
           <Stack gap={4}>
@@ -281,7 +272,6 @@ export default function TicketDetailPage() {
             <Text size="sm" c="dimmed">
               Assignee
             </Text>
-            {/* PERBAIKAN: Tampilkan nama, bukan ID */}
             <Text fw={600}>
               {(assignee ? userNameMap.get(assignee) : null) ?? "-"}
             </Text>
@@ -314,7 +304,6 @@ export default function TicketDetailPage() {
         )}
       </Paper>
 
-      {/* Timeline */}
       <Paper withBorder radius="md" p="md">
         <Title order={4} mb="md">
           Timeline Pengerjaan
@@ -422,10 +411,8 @@ export default function TicketDetailPage() {
         )}
       </Paper>
 
-      {/* Resolution */}
       {hasResolution ? (
         <Paper withBorder radius="md" p="md">
-          {/* ... (Tampilan Resolusi sama) ... */}
           <Group justify="space-between" mb="xs">
             <Text fw={700}>Ringkasan Penyelesaian</Text>
             {resolution?.resolvedAt && (
@@ -434,15 +421,12 @@ export default function TicketDetailPage() {
               </Badge>
             )}
           </Group>
-          {/* ... (Sisa tampilan resolusi) ... */}
         </Paper>
       ) : (
         <Paper withBorder radius="md" p="md">
           <Text c="dimmed">Ticket belum diselesaikan.</Text>
         </Paper>
       )}
-
-      {/* --- MODALS --- */}
 
       <AddDiagnosisModal
         opened={diagModalOpen}
