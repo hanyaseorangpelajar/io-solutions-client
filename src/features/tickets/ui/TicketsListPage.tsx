@@ -11,8 +11,8 @@ import {
   Text,
   Title,
   LoadingOverlay,
-  Menu, // Impor Menu
-  ActionIcon, // Impor ActionIcon
+  Menu,
+  ActionIcon,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { notifications } from "@mantine/notifications";
@@ -23,7 +23,7 @@ import {
   IconUser,
   IconChevronRight,
   IconArrowsExchange,
-  IconDots, // Impor IconDots
+  IconDots,
 } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { TicketResolutionInput } from "../model/schema";
@@ -33,9 +33,7 @@ import ResolveTicketModal from "./ResolveTicketModal";
 import TicketFormModal from "./TicketFormModal";
 import TicketPriorityBadge from "./TicketPriorityBadge";
 import TicketStatusBadge from "./TicketStatusBadge";
-// Kita tidak akan gunakan ActionsDropdown lagi untuk sel ini
-// import { ActionsDropdown } from "@/shared/ui/menus";
-
+import { Modal } from "@mantine/core";
 import {
   createTicket,
   listTickets,
@@ -65,13 +63,11 @@ const PRIORITY_OPTIONS = [
   { value: "urgent", label: "Urgent" },
 ];
 
-// Map helper untuk nama status
 const statusLabelMap = new Map(STATUS_OPTIONS.map((s) => [s.value, s.label]));
 
 export function TicketsListPage() {
   const queryClient = useQueryClient();
 
-  // filters
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<TicketStatus | "all">("all");
   const [priority, setPriority] = useState<TicketPriority | "all">("all");
@@ -80,32 +76,46 @@ export function TicketsListPage() {
   );
   const [range, setRange] = useState<RangeValue>([null, null]);
 
-  // data
   const [rows, setRows] = useState<Ticket[]>([]);
   const [users, setUsers] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [resolveFor, setResolveFor] = useState<null | "bulk" | Ticket>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [assignFor, setAssignFor] = useState<Ticket | null>(null);
+  const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(
+    null
+  );
 
-  // fetch helper
+  const clearFilters = () => {
+    setQ("");
+    setStatus("all");
+    setPriority("all");
+    setAssignee("all");
+    setRange([null, null]);
+  };
+
   const fetchRows = useCallback(async () => {
     setLoading(true);
     try {
       const [from, to] = range;
+
+      const fromISO = from ? new Date(from).toISOString() : undefined;
+      const toISO = to ? new Date(to).toISOString() : undefined;
+
       const res = await listTickets({
         q: q || undefined,
         status: status === "all" ? undefined : status,
         priority: priority === "all" ? undefined : priority,
         assignee: assignee,
-        from: from ? from.toISOString() : undefined,
-        to: to ? to.toISOString() : undefined,
+        from: fromISO,
+        to: toISO,
         sortBy: "updatedAt",
         order: "desc",
         page: 1,
         limit: 100,
       });
-      const data = res.data ?? []; // Pastikan array
+      const data = res.data ?? [];
       setRows(data);
       queryClient.setQueryData(["tickets", "list"], data);
     } catch (e: any) {
@@ -124,7 +134,7 @@ export function TicketsListPage() {
       setLoading(true);
       try {
         const userRes = await getStaffList();
-        const usersData = userRes ?? []; // Pastikan array
+        const usersData = userRes ?? [];
         setUsers(usersData);
         queryClient.setQueryData(["staff", "list"], usersData);
         await fetchRows();
@@ -141,7 +151,6 @@ export function TicketsListPage() {
     fetchInitialData();
   }, [fetchRows, queryClient]);
 
-  // Opsi assignee dari 'users' state
   const assigneeOptions = useMemo(() => {
     return [
       { value: "all", label: "Semua teknisi" },
@@ -153,13 +162,11 @@ export function TicketsListPage() {
     ];
   }, [users]);
 
-  // Map untuk lookup nama teknisi
   const userNameMap = useMemo(
     () => new Map(users.map((u) => [u.id, u.name])),
     [users]
   );
 
-  // selection helpers
   const filteredIds = rows.map((r) => r.id);
   const allSelectedInFiltered =
     filteredIds.length > 0 && filteredIds.every((id) => selected.has(id));
@@ -182,8 +189,6 @@ export function TicketsListPage() {
       return s;
     });
   };
-
-  // ---- Mutasi (useMutation) ----
 
   const createMutation = useMutation({
     mutationFn: createTicket,
@@ -271,172 +276,173 @@ export function TicketsListPage() {
       });
     },
   });
-  // ------------------------------------
 
-  // columns
-  const columns: Column<Ticket>[] = [
-    {
-      key: "select",
-      header: (
-        <Checkbox
-          aria-label="Pilih semua"
-          checked={allSelectedInFiltered}
-          indeterminate={someSelectedInFiltered}
-          onChange={(e) => toggleSelectedFiltered(e.currentTarget.checked)}
-        />
-      ),
-      cell: (r) => (
-        <Checkbox
-          aria-label={`Pilih ${r.code}`}
-          checked={selected.has(r.id)}
-          onChange={(e) => toggleRow(r.id, e.currentTarget.checked)}
-        />
-      ),
-      width: 40,
-      align: "center",
-    },
-    { key: "code", header: "Kode", cell: (r) => r.code, width: 140 },
-    { key: "subject", header: "Subjek", cell: (r) => r.subject, width: "26%" },
-    { key: "requester", header: "Pemohon", cell: (r) => r.requester },
-    {
-      key: "assignee",
-      header: "Teknisi",
-      // PERBAIKAN: Cek null/undefined sebelum 'get'
-      cell: (r) => (r.assignee ? userNameMap.get(r.assignee) : null) ?? "-",
-      align: "center",
-    },
-    {
-      key: "priority",
-      header: "Prioritas",
-      cell: (r) => <TicketPriorityBadge priority={r.priority} />,
-      align: "center",
-    },
-    {
-      key: "status",
-      header: "Status",
-      cell: (r) => <TicketStatusBadge status={r.status} />,
-      align: "center",
-    },
-    {
-      key: "createdAt",
-      header: "Dibuat",
-      cell: (r) => formatDateTime(r.createdAt),
-      width: 180,
-    },
-    {
-      key: "actions",
-      header: "",
-      width: 56, // Perkecil lebar
-      align: "right",
-      // PERBAIKAN: Gunakan <Menu> standar Mantine, bukan ActionsDropdown
-      cell: (r) => (
-        <Menu withinPortal position="bottom-end" shadow="sm">
-          <Menu.Target>
-            <ActionIcon variant="subtle" color="gray">
-              <IconDots size={16} />
-            </ActionIcon>
-          </Menu.Target>
-          <Menu.Dropdown>
-            <Menu.Item
-              leftSection={<IconEye size={14} />}
-              component="a" // Asumsi Anda pakai Next.js Link atau <a>
-              href={`/views/tickets/${encodeURIComponent(r.id)}`} // Sesuaikan path
-            >
-              Lihat detail
-            </Menu.Item>
+  const columns: Column<Ticket>[] = useMemo(
+    () => [
+      {
+        key: "select",
+        header: (
+          <Checkbox
+            aria-label="Pilih semua"
+            checked={allSelectedInFiltered}
+            indeterminate={someSelectedInFiltered}
+            onChange={(e) => toggleSelectedFiltered(e.currentTarget.checked)}
+          />
+        ),
+        cell: (r) => (
+          <Checkbox
+            aria-label={`Pilih ${r.code}`}
+            checked={selected.has(r.id)}
+            onChange={(e) => toggleRow(r.id, e.currentTarget.checked)}
+          />
+        ),
+        width: 40,
+        align: "center",
+      },
+      { key: "code", header: "Kode", cell: (r) => r.code, width: 140 },
+      {
+        key: "subject",
+        header: "Subjek",
+        cell: (r) => r.subject,
+        width: "26%",
+      },
+      { key: "requester", header: "Pemohon", cell: (r) => r.requester },
+      {
+        key: "assignee",
+        header: "Teknisi",
+        cell: (r) => (r.assignee ? userNameMap.get(r.assignee) : null) ?? "-",
+        align: "center",
+      },
+      {
+        key: "priority",
+        header: "Prioritas",
+        cell: (r) => <TicketPriorityBadge priority={r.priority} />,
+        align: "center",
+      },
+      {
+        key: "status",
+        header: "Status",
+        cell: (r) => <TicketStatusBadge status={r.status} />,
+        align: "center",
+      },
+      {
+        key: "createdAt",
+        header: "Dibuat",
+        cell: (r) => formatDateTime(r.createdAt),
+        width: 180,
+      },
+      {
+        key: "actions",
+        header: "",
+        width: 56,
+        align: "right",
+        cell: (r) => {
+          const hasAssignee = !!r.assignee;
 
-            {/* Submenu Assign */}
-            <Menu position="right-start" withArrow shadow="sm">
+          return (
+            <Menu withinPortal position="bottom-end" shadow="sm">
               <Menu.Target>
-                <Menu.Item
-                  leftSection={<IconUser size={14} />}
-                  rightSection={<IconChevronRight size={14} />}
-                >
-                  Tugaskan Teknisi
-                </Menu.Item>
+                <ActionIcon variant="subtle" color="gray">
+                  <IconDots size={16} />
+                </ActionIcon>
               </Menu.Target>
               <Menu.Dropdown>
                 <Menu.Item
-                  onClick={() =>
-                    assignMutation.mutate({ ticketId: r.id, userId: null })
-                  }
-                  disabled={assignMutation.isPending}
+                  leftSection={<IconEye size={14} />}
+                  component="a"
+                  href={`/views/tickets/${encodeURIComponent(r.id)}`}
                 >
-                  Unassigned
+                  Lihat detail
                 </Menu.Item>
-                <Menu.Divider />
-                {users
-                  .filter((u) => u.role === "Teknisi" || u.role === "Admin")
-                  .map((user) => (
+
+                <Menu
+                  withinPortal
+                  position="left-start"
+                  withArrow
+                  shadow="sm"
+                  trigger="hover"
+                >
+                  <Menu.Target>
                     <Menu.Item
-                      key={user.id}
-                      onClick={() =>
-                        assignMutation.mutate({
-                          ticketId: r.id,
-                          userId: user.id,
-                        })
-                      }
-                      disabled={
-                        assignMutation.isPending || r.assignee === user.id
-                      }
+                      leftSection={<IconUser size={14} />}
+                      onClick={() => {
+                        setAssignFor(r);
+                        setSelectedAssigneeId(r.assignee ?? null);
+                      }}
                     >
-                      {user.name}
+                      {hasAssignee ? "Ubah Penugasan" : "Tugaskan Teknisi"}
                     </Menu.Item>
-                  ))}
-              </Menu.Dropdown>
-            </Menu>
+                  </Menu.Target>
+                </Menu>
 
-            {/* Submenu Status */}
-            <Menu position="right-start" withArrow shadow="sm">
-              <Menu.Target>
-                <Menu.Item
-                  leftSection={<IconArrowsExchange size={14} />}
-                  rightSection={<IconChevronRight size={14} />} // PERBAIKAN: Typo 1LED -> 14
+                <Menu
+                  withinPortal
+                  position="left-start"
+                  withArrow
+                  shadow="sm"
+                  trigger="hover"
                 >
-                  Ubah Status
+                  <Menu.Target>
+                    <Menu.Item
+                      leftSection={<IconArrowsExchange size={14} />}
+                      rightSection={<IconChevronRight size={14} />}
+                    >
+                      Ubah Status
+                    </Menu.Item>
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    {STATUS_OPTIONS.filter((s) => s.value !== "all").map(
+                      (opt) => (
+                        <Menu.Item
+                          key={opt.value}
+                          onClick={() =>
+                            statusMutation.mutate({
+                              ticketId: r.id,
+                              status: opt.value as TicketStatus,
+                            })
+                          }
+                          disabled={
+                            statusMutation.isPending || r.status === opt.value
+                          }
+                        >
+                          {opt.label}
+                        </Menu.Item>
+                      )
+                    )}
+                  </Menu.Dropdown>
+                </Menu>
+
+                <Menu.Divider />
+
+                <Menu.Item
+                  leftSection={<IconCircleCheck size={14} />}
+                  onClick={() => setResolveFor(r)}
+                  disabled={
+                    r.status === "resolved" ||
+                    r.status === "closed" ||
+                    resolveMutation.isPending
+                  }
+                >
+                  Tandai selesai
                 </Menu.Item>
-              </Menu.Target>
-              <Menu.Dropdown>
-                {STATUS_OPTIONS.filter((s) => s.value !== "all").map((opt) => (
-                  <Menu.Item
-                    key={opt.value}
-                    onClick={() =>
-                      statusMutation.mutate({
-                        ticketId: r.id,
-                        status: opt.value as TicketStatus,
-                      })
-                    }
-                    disabled={
-                      statusMutation.isPending || r.status === opt.value
-                    }
-                  >
-                    {opt.label}
-                  </Menu.Item>
-                ))}
               </Menu.Dropdown>
             </Menu>
+          );
+        },
+      },
+    ],
+    [
+      allSelectedInFiltered,
+      someSelectedInFiltered,
+      selected,
+      userNameMap,
+      users,
+      assignMutation,
+      statusMutation,
+      resolveMutation,
+    ]
+  );
 
-            <Menu.Divider />
-
-            {/* Tombol Resolve */}
-            <Menu.Item
-              leftSection={<IconCircleCheck size={14} />}
-              onClick={() => setResolveFor(r)}
-              disabled={
-                r.status === "resolved" ||
-                r.status === "closed" ||
-                resolveMutation.isPending
-              }
-            >
-              Tandai selesai
-            </Menu.Item>
-          </Menu.Dropdown>
-        </Menu>
-      ),
-    },
-  ];
-
-  // ---- Resolve modal wiring ----
   const resolveOpen = resolveFor !== null;
   const closeResolve = () => setResolveFor(null);
 
@@ -452,9 +458,7 @@ export function TicketsListPage() {
       } else {
         await resolveMutation.mutateAsync({ id: resolveFor.id, payload });
       }
-    } catch (e) {
-      // Error dihandle oleh mutasi
-    }
+    } catch (e) {}
   };
 
   const isMutating =
@@ -478,7 +482,6 @@ export function TicketsListPage() {
         </Group>
       </Group>
 
-      {/* Toolbar filter */}
       <Group align="end" wrap="wrap" gap="sm">
         <TextField
           label="Cari"
@@ -521,9 +524,12 @@ export function TicketsListPage() {
           style={{ minWidth: 260 }}
           popoverProps={{ withinPortal: true }}
         />
+
+        <Button variant="light" onClick={clearFilters}>
+          Bersihkan Filter
+        </Button>
       </Group>
 
-      {/* Bulk action bar */}
       {selected.size > 0 && (
         <Group justify="space-between">
           <Text size="sm" c="dimmed">
@@ -543,7 +549,6 @@ export function TicketsListPage() {
         </Group>
       )}
 
-      {/* Tabel + overlay loading */}
       <div style={{ position: "relative" }}>
         <LoadingOverlay visible={loading || isMutating} />
         <SimpleTable<Ticket>
@@ -557,7 +562,6 @@ export function TicketsListPage() {
         />
       </div>
 
-      {/* Modal Create */}
       <TicketFormModal
         opened={formOpen}
         onClose={() => setFormOpen(false)}
@@ -567,13 +571,60 @@ export function TicketsListPage() {
         }}
       />
 
-      {/* Modal Resolve (single / bulk) */}
       <ResolveTicketModal
         opened={resolveOpen}
         onClose={closeResolve}
         onSubmit={handleResolveSubmit}
         ticket={resolveFor === "bulk" ? null : resolveFor}
       />
+
+      <Modal
+        opened={!!assignFor}
+        onClose={() => setAssignFor(null)}
+        title={
+          assignFor
+            ? `Tentukan teknisi untuk #${assignFor.code}`
+            : "Tentukan teknisi"
+        }
+        withinPortal
+      >
+        <Stack gap="sm">
+          <Select
+            searchable
+            clearable
+            label="Teknisi"
+            placeholder="Ketik untuk mencari…"
+            data={users
+              .filter((u) => (u.role ?? "").toLowerCase() === "teknisi")
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((u) => ({ value: u.id, label: u.name }))}
+            value={selectedAssigneeId}
+            onChange={(v) => setSelectedAssigneeId(v)}
+            nothingFoundMessage="Tidak ditemukan"
+            maxDropdownHeight={300}
+            withCheckIcon={false}
+          />
+
+          <Group justify="space-between">
+            <Button variant="subtle" onClick={() => setAssignFor(null)}>
+              Batal
+            </Button>
+            <Button
+              loading={assignMutation.isPending}
+              onClick={() => {
+                if (!assignFor) return;
+                assignMutation.mutate({
+                  ticketId: assignFor.id,
+                  userId: selectedAssigneeId ?? null,
+                });
+                setAssignFor(null);
+              }}
+            >
+              Simpan
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack>
   );
 }
