@@ -1,14 +1,27 @@
 export type AuditStatus = "draft" | "approved" | "rejected";
 
 export type AuditRecord = {
-  id: string; // audit id
-  ticketId: string; // link to Ticket.id
-  ticketCode: string; // denormalized for table
-  reviewer: string; // user who audits
-  reviewedAt: string; // ISO datetime
+  id: string;
+  ticketId: string;
+  ticketCode: string;
+  reviewer: string;
+  reviewedAt: string;
   status: AuditStatus;
-  score: number; // 0..100
-  notes?: string; // reviewer notes / rationale
-  tags: string[]; // curated tags for knowledge base
-  publish: boolean; // true if promoted to Repository (SOP)
+  score: number;
+  notes?: string;
+  tags: string[];
+  publish: boolean;
+};
+
+export type AuditLogItem = {
+  id: string;
+  at: string;
+  who: string;
+  ticketId: string;
+  ticketCode: string;
+  action: AuditStatus;
+  description: string;
+  score?: number;
+  tags?: string[];
+  partUnit?: string;
 };

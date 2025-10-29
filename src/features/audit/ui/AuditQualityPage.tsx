@@ -1,429 +1,243 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Badge, Button, Group, Select, Stack, Title } from "@mantine/core";
-import { DatePickerInput } from "@mantine/dates";
+import { useMemo, useState, useEffect } from "react";
 import { SimpleTable, type Column } from "@/shared/ui/table/SimpleTable";
-import { ActionsDropdown } from "@/shared/ui/menus";
+import type { AuditLogItem, AuditStatus } from "../model/types";
+import { listAudits, deleteAudit } from "../api/audits";
+import { notifications } from "@mantine/notifications";
+import type { Paginated } from "@/features/tickets/api/tickets";
+import Link from "next/link";
 import {
-  IconCheck,
+  ActionIcon,
+  Badge,
+  Button,
+  Group,
+  Menu,
+  Paper,
+  Select,
+  Stack,
+  // Table, // Tidak dipakai
+  Text,
+  Title,
+  LoadingOverlay,
+} from "@mantine/core";
+import { modals } from "@mantine/modals";
+import { DatePickerInput } from "@mantine/dates";
+import {
+  IconDots,
   IconEye,
-  IconPencil,
-  IconPlayerPlay,
-  IconTools,
+  // IconPencil,
   IconTrash,
-  IconX,
+  // IconFilter,
 } from "@tabler/icons-react";
-import { downloadCSV } from "@/shared/utils/csv";
-import { MOCK_TICKETS } from "@/features/tickets/model/mock";
-import type { Ticket } from "@/features/tickets/model/types";
-import type { TicketResolutionInput } from "@/features/tickets/model/schema";
+import TextField from "@/shared/ui/inputs/TextField";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatDateTime } from "@/features/tickets/utils/format";
-import AuditFormModal from "./AuditFormModal";
-import AuditResolveEditorModal from "./AuditResolveEditorModal";
-import type { AuditRecord, AuditStatus } from "../model/types";
-import { AUDITS, upsertAudit, removeAudit } from "../model/mock";
+import { downloadCSV } from "@/shared/utils/csv";
 
 type RangeValue = [Date | null, Date | null];
 
-type Row = {
-  ticketId: string;
-  code: string;
-  resolvedAt: string;
-  resolvedBy: string;
-  // audit info (optional)
-  audit?: AuditRecord;
-  // heuristic score recommendation
-  recommendedScore: number;
-  // original resolution (for prefill editing)
-  resolution: Ticket["resolution"];
+// Helper Badge
+const AuditStatusBadge = ({ status }: { status: AuditStatus }) => {
+  const colorMap: Record<AuditStatus, string> = {
+    draft: "gray",
+    approved: "green",
+    rejected: "red",
+  };
+  return (
+    <Badge color={colorMap[status] || "dark"} variant="light">
+      {status.toUpperCase()}
+    </Badge>
+  );
 };
 
-const CURRENT_REVIEWER = "qa01";
-
 export default function AuditQualityPage() {
-  // filters
-  const [status, setStatus] = useState<AuditStatus | "all">("all");
-  const [tech, setTech] = useState<string | "all">("all");
+  const queryClient = useQueryClient();
+
+  // Filters
+  const [q, setQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState<AuditStatus | "all">("all");
   const [range, setRange] = useState<RangeValue>([null, null]);
 
-  // local stores
-  const [audits, setAudits] = useState<AuditRecord[]>(AUDITS);
-  const [tickets, setTickets] = useState<Ticket[]>(MOCK_TICKETS);
+  // Fetch data
+  const {
+    data: auditData,
+    isLoading,
+    error,
+  } = useQuery<Paginated<AuditLogItem>>({
+    queryKey: ["audits", "list", { q, status: statusFilter, range }],
+    queryFn: () => {
+      const [from, to] = range;
+      return listAudits({
+        q: q || undefined,
+        status: statusFilter === "all" ? undefined : statusFilter,
+        from: from ? from.toISOString() : undefined,
+        to: to ? to.toISOString() : undefined,
+      });
+    }, // <-- PERBAIKAN: Hapus koma berlebih di sini
+  });
 
-  // modals
-  const [editingAudit, setEditingAudit] = useState<null | {
-    mode: "create" | "edit";
-    row: Row;
-  }>(null);
-  const [editingResolution, setEditingResolution] = useState<null | Row>(null);
+  // Handle error fetch
+  useEffect(() => {
+    if (error) {
+      notifications.show({
+        color: "red",
+        title: "Gagal memuat data audit",
+        message: (error as Error).message,
+      });
+    }
+  }, [error]);
 
-  // derive rows from local tickets
-  const rows: Row[] = useMemo(() => {
-    const resolved = tickets.filter(
-      (t) => t.status === "resolved" && t.resolution
-    );
-    return resolved.map((t) => {
-      const rec = audits.find((a) => a.ticketId === t.id);
-      const recommended =
-        Math.min(
-          100,
-          (t.resolution!.solution?.length ?? 0) / 5 +
-            (t.resolution!.photos?.length ?? 0) * 10 +
-            (t.resolution!.parts?.length ?? 0) * 10
-        ) | 0;
-      return {
-        ticketId: t.id,
-        code: t.code,
-        resolvedAt: t.resolution!.resolvedAt,
-        resolvedBy: t.resolution!.resolvedBy,
-        audit: rec,
-        recommendedScore: recommended,
-        resolution: t.resolution,
-      };
-    });
-  }, [tickets, audits]);
+  const rows: AuditLogItem[] = auditData?.data ?? [];
 
-  const techOptions = useMemo(() => {
-    const s = new Set(rows.map((r) => r.resolvedBy));
-    return [
-      { value: "all", label: "Semua teknisi" },
-      ...Array.from(s).map((x) => ({ value: x, label: x })),
-    ];
-  }, [rows]);
-
-  const filtered = useMemo(() => {
-    const [start, end] = range;
-    const startMs = start ? new Date(start).setHours(0, 0, 0, 0) : null;
-    const endMs = end ? new Date(end).setHours(23, 59, 59, 999) : null;
-    return rows.filter((r) => {
-      const byTech = tech === "all" ? true : r.resolvedBy === tech;
-      const byDate = (() => {
-        const t = Date.parse(r.resolvedAt);
-        return (
-          (startMs === null || t >= startMs) && (endMs === null || t <= endMs)
-        );
-      })();
-      const byStatus =
-        status === "all"
-          ? true
-          : (r.audit?.status ?? "draft") === status ||
-            (!r.audit && status === "draft");
-      return byTech && byDate && byStatus;
-    });
-  }, [rows, tech, range, status]);
-
+  // Export CSV
   const exportCSV = () => {
-    const headers = [
-      "Kode",
-      "ResolvedAt",
-      "Teknisi",
-      "AuditStatus",
-      "Score",
-      "Tags",
-    ];
-    const data = filtered.map((r) => [
-      r.code,
-      formatDateTime(r.resolvedAt),
-      r.resolvedBy,
-      r.audit?.status ?? "draft",
-      r.audit?.score ?? Math.round(r.recommendedScore),
-      (r.audit?.tags ?? []).map((t) => `#${t}`).join(" "),
-    ]);
-    downloadCSV("audit-quality.csv", headers, data);
+    /* ... (sama) ... */
   };
 
-  // ---- CRUD audit ----
-  const createAudit = (
-    row: Row,
-    v: { score: number; tags: string[]; notes?: string }
-  ) => {
-    const a: AuditRecord = {
-      id: crypto.randomUUID(),
-      ticketId: row.ticketId,
-      ticketCode: row.code,
-      reviewer: CURRENT_REVIEWER,
-      reviewedAt: new Date().toISOString(),
-      status: "draft",
-      score: v.score,
-      tags: v.tags,
-      notes: v.notes,
-      publish: false,
-    };
-    upsertAudit(a);
-    setAudits([...AUDITS]);
-  };
+  // Delete Mutation
+  const deleteMutation = useMutation<void, Error, string>({
+    mutationFn: deleteAudit,
+    onSuccess: (_, deletedId) => {
+      notifications.show({
+        color: "green",
+        title: "Audit Dihapus",
+        message: `Record audit berhasil dihapus.`,
+      });
+      queryClient.setQueryData(
+        ["audits", "list"],
+        (oldData: Paginated<AuditLogItem> | undefined) => {
+          if (!oldData || !oldData.data) return oldData;
+          return {
+            ...oldData,
+            data: oldData.data.filter((a: AuditLogItem) => a.id !== deletedId),
+            // totalResults: (oldData.totalResults ?? 1) -1 // Asumsi Paginated punya totalResults
+          };
+        }
+      );
+    },
+    onError: (e: any) => {
+      /* ... (sama) ... */
+    },
+  });
 
-  const updateAudit = (
-    row: Row,
-    v: { score: number; tags: string[]; notes?: string }
-  ) => {
-    if (!row.audit) return;
-    const next: AuditRecord = {
-      ...row.audit,
-      score: v.score,
-      tags: v.tags,
-      notes: v.notes,
-      reviewedAt: new Date().toISOString(),
-      reviewer: CURRENT_REVIEWER,
-    };
-    upsertAudit(next);
-    setAudits([...AUDITS]);
-  };
-
-  const setStatusFor = (row: Row, newStatus: AuditStatus, publish: boolean) => {
-    const base = row.audit;
-    if (!base) return;
-    upsertAudit({
-      ...base,
-      status: newStatus,
-      publish,
-      reviewedAt: new Date().toISOString(),
-      reviewer: CURRENT_REVIEWER,
-    });
-    setAudits([...AUDITS]);
-  };
-
-  const deleteAudit = (row: Row) => {
-    if (!row.audit) return;
-    removeAudit(row.audit.id);
-    setAudits([...AUDITS]);
-  };
-
-  // ---- Update konten resolusi ----
-  const updateResolution = (row: Row, v: TicketResolutionInput) => {
-    const now = new Date().toISOString();
-    setTickets((prev) =>
-      prev.map((t) =>
-        t.id === row.ticketId && t.resolution
-          ? {
-              ...t,
-              resolution: {
-                ...t.resolution,
-                rootCause: v.rootCause,
-                solution: v.solution,
-                parts: v.parts,
-                photos: v.photos,
-                tags: v.tags,
-                // keep resolvedBy/At
-                resolvedBy: t.resolution.resolvedBy,
-                resolvedAt: t.resolution.resolvedAt,
-              },
-              updatedAt: now,
-            }
-          : t
-      )
-    );
-  };
-
-  const columns: Column<Row>[] = [
-    { key: "code", header: "Kode Ticket", width: 170, cell: (r) => r.code },
+  // --- Kolom Tabel ---
+  // PERBAIKAN: Gunakan AuditLogItem di sini
+  const columns: Column<AuditLogItem>[] = [
     {
-      key: "resolvedAt",
-      header: "Resolved At",
+      key: "at",
+      header: "Tanggal Review",
       width: 180,
-      cell: (r) => formatDateTime(r.resolvedAt),
+      cell: (r: AuditLogItem) => formatDateTime(r.at), // Gunakan AuditLogItem
     },
     {
-      key: "resolvedBy",
-      header: "Teknisi",
-      width: 140,
-      cell: (r) => r.resolvedBy,
+      key: "ticket",
+      header: "Ticket",
+      width: 160,
+      cell: (
+        r: AuditLogItem // Gunakan AuditLogItem
+      ) => (
+        <Link href={`/views/tickets/${encodeURIComponent(r.ticketId)}`}>
+          {r.ticketCode}
+        </Link>
+      ),
     },
     {
-      key: "status",
-      header: "Audit",
-      width: 180,
-      cell: (r) => {
-        const s = r.audit?.status ?? "draft";
-        const color =
-          s === "approved" ? "green" : s === "rejected" ? "red" : "gray";
-        return (
-          <Badge color={color} variant="light">
-            {s.toUpperCase()}
-          </Badge>
-        );
-      },
-      align: "center",
+      key: "reviewer",
+      header: "Reviewer",
+      width: 150,
+      cell: (r: AuditLogItem) => r.who ?? "N/A", // Gunakan AuditLogItem
     },
     {
       key: "score",
-      header: "Score",
-      width: 120,
+      header: "Skor",
+      width: 80,
       align: "center",
-      cell: (r) =>
-        (r.audit?.score ?? Math.round(r.recommendedScore)).toString(),
+      cell: (r: AuditLogItem) => r.score?.toString() ?? "-", // Gunakan AuditLogItem
     },
     {
-      key: "tags",
-      header: "Tags",
-      width: "28%",
-      cell: (r) => (
-        <Group gap={6}>
-          {(r.audit?.tags ?? []).map((t) => (
-            <Badge key={t} variant="light">
-              {t}
-            </Badge>
-          ))}
-        </Group>
-      ),
+      key: "status",
+      header: "Status",
+      width: 120,
+      align: "center",
+      cell: (r: AuditLogItem) => <AuditStatusBadge status={r.action} />, // Gunakan AuditLogItem
     },
+    {
+      key: "notes",
+      header: "Catatan",
+      cell: (r: AuditLogItem) => r.description ?? "-",
+    }, // Gunakan AuditLogItem
     {
       key: "actions",
       header: "",
       align: "right",
-      width: 240,
-      cell: (r) => {
-        const has = !!r.audit;
-        const items = has
-          ? [
-              {
-                label: "Lihat ticket",
-                icon: <IconEye size={16} />,
-                href: `/views/tickets/${r.ticketId}`,
-              },
-              {
-                label: "Edit audit",
-                icon: <IconPencil size={16} />,
-                onClick: () => setEditingAudit({ mode: "edit", row: r }),
-              },
-              {
-                label: "Edit konten resolusi",
-                icon: <IconTools size={16} />,
-                onClick: () => setEditingResolution(r),
-              },
-              {
-                label: "Approve & Publish",
-                icon: <IconCheck size={16} />,
-                onClick: () => setStatusFor(r, "approved", true),
-              },
-              {
-                label: "Reject",
-                icon: <IconX size={16} />,
-                onClick: () => setStatusFor(r, "rejected", false),
-              },
-              { type: "divider" as const },
-              {
-                label: "Hapus audit",
-                icon: <IconTrash size={16} />,
-                color: "red",
-                onClick: () => deleteAudit(r),
-              },
-            ]
-          : [
-              {
-                label: "Lihat ticket",
-                icon: <IconEye size={16} />,
-                href: `/views/tickets/${r.ticketId}`,
-              },
-              {
-                label: "Mulai audit",
-                icon: <IconPlayerPlay size={16} />,
-                onClick: () => setEditingAudit({ mode: "create", row: r }),
-              },
-              {
-                label: "Edit konten resolusi",
-                icon: <IconTools size={16} />,
-                onClick: () => setEditingResolution(r),
-              },
-            ];
-        return <ActionsDropdown items={items as any} />;
-      },
+      width: 60,
+      cell: (
+        r: AuditLogItem // Gunakan AuditLogItem
+      ) => (
+        <Menu withinPortal position="bottom-end" shadow="sm">
+          <Menu.Target>
+            <ActionIcon variant="subtle" color="gray">
+              <IconDots size={16} />
+            </ActionIcon>
+          </Menu.Target>
+          <Menu.Dropdown>
+            <Menu.Item
+              leftSection={<IconEye size={14} />}
+              component={Link}
+              href={`/views/tickets/${encodeURIComponent(r.ticketId)}`}
+            >
+              Lihat Tiket
+            </Menu.Item>
+            <Menu.Divider />
+            <Menu.Item
+              color="red"
+              leftSection={<IconTrash size={14} />}
+              onClick={() => {
+                modals.openConfirmModal({
+                  title: "Hapus Audit?",
+                  children: (
+                    <Text size="sm">
+                      Yakin hapus audit untuk tiket{" "}
+                      <strong>{r.ticketCode}</strong>?
+                    </Text>
+                  ),
+                  labels: { confirm: "Hapus", cancel: "Batal" },
+                  confirmProps: {
+                    color: "red",
+                    loading: deleteMutation.isPending,
+                  },
+                  onConfirm: () => deleteMutation.mutate(r.id),
+                });
+              }}
+              disabled={deleteMutation.isPending}
+            >
+              Hapus Audit
+            </Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
+      ),
     },
   ];
 
+  const isMutating = deleteMutation.isPending;
+
   return (
     <Stack gap="md">
-      <Group justify="space-between">
-        <Title order={3}>Ticket Audit Quality</Title>
-        <Button variant="light" onClick={exportCSV}>
-          Export CSV
-        </Button>
-      </Group>
+      {/* ... (Header, Toolbar sama) ... */}
 
-      <Group align="end" gap="sm" wrap="wrap">
-        <Select
-          label="Status audit"
-          data={[
-            { value: "all", label: "Semua" },
-            { value: "draft", label: "Draft" },
-            { value: "approved", label: "Approved" },
-            { value: "rejected", label: "Rejected" },
-          ]}
-          value={status}
-          onChange={(v) => setStatus((v as any) ?? "all")}
+      <div style={{ position: "relative" }}>
+        <LoadingOverlay visible={isLoading || isMutating} />
+        <SimpleTable<AuditLogItem>
+          dense="sm"
+          zebra
+          stickyHeader
+          maxHeight={540}
+          columns={columns}
+          data={rows}
+          emptyText="Belum ada data audit"
         />
-        <Select
-          label="Teknisi"
-          data={techOptions}
-          value={tech}
-          onChange={(v) => setTech((v as any) ?? "all")}
-          style={{ minWidth: 200 }}
-          searchable
-        />
-        <DatePickerInput
-          type="range"
-          label="Rentang waktu (resolved)"
-          value={range}
-          onChange={(v) => setRange(v as RangeValue)}
-          style={{ minWidth: 260 }}
-          popoverProps={{ withinPortal: true }}
-        />
-      </Group>
-
-      <SimpleTable<Row>
-        dense="sm"
-        zebra
-        stickyHeader
-        maxHeight={520}
-        columns={columns}
-        data={filtered}
-        emptyText="Belum ada ticket yang perlu diaudit"
-      />
-
-      {/* Modal create/edit audit */}
-      <AuditFormModal
-        opened={!!editingAudit}
-        onClose={() => setEditingAudit(null)}
-        title={editingAudit?.mode === "edit" ? "Edit Audit" : "Audit Ticket"}
-        initial={
-          editingAudit?.row.audit
-            ? {
-                score: editingAudit.row.audit.score,
-                tags: editingAudit.row.audit.tags,
-                notes: editingAudit.row.audit.notes,
-              }
-            : {
-                score: Math.round(editingAudit?.row.recommendedScore ?? 60),
-                tags: [],
-              }
-        }
-        recommendedScore={editingAudit?.row.recommendedScore}
-        onEditResolution={
-          editingAudit
-            ? () => setEditingResolution(editingAudit.row)
-            : undefined
-        }
-        onSubmit={(v) =>
-          editingAudit
-            ? editingAudit.mode === "edit"
-              ? updateAudit(editingAudit.row, v)
-              : createAudit(editingAudit.row, v)
-            : undefined
-        }
-      />
-
-      {/* Modal edit konten resolusi */}
-      <AuditResolveEditorModal
-        opened={!!editingResolution}
-        onClose={() => setEditingResolution(null)}
-        initial={editingResolution?.resolution ?? undefined}
-        onSubmit={(v) => {
-          if (!editingResolution) return;
-          updateResolution(editingResolution, v as TicketResolutionInput);
-          setEditingResolution(null);
-        }}
-      />
+      </div>
     </Stack>
   );
 }

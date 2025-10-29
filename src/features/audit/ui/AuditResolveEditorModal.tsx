@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { PartUsage } from "@/features/tickets/model/types";
+import { useQuery } from "@tanstack/react-query";
+import { listParts, type Part } from "@/features/inventory/api/parts";
 import {
   ActionIcon,
   Button,
@@ -26,9 +29,6 @@ import {
   TicketResolutionSchema,
   type TicketResolutionInput,
 } from "@/features/tickets/model/schema";
-import type { PartUsage } from "@/features/tickets/model/types";
-import { INVENTORY_ITEMS } from "@/features/inventory/model/mock";
-import type { Part } from "@/features/inventory/model/types";
 import {
   IconArrowLeft,
   IconArrowRight,
@@ -45,7 +45,6 @@ type Props = {
   initial?: Partial<TicketResolutionInput>;
 };
 
-// Helpers ----------
 function move<T>(arr: T[], from: number, to: number) {
   const a = arr.slice();
   const [spliced] = a.splice(from, 1);
@@ -81,11 +80,9 @@ export default function AuditResolveEditorModal({
       parts: initial?.parts ?? [],
       photos: initial?.photos ?? [],
       tags: initial?.tags ?? [],
-      // extraCosts tidak diedit di modal ini
     },
   });
 
-  // ===== Parts selection (ids) + qtys =====
   const [pickedPartIds, setPickedPartIds] = useState<string[]>(
     ((initial?.parts ?? []) as PartUsage[]).map((p) => p.partId)
   );
@@ -95,9 +92,7 @@ export default function AuditResolveEditorModal({
     )
   );
 
-  // ===== Photos editor (ADD / REMOVE / REORDER / REPLACE) =====
   const [photos, setPhotos] = useState<string[]>(initial?.photos ?? []);
-  // input file tersembunyi per foto untuk replace
   const replaceInputsRef = useRef<Array<HTMLInputElement | null>>([]);
 
   const handleAddPhotos = (files: File[] | null) => {
@@ -153,34 +148,48 @@ export default function AuditResolveEditorModal({
       return next;
     });
   };
+  const { data: inventoryItems = [], isLoading: isLoadingParts } = useQuery<
+    Part[]
+  >({
+    queryKey: ["parts", "list", "forAuditResolveModal"], // Key unik
+    queryFn: listParts,
+    enabled: opened, // Hanya fetch saat modal dibuka
+    staleTime: 5 * 60 * 1000,
+  });
 
-  // part options (dari Inventory)
   const partOptions = useMemo(
     () =>
-      INVENTORY_ITEMS.map((p: Part) => ({
+      inventoryItems.map((p: Part) => ({
+        // Gunakan data dari query
         value: p.id,
         label: p.name + (p.sku ? ` — ${p.sku}` : ""),
       })),
-    []
+    [inventoryItems] // Dependensi ke hasil query
   );
 
-  // Sync parts -> form
   useEffect(() => {
     const parts: PartUsage[] = pickedPartIds.map((id) => {
-      const p = INVENTORY_ITEMS.find((x) => x.id === id)!;
+      // Cari part di hasil query
+      const p = inventoryItems.find((x) => x.id === id);
+      // Handle jika part tidak ditemukan (seharusnya tidak terjadi jika UI benar)
+      const partName = p?.name ?? `Part ID: ${id}`;
       const qty = Math.max(1, quantities[id] ?? 1);
-      return { partId: id, name: p.name, qty };
+      return { partId: id, name: partName, qty };
     });
-    PartsArraySchema.parse(parts);
-    setValue("parts", parts, { shouldValidate: true });
-  }, [pickedPartIds, quantities, setValue]);
+    // Validasi sebelum set value (opsional tapi bagus)
+    try {
+      PartsArraySchema.parse(parts);
+      setValue("parts", parts, { shouldValidate: true });
+    } catch (e) {
+      console.error("Invalid parts data:", e);
+      // Mungkin tampilkan error ke user
+    }
+  }, [pickedPartIds, quantities, setValue, inventoryItems]);
 
-  // Sync photos (state utama) -> form
   useEffect(() => {
     setValue("photos", photos, { shouldValidate: true });
   }, [photos, setValue]);
 
-  // Reset saat modal dibuka
   useEffect(() => {
     if (opened) {
       reset({
@@ -200,15 +209,15 @@ export default function AuditResolveEditorModal({
       );
       setPhotos(initial?.photos ?? []);
     }
-    // Saat modal unmount, revoke semua blob url yang masih tersisa
     return () => {
       photos.forEach(revokeIfBlob);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opened, initial, reset]);
 
   const partRows = pickedPartIds.map((id) => {
-    const p = INVENTORY_ITEMS.find((x) => x.id === id)!;
+    // Cari part di hasil query
+    const p = inventoryItems.find((x) => x.id === id);
+    if (!p) return null; // Handle jika part tidak ditemukan
     const qty = Math.max(1, quantities[id] ?? 1);
     return (
       <Table.Tr key={id}>
@@ -312,7 +321,6 @@ export default function AuditResolveEditorModal({
             </Paper>
           )}
 
-          {/* === Photos Editor === */}
           <Stack gap="xs">
             <FileInput
               label="Tambah foto dokumentasi"
@@ -339,7 +347,6 @@ export default function AuditResolveEditorModal({
                       border: "1px solid var(--mantine-color-gray-4)",
                     }}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={src}
                       alt={`photo-${i}`}
@@ -350,7 +357,6 @@ export default function AuditResolveEditorModal({
                       }}
                     />
 
-                    {/* Controls overlay */}
                     <Group
                       gap={4}
                       style={{
@@ -408,7 +414,6 @@ export default function AuditResolveEditorModal({
                         </ActionIcon>
                       </Tooltip>
 
-                      {/* hidden input untuk replace */}
                       <input
                         ref={(el) => {
                           replaceInputsRef.current[i] = el;

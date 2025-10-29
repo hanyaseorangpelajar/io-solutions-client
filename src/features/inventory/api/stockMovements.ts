@@ -12,19 +12,19 @@ type CreateStockMovementInput = {
 
 /**
  * Membuat record pergerakan stok baru.
- * Memanggil POST /api/v1/stock-movements
+ * Memanggil POST /stock-movements
  */
 export async function createStockMovement(
   data: CreateStockMovementInput
 ): Promise<StockMovement> {
-  const endpoint = "/api/v1/stock-movements";
+  const endpoint = "/stock-movements";
   const response = await apiClient.post<StockMovement>(endpoint, data);
   return response.data;
 }
 
 /**
  * Mengambil daftar riwayat pergerakan stok (paginasi).
- * Memanggil GET /api/v1/stock-movements
+ * Memanggil GET /stock-movements
  */
 export async function listStockMovements(
   params: Record<string, any>
@@ -39,7 +39,7 @@ export async function listStockMovements(
     return q ? `?${q}` : "";
   };
 
-  const endpoint = `/api/v1/stock-movements${qs(params)}`;
+  const endpoint = `/stock-movements${qs(params)}`;
   const response = await apiClient.get<Paginated<StockMovement>>(endpoint);
   return response.data;
 }

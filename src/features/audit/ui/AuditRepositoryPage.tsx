@@ -1,9 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import type { Paginated } from "@/features/tickets/api/tickets";
+import { formatDateTime } from "@/features/tickets/utils/format";
+import TextField from "@/shared/ui/inputs/TextField";
 import {
   Button,
   Group,
+  LoadingOverlay,
   Select,
   SimpleGrid,
   Stack,
@@ -11,174 +14,179 @@ import {
   Title,
 } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
-import { AUDITS } from "../model/mock";
-import { MOCK_TICKETS } from "@/features/tickets/model/mock";
-import { formatDateTime } from "@/features/tickets/utils/format";
+import { notifications } from "@mantine/notifications";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { listAudits } from "../api/audits";
+import type { AuditLogItem, AuditRecord } from "../model/types";
 import RepositoryCard, { type RepositoryCardData } from "./RepositoryCard";
-import TextField from "@/shared/ui/inputs/TextField";
 
-/** Heuristik sederhana menebak jenis device dari tag */
 function inferDeviceFromTags(tags: string[]): string | undefined {
-  const t = tags.map((x) => x.toLowerCase());
-  if (t.includes("laptop")) return "Laptop";
-  if (t.includes("desktop") || t.includes("pc")) return "Desktop";
-  if (t.includes("monitor") || t.includes("display")) return "Monitor";
-  if (t.includes("printer")) return "Printer";
-  if (t.includes("network")) return "Network";
-  if (t.includes("software")) return "Software";
+  if (!Array.isArray(tags)) return undefined;
+  const lowerTags = tags.map((t) => t.toLowerCase());
+  if (lowerTags.includes("laptop")) return "Laptop";
+  if (lowerTags.includes("pc") || lowerTags.includes("desktop"))
+    return "PC Desktop";
+  if (lowerTags.includes("printer")) return "Printer";
   return undefined;
 }
 
 export default function AuditRepositoryPage() {
-  // Filters
   const [device, setDevice] = useState<string | "all">("all");
   const [tag, setTag] = useState<string | "all">("all");
   const [q, setQ] = useState("");
   const [qDebounced] = useDebouncedValue(q.trim().toLowerCase(), 250);
 
-  // Pagination
   const PAGE_SIZE = 9;
   const [page, setPage] = useState(1);
 
-  // Ambil audits yang published, gabungkan dengan ticket resolusinya
-  const cards = useMemo<RepositoryCardData[]>(() => {
-    const list: RepositoryCardData[] = [];
-    for (const a of AUDITS) {
-      if (!a.publish) continue;
-      const t = MOCK_TICKETS.find((x) => x.id === a.ticketId);
-      if (!t?.resolution) continue;
+  const {
+    data: auditData,
+    isLoading,
+    error,
+  } = useQuery<Paginated<AuditLogItem>>({
+    queryKey: ["audits", "list", { publish: true, q: qDebounced, tag, device }],
+    queryFn: () =>
+      listAudits({
+        publish: true,
+        q: qDebounced || undefined,
+        tag: tag === "all" ? undefined : tag,
+      }),
+  });
 
-      const allTags = a.tags?.length ? a.tags : t.resolution.tags ?? [];
-      list.push({
-        code: a.ticketCode,
-        ticketId: a.ticketId,
-        subject: t.subject ?? a.ticketCode,
-        deviceType: inferDeviceFromTags(allTags),
-        resolvedAt: formatDateTime(t.resolution.resolvedAt),
-        tags: allTags,
-        rootCause: t.resolution.rootCause,
-        solution: t.resolution.solution,
-        cover: t.resolution.photos?.[0],
+  useEffect(() => {
+    if (error) {
+      notifications.show({
+        color: "red",
+        title: "Gagal memuat repository",
+        message: (error as Error).message,
       });
     }
-    // terbaru di atas
-    return list.reverse();
-  }, []);
+  }, [error]);
 
-  // derive opsi filter dari data
+  const publishedAudits: AuditLogItem[] = auditData?.data ?? [];
+
+  const cards = useMemo<RepositoryCardData[]>(() => {
+    return publishedAudits
+      .map((a: AuditLogItem) => {
+        const allTags = a.tags ?? [];
+        return {
+          code: a.ticketCode,
+          ticketId: a.ticketId,
+          subject: `Audit for ${a.ticketCode}`,
+          deviceType: inferDeviceFromTags(allTags),
+          resolvedAt: formatDateTime(a.at),
+          tags: allTags,
+          rootCause: a.description ?? "N/A",
+          solution: "Lihat detail tiket",
+        };
+      })
+      .reverse();
+  }, [publishedAudits]);
+
   const deviceOptions = useMemo(() => {
-    const s = new Set(
-      cards.map((c) => c.deviceType).filter(Boolean) as string[]
+    const devices = new Set(
+      cards.map((c) => c.deviceType).filter((d): d is string => !!d)
     );
     return [
-      { value: "all", label: "Semua device" },
-      ...Array.from(s).map((v) => ({ value: v, label: v })),
+      { value: "all", label: "Semua Perangkat" },
+      ...Array.from(devices)
+        .sort()
+        .map((d) => ({ value: d, label: d })),
     ];
   }, [cards]);
-
   const tagOptions = useMemo(() => {
-    const s = new Set(cards.flatMap((c) => c.tags));
+    const tags = new Set(cards.flatMap((c) => c.tags ?? []));
     return [
-      { value: "all", label: "Semua tag" },
-      ...Array.from(s).map((v) => ({ value: v, label: `#${v}` })),
+      { value: "all", label: "Semua Tag" },
+      ...Array.from(tags)
+        .sort()
+        .map((t) => ({ value: t, label: t })),
     ];
   }, [cards]);
 
-  // Filter + search
   const filtered = useMemo(() => {
     const byDevice = (c: RepositoryCardData) =>
-      device === "all" ? true : c.deviceType === device;
+      device === "all" || c.deviceType === device;
     const byTag = (c: RepositoryCardData) =>
-      tag === "all" ? true : c.tags.includes(tag);
+      tag === "all" || c.tags.includes(tag);
     const byQuery = (c: RepositoryCardData) => {
       if (!qDebounced) return true;
-      const hay = `${c.subject} ${c.rootCause} ${c.solution} ${c.tags.join(
-        " "
-      )}`.toLowerCase();
+      const hay = `${c.subject} ${c.code} ${c.rootCause} ${
+        c.solution
+      } ${c.tags.join(" ")}`.toLowerCase();
       return hay.includes(qDebounced);
     };
-    const arr = cards.filter((c) => byDevice(c) && byTag(c) && byQuery(c));
-    return arr;
+    return cards.filter((c) => byDevice(c) && byTag(c) && byQuery(c));
   }, [cards, device, tag, qDebounced]);
 
-  // reset page saat filter berubah
   const [filtersKey, setFiltersKey] = useState(0);
-  useMemo(() => {
-    setPage(1);
-    setFiltersKey((k) => k + 1); // trigger re-render key if needed
-  }, [device, tag, qDebounced]);
+  useMemo(() => {}, [device, tag, qDebounced]);
 
   const visible = filtered.slice(0, page * PAGE_SIZE);
   const canLoadMore = visible.length < filtered.length;
-
   const clearFilters = () => {
+    setQ("");
     setDevice("all");
     setTag("all");
-    setQ("");
+    setPage(1);
   };
 
   return (
-    <Stack gap="md">
+    <Stack gap="md" style={{ position: "relative" }}>
+      <LoadingOverlay visible={isLoading} />
+
       <Group justify="space-between" align="center">
         <Title order={3}>Repository (SOP Library)</Title>
         <Text size="sm" c="dimmed">
-          {filtered.length} entri
+          {filtered.length} entri ditemukan
         </Text>
       </Group>
 
-      {/* Toolbar filter */}
       <Group gap="sm" align="end" wrap="wrap">
         <TextField
-          label="Cari"
-          placeholder="Cari subject / akar masalah / solusi / tag"
+          label="Cari SOP"
+          placeholder="Kata kunci..."
           value={q}
           onChange={(e) => setQ(e.currentTarget.value)}
-          style={{ minWidth: 280 }}
+          style={{ flexGrow: 1, minWidth: 250 }}
         />
         <Select
-          label="Jenis device"
+          label="Perangkat"
           data={deviceOptions}
           value={device}
-          onChange={(v) => setDevice((v as any) ?? "all")}
-          style={{ minWidth: 200 }}
-          searchable
-          clearable={false}
+          onChange={(v) => setDevice(v ?? "all")}
+          style={{ minWidth: 180 }}
         />
         <Select
           label="Tag"
           data={tagOptions}
           value={tag}
-          onChange={(v) => setTag((v as any) ?? "all")}
-          style={{ minWidth: 200 }}
+          onChange={(v) => setTag(v ?? "all")}
           searchable
-          clearable={false}
+          style={{ minWidth: 180 }}
         />
         <Button variant="subtle" onClick={clearFilters}>
-          Reset filter
+          Reset Filter
         </Button>
       </Group>
 
-      {/* Grid of cards */}
-      <SimpleGrid
-        key={filtersKey}
-        cols={{ base: 1, sm: 2, md: 3 }}
-        spacing="md"
-      >
-        {visible.map((c) => (
-          <RepositoryCard key={`${c.code}-${c.ticketId}`} data={c} />
+      <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
+        {visible.map((cardData) => (
+          <RepositoryCard key={cardData.ticketId} data={cardData} />
         ))}
       </SimpleGrid>
 
-      {filtered.length === 0 && (
-        <Text c="dimmed" size="sm">
-          Tidak ada entri yang cocok dengan filter/pencarian.
+      {filtered.length === 0 && !isLoading && (
+        <Text c="dimmed" ta="center" py="xl">
+          Tidak ada entri SOP yang cocok ditemukan.
         </Text>
       )}
 
       {canLoadMore && (
-        <Group justify="center" mt="sm">
+        <Group justify="center" mt="md">
           <Button variant="light" onClick={() => setPage((p) => p + 1)}>
-            Muat lebih
+            Muat lebih banyak ({filtered.length - visible.length} tersisa)
           </Button>
         </Group>
       )}
