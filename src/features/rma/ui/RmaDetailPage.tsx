@@ -40,9 +40,9 @@ export default function RmaDetailPage() {
   } = useQuery<RmaRecord>({
     queryKey: ["rma", "detail", id],
     queryFn: async () => {
-      const res = await apiClient.get(`/rma/${id}`);
-      // UBAH BARIS INI JUGA:
-      return res.data?.data; // Asumsi data RMA ada di dalam properti 'data'
+      const res = await apiClient.get<RmaRecord>(`/rma/${id}`); // Tambahkan tipe data yang diharapkan
+      // BENAR: Kembalikan data respons secara langsung
+      return res.data;
     },
     enabled: !!id,
   });
@@ -163,7 +163,7 @@ export default function RmaDetailPage() {
         </Text>
         <List spacing={6}>
           {rma.actions.map((a: RmaAction) => (
-            <List.Item key={a._id ?? a.at}>
+            <List.Item key={a.id ?? a.at}>
               <Text>
                 <Text span fw={600}>
                   {dt(a.at)}

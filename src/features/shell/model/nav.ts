@@ -44,12 +44,6 @@ export const MASTER_NAV: NavItem[] = [
         roles: ["Admin"],
       },
       {
-        label: "Audit Log",
-        href: "/views/tickets/history",
-        roles: ["Admin"],
-      },
-
-      {
         label: "Repository",
         href: "/views/audit/repository",
         roles: ["Admin", "Teknisi"],
@@ -74,35 +68,6 @@ export const MASTER_NAV: NavItem[] = [
       },
     ],
   },
-
-  {
-    group: true,
-    label: "Documents",
-    roles: ["Admin"],
-    children: [
-      {
-        label: "Tickets",
-        href: "/views/reports/inventory",
-        roles: ["Admin"],
-      },
-      {
-        label: "Ringkasan",
-        href: "/views/reports/overview",
-        roles: ["Admin"],
-      },
-      {
-        label: "RMA & Warranty",
-        href: "/views/reports/rma",
-        roles: ["Admin"],
-      },
-      {
-        label: "Tickets",
-        href: "/views/reports/tickets",
-        roles: ["Admin"],
-      },
-    ],
-  },
-
   {
     group: true,
     label: "Tickets",
@@ -111,6 +76,11 @@ export const MASTER_NAV: NavItem[] = [
       {
         label: "Tickets List",
         href: "/views/tickets/list",
+        roles: ["Admin"],
+      },
+      {
+        label: "Audit Log",
+        href: "/views/tickets/history",
         roles: ["Admin"],
       },
       {

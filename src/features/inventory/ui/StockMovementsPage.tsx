@@ -1,3 +1,5 @@
+// File: features/inventory/ui/StockMovementsPage.tsx
+
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
@@ -8,6 +10,7 @@ import {
   Title,
   LoadingOverlay,
   Text,
+  Button, // [TAMBAHKAN INI]
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import TextField from "@/shared/ui/inputs/TextField";
@@ -51,12 +54,16 @@ export default function StockMovementsPage() {
     queryKey: ["stockMovements", "list", { q, type, partId, range }],
     queryFn: () => {
       const [from, to] = range;
+      // [PERBAIKAN] Pastikan kita kirim tanggal sebagai objek Date
+      const fromISO = from ? new Date(from).toISOString() : undefined;
+      const toISO = to ? new Date(to).toISOString() : undefined;
+
       return listStockMovements({
         q: q || undefined,
         type: type === "all" ? undefined : type,
         partId: partId === "all" ? undefined : partId,
-        from: from ? from.toISOString() : undefined,
-        to: to ? to.toISOString() : undefined,
+        from: fromISO,
+        to: toISO,
       });
     },
   });
@@ -71,6 +78,7 @@ export default function StockMovementsPage() {
     }
   }, [error]);
 
+  // [PERBAIKAN 1] Sekarang 'movementsData.data' akan terisi dengan benar
   const rows: StockMovement[] = movementsData?.data ?? [];
 
   const columns: Column<StockMovement>[] = [
@@ -100,6 +108,14 @@ export default function StockMovementsPage() {
     { key: "by", header: "Oleh", width: 140, cell: (r) => r.by ?? "N/A" },
   ];
 
+  // [FUNGSI BARU]
+  const clearFilters = () => {
+    setQ("");
+    setType("all");
+    setPartId("all");
+    setRange([null, null]);
+  };
+
   return (
     <Stack gap="md">
       <Title order={3}>Stock Movements</Title>
@@ -114,7 +130,13 @@ export default function StockMovementsPage() {
         />
         <Select
           label="Jenis"
-          data={[]}
+          // [PERBAIKAN 2] Isi data untuk filter 'Jenis'
+          data={[
+            { value: "all", label: "Semua Jenis" },
+            { value: "in", label: "Masuk (In)" },
+            { value: "out", label: "Keluar (Out)" },
+            { value: "adjust", label: "Penyesuaian (Adjust)" },
+          ]}
           value={type}
           onChange={(v) => setType((v as any) ?? "all")}
           style={{ minWidth: 160 }}
@@ -136,6 +158,10 @@ export default function StockMovementsPage() {
           style={{ minWidth: 260 }}
           popoverProps={{ withinPortal: true }}
         />
+        {/* [BONUS] Tombol clear filter */}
+        <Button variant="light" onClick={clearFilters}>
+          Bersihkan Filter
+        </Button>
       </Group>
 
       <div style={{ position: "relative" }}>

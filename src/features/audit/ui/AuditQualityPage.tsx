@@ -16,20 +16,13 @@ import {
   Paper,
   Select,
   Stack,
-  // Table, // Tidak dipakai
   Text,
   Title,
   LoadingOverlay,
 } from "@mantine/core";
 import { modals } from "@mantine/modals";
 import { DatePickerInput } from "@mantine/dates";
-import {
-  IconDots,
-  IconEye,
-  // IconPencil,
-  IconTrash,
-  // IconFilter,
-} from "@tabler/icons-react";
+import { IconDots, IconEye, IconTrash } from "@tabler/icons-react";
 import TextField from "@/shared/ui/inputs/TextField";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { formatDateTime } from "@/features/tickets/utils/format";
@@ -37,7 +30,6 @@ import { downloadCSV } from "@/shared/utils/csv";
 
 type RangeValue = [Date | null, Date | null];
 
-// Helper Badge
 const AuditStatusBadge = ({ status }: { status: AuditStatus }) => {
   const colorMap: Record<AuditStatus, string> = {
     draft: "gray",
@@ -54,12 +46,10 @@ const AuditStatusBadge = ({ status }: { status: AuditStatus }) => {
 export default function AuditQualityPage() {
   const queryClient = useQueryClient();
 
-  // Filters
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState<AuditStatus | "all">("all");
   const [range, setRange] = useState<RangeValue>([null, null]);
 
-  // Fetch data
   const {
     data: auditData,
     isLoading,
@@ -68,16 +58,19 @@ export default function AuditQualityPage() {
     queryKey: ["audits", "list", { q, status: statusFilter, range }],
     queryFn: () => {
       const [from, to] = range;
+
+      const fromISO = from ? new Date(from).toISOString() : undefined;
+      const toISO = to ? new Date(to).toISOString() : undefined;
+
       return listAudits({
         q: q || undefined,
         status: statusFilter === "all" ? undefined : statusFilter,
-        from: from ? from.toISOString() : undefined,
-        to: to ? to.toISOString() : undefined,
+        from: fromISO,
+        to: toISO,
       });
-    }, // <-- PERBAIKAN: Hapus koma berlebih di sini
+    },
   });
 
-  // Handle error fetch
   useEffect(() => {
     if (error) {
       notifications.show({
@@ -90,12 +83,12 @@ export default function AuditQualityPage() {
 
   const rows: AuditLogItem[] = auditData?.data ?? [];
 
-  // Export CSV
-  const exportCSV = () => {
-    /* ... (sama) ... */
+  const clearFilters = () => {
+    setQ("");
+    setStatusFilter("all");
+    setRange([null, null]);
   };
 
-  // Delete Mutation
   const deleteMutation = useMutation<void, Error, string>({
     mutationFn: deleteAudit,
     onSuccess: (_, deletedId) => {
@@ -105,76 +98,78 @@ export default function AuditQualityPage() {
         message: `Record audit berhasil dihapus.`,
       });
       queryClient.setQueryData(
-        ["audits", "list"],
+        ["audits", "list", { q, status: statusFilter, range }],
         (oldData: Paginated<AuditLogItem> | undefined) => {
           if (!oldData || !oldData.data) return oldData;
           return {
             ...oldData,
             data: oldData.data.filter((a: AuditLogItem) => a.id !== deletedId),
-            // totalResults: (oldData.totalResults ?? 1) -1 // Asumsi Paginated punya totalResults
           };
         }
       );
     },
     onError: (e: any) => {
-      /* ... (sama) ... */
+      notifications.show({
+        color: "red",
+        title: "Gagal Hapus",
+        message: e.message,
+      });
     },
   });
 
-  // --- Kolom Tabel ---
-  // PERBAIKAN: Gunakan AuditLogItem di sini
   const columns: Column<AuditLogItem>[] = [
     {
       key: "at",
       header: "Tanggal Review",
       width: 180,
-      cell: (r: AuditLogItem) => formatDateTime(r.at), // Gunakan AuditLogItem
+      cell: (r: AuditLogItem) => formatDateTime(r.at),
     },
     {
       key: "ticket",
       header: "Ticket",
       width: 160,
-      cell: (
-        r: AuditLogItem // Gunakan AuditLogItem
-      ) => (
-        <Link href={`/views/tickets/${encodeURIComponent(r.ticketId)}`}>
+      cell: (r: AuditLogItem) => (
+        <Text
+          component={Link}
+          href={`/views/tickets/${encodeURIComponent(r.ticketId)}`}
+          size="sm"
+          c="blue"
+        >
           {r.ticketCode}
-        </Link>
+        </Text>
       ),
     },
     {
       key: "reviewer",
       header: "Reviewer",
       width: 150,
-      cell: (r: AuditLogItem) => r.who ?? "N/A", // Gunakan AuditLogItem
+      cell: (r: AuditLogItem) => r.who ?? "N/A",
     },
     {
       key: "score",
       header: "Skor",
       width: 80,
       align: "center",
-      cell: (r: AuditLogItem) => r.score?.toString() ?? "-", // Gunakan AuditLogItem
+      cell: (r: AuditLogItem) => r.score?.toString() ?? "-",
     },
     {
       key: "status",
       header: "Status",
       width: 120,
       align: "center",
-      cell: (r: AuditLogItem) => <AuditStatusBadge status={r.action} />, // Gunakan AuditLogItem
+      cell: (r: AuditLogItem) => <AuditStatusBadge status={r.action} />,
     },
     {
       key: "notes",
       header: "Catatan",
       cell: (r: AuditLogItem) => r.description ?? "-",
-    }, // Gunakan AuditLogItem
+    },
     {
       key: "actions",
       header: "",
       align: "right",
       width: 60,
-      cell: (
-        r: AuditLogItem // Gunakan AuditLogItem
-      ) => (
+      cell: (r: AuditLogItem) => (
         <Menu withinPortal position="bottom-end" shadow="sm">
           <Menu.Target>
             <ActionIcon variant="subtle" color="gray">
@@ -224,7 +219,39 @@ export default function AuditQualityPage() {
 
   return (
     <Stack gap="md">
-      {/* ... (Header, Toolbar sama) ... */}
+      <Group align="end" wrap="wrap" gap="sm">
+        <TextField
+          label="Cari"
+          placeholder="Kode Tiket / Catatan"
+          value={q}
+          onChange={(e) => setQ(e.currentTarget.value)}
+          style={{ minWidth: 260 }}
+        />
+        <Select
+          label="Status Audit"
+          data={[
+            { value: "all", label: "Semua" },
+            { value: "draft", label: "Draft" },
+            { value: "approved", label: "Approved" },
+            { value: "rejected", label: "Rejected" },
+          ]}
+          value={statusFilter}
+          onChange={(v) => setStatusFilter((v as any) ?? "all")}
+          style={{ minWidth: 160 }}
+        />
+        <DatePickerInput
+          type="range"
+          label="Rentang Tanggal Review"
+          placeholder="Pilih tanggal"
+          value={range}
+          onChange={(v) => setRange(v as RangeValue)}
+          style={{ minWidth: 260 }}
+          popoverProps={{ withinPortal: true }}
+        />
+        <Button variant="light" onClick={clearFilters}>
+          Bersihkan Filter
+        </Button>
+      </Group>
 
       <div style={{ position: "relative" }}>
         <LoadingOverlay visible={isLoading || isMutating} />

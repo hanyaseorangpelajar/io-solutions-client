@@ -49,6 +49,13 @@ import StockOutFromTicketModal, {
 const MOCK_CURRENT_USER_ID = "USER_ID_DARI_AUTH";
 const nextId = (prefix: string) => `${prefix}-${Date.now()}`;
 
+const STATUS_OPTIONS = [
+  { value: "all", label: "Semua Status" },
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
+  { value: "discontinued", label: "Discontinued" },
+];
+
 export default function InventoryListPage() {
   const queryClient = useQueryClient();
 
@@ -85,7 +92,19 @@ export default function InventoryListPage() {
   const [stockOutTicket, setStockOutTicket] = useState(false);
   const [loadingStockOut, setLoadingStockOut] = useState(false);
 
-  const categories = useMemo(() => {}, [items]);
+  const categories = useMemo(() => {
+    if (!Array.isArray(items)) return [];
+    const cats = new Set(
+      items.map((i) => i.category).filter(Boolean) as string[]
+    );
+    return [
+      { value: "all", label: "Semua Kategori" },
+      ...Array.from(cats)
+        .sort()
+        .map((c) => ({ value: c, label: c })),
+    ];
+  }, [items]);
+
   const filtered: Part[] = useMemo(() => {
     const term = q.trim().toLowerCase();
     if (!Array.isArray(items)) return [];
@@ -103,21 +122,52 @@ export default function InventoryListPage() {
       return matchQ && matchC && matchS && matchL;
     });
   }, [items, q, category, status, lowOnly]);
+
   const exportCSV = () => {};
 
-  const invalidatePartsList = () => {};
+  const invalidatePartsList = () => {
+    queryClient.invalidateQueries({ queryKey: ["parts", "list"] });
+  };
 
   const createMutation = useMutation({
     mutationFn: createPart,
-    onSuccess: (newPart) => {},
-    onError: (e: any) => {},
+    onSuccess: (newPart) => {
+      notifications.show({
+        color: "green",
+        title: "Part Ditambahkan",
+        message: newPart.name,
+      });
+      setCreating(false);
+      invalidatePartsList();
+    },
+    onError: (e: any) => {
+      notifications.show({
+        color: "red",
+        title: "Gagal Menambahkan",
+        message: e.message,
+      });
+    },
   });
 
   const updateMutation = useMutation({
     mutationFn: (vars: { id: string; data: PartFormInput }) =>
       updatePart(vars.id, vars.data),
-    onSuccess: (updatedPart) => {},
-    onError: (e: any) => {},
+    onSuccess: (updatedPart) => {
+      notifications.show({
+        color: "green",
+        title: "Part Diperbarui",
+        message: updatedPart.name,
+      });
+      setEditing(null);
+      invalidatePartsList();
+    },
+    onError: (e: any) => {
+      notifications.show({
+        color: "red",
+        title: "Gagal Memperbarui",
+        message: e.message,
+      });
+    },
   });
 
   const deleteMutation = useMutation<void, Error, string>({
@@ -132,7 +182,13 @@ export default function InventoryListPage() {
         old.filter((p) => p.id !== deletedId)
       );
     },
-    onError: (e: any) => {},
+    onError: (e: any) => {
+      notifications.show({
+        color: "red",
+        title: "Gagal Menghapus",
+        message: e.message,
+      });
+    },
   });
 
   const stockMoveMutation = useMutation({
@@ -143,7 +199,7 @@ export default function InventoryListPage() {
         title: "Mutasi Stok Berhasil",
         message: `Stok untuk part terkait telah diperbarui.`,
       });
-      queryClient.invalidateQueries({ queryKey: ["parts", "list"] });
+      invalidatePartsList();
     },
     onError: (e: any) => {
       notifications.show({
@@ -162,6 +218,7 @@ export default function InventoryListPage() {
       reference: v.ref,
       notes: v.note,
     });
+    setMoving(null);
   };
 
   const handleStockOutFromTicket = async (
@@ -215,7 +272,7 @@ export default function InventoryListPage() {
     {
       key: "name",
       header: "Nama Part",
-      width: "35%", // Beri porsi lebih
+      width: "35%",
       cell: (r) => (
         <Stack gap={0}>
           <Text fw={600} size="sm">
@@ -264,7 +321,6 @@ export default function InventoryListPage() {
       header: "Status",
       align: "center",
       width: 120,
-      // Pastikan PartStatusBadge sudah diimpor di atas
       cell: (r) => <PartStatusBadge status={r.status} />,
     },
     {
@@ -281,7 +337,6 @@ export default function InventoryListPage() {
               </ActionIcon>
             </Menu.Target>
             <Menu.Dropdown miw={160}>
-              {" "}
               <Menu.Item
                 leftSection={<IconPencil size={14} />}
                 onClick={() => setEditing(r)}
@@ -337,6 +392,57 @@ export default function InventoryListPage() {
 
   return (
     <Stack gap="md">
+      <Group justify="space-between" align="center">
+        <Title order={3}>Inventory Items</Title>
+        <Group>
+          <Button
+            variant="light"
+            leftSection={<IconLink size={16} />}
+            onClick={() => setStockOutTicket(true)}
+          >
+            Stock Out (Tiket)
+          </Button>
+          <Button
+            leftSection={<IconPlus size={16} />}
+            onClick={() => setCreating(true)}
+            disabled={createMutation.isPending}
+          >
+            Tambah Part
+          </Button>
+        </Group>
+      </Group>
+
+      <Group align="end" wrap="wrap" gap="sm">
+        <TextField
+          label="Cari Part"
+          placeholder="Nama / SKU / Vendor..."
+          value={q}
+          onChange={(e) => setQ(e.currentTarget.value)}
+          style={{ minWidth: 260, flexGrow: 1 }}
+        />
+        <Select
+          label="Kategori"
+          data={categories}
+          value={category}
+          onChange={(v) => setCategory(v ?? "all")}
+          searchable
+          style={{ minWidth: 180 }}
+        />
+        <Select
+          label="Status"
+          data={STATUS_OPTIONS}
+          value={status}
+          onChange={(v) => setStatus((v as any) ?? "all")}
+          style={{ minWidth: 160 }}
+        />
+        <Checkbox
+          label="Stok menipis"
+          checked={lowOnly}
+          onChange={(e) => setLowOnly(e.currentTarget.checked)}
+          style={{ alignSelf: "flex-end", paddingBottom: 5 }}
+        />
+      </Group>
+
       <div style={{ position: "relative" }}>
         <LoadingOverlay visible={isLoading || isMutating} />
         <SimpleTable<Row>

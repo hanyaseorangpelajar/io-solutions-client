@@ -1,21 +1,21 @@
-// RMA & Warranty — domain types
+// File: features/rma/model/types.ts
 
 export type RmaStatus =
-  | "new" // baru dibuat, menunggu unit diterima
-  | "received" // unit diterima dari pelanggan
-  | "sent_to_vendor" // dikirim ke vendor
-  | "in_vendor" // dalam proses vendor
-  | "replaced" // diganti unit baru oleh vendor
-  | "repaired" // diperbaiki oleh vendor
-  | "returned" // dikembalikan ke pelanggan
-  | "rejected" // klaim ditolak vendor
-  | "cancelled"; // dibatalkan
+  | "new"
+  | "received"
+  | "sent_to_vendor"
+  | "in_vendor"
+  | "replaced"
+  | "repaired"
+  | "returned"
+  | "rejected"
+  | "cancelled";
 
 export type WarrantyInfo = {
-  purchaseDate?: string; // ISO
-  warrantyMonths?: number; // durasi garansi, bulan
+  purchaseDate?: string;
+  warrantyMonths?: number;
   serial?: string;
-  vendor?: string; // nama vendor/RMA center
+  vendor?: string;
   invoiceNo?: string;
 };
 
@@ -29,25 +29,30 @@ export type RmaActionType =
   | "reject"
   | "cancel";
 
+// [PERBAIKAN 1]
 export type RmaAction = {
-  _id: string; // <-- UBAH DARI 'id'
+  id: string; // <-- Ganti dari '_id'
   type: RmaActionType;
   note?: string;
-  by: string; // user/operator
+  // Ubah 'by' menjadi object User sederhana jika backend mengirimkannya
+  // Jika backend hanya kirim ID string, biarkan 'string'
+  by: { id: string; name?: string; username?: string } | string;
   at: string; // ISO datetime
   payload?: Record<string, unknown>;
 };
 
+// [PERBAIKAN 2]
 export type RmaRecord = {
-  _id: string; // <-- UBAH DARI 'id'
-  code: string; // RMA-YYYY-XXXX
+  id: string; // <-- Ganti dari '_id'
+  code: string;
   title: string;
   customerName: string;
-  contact?: string; // telp/email
+  contact?: string;
   productName: string;
   productSku?: string;
-  ticketId?: string; // jika berasal dari tiket
-  issueDesc?: string;
+  ticketId?: string; // ID tiket terkait
+  // Tambahkan detail tiket jika backend mengirimkannya setelah populate
+  ticket?: { id: string; code: string; subject?: string };
 
   warranty: WarrantyInfo;
 

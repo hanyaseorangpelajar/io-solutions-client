@@ -1,3 +1,5 @@
+// File: features/audit/ui/AuditRepositoryPage.tsx
+
 "use client";
 
 import type { Paginated } from "@/features/tickets/api/tickets";
@@ -40,18 +42,23 @@ export default function AuditRepositoryPage() {
   const PAGE_SIZE = 9;
   const [page, setPage] = useState(1);
 
+  // [PERBAIKAN PADA 'useQuery']
   const {
     data: auditData,
     isLoading,
     error,
   } = useQuery<Paginated<AuditLogItem>>({
-    queryKey: ["audits", "list", { publish: true, q: qDebounced, tag, device }],
+    // 1. QueryKey disederhanakan: kita hanya mengambil 'approved' audits
+    queryKey: ["audits", "list", { status: "approved" }],
     queryFn: () =>
       listAudits({
-        publish: true,
-        q: qDebounced || undefined,
-        tag: tag === "all" ? undefined : tag,
+        // 2. Minta status 'approved', karena inilah yang menjadi SOP
+        status: "approved",
+        // 3. Hapus 'q' dan 'tag'. Kita filter itu di client-side.
+        // 4. Set limit tinggi agar kita mendapatkan SEMUA SOP untuk difilter di client
+        limit: 500,
       }),
+    // 5. Query ini tidak perlu dijalankan ulang saat filter client berubah
   });
 
   useEffect(() => {
@@ -66,6 +73,7 @@ export default function AuditRepositoryPage() {
 
   const publishedAudits: AuditLogItem[] = auditData?.data ?? [];
 
+  // 'cards' sekarang berisi SEMUA SOP yang 'approved'
   const cards = useMemo<RepositoryCardData[]>(() => {
     return publishedAudits
       .map((a: AuditLogItem) => {
@@ -73,17 +81,19 @@ export default function AuditRepositoryPage() {
         return {
           code: a.ticketCode,
           ticketId: a.ticketId,
-          subject: `Audit for ${a.ticketCode}`,
+          // [PERBAIKAN KECIL] Gunakan 'notes' dari audit sebagai rootCause
+          subject: a.description ?? `Audit for ${a.ticketCode}`,
           deviceType: inferDeviceFromTags(allTags),
           resolvedAt: formatDateTime(a.at),
           tags: allTags,
-          rootCause: a.description ?? "N/A",
+          rootCause: a.description ?? "N/A", // Gunakan 'notes' (description)
           solution: "Lihat detail tiket",
         };
       })
-      .reverse();
+      .reverse(); // .reverse() mungkin tidak diperlukan jika sort backend sudah benar
   }, [publishedAudits]);
 
+  // Opsi filter ini sekarang dibuat dari daftar 'cards' yang lengkap
   const deviceOptions = useMemo(() => {
     const devices = new Set(
       cards.map((c) => c.deviceType).filter((d): d is string => !!d)
@@ -105,6 +115,7 @@ export default function AuditRepositoryPage() {
     ];
   }, [cards]);
 
+  // Logika filter client-side ini SEKARANG AKAN BERFUNGSI DENGAN BENAR
   const filtered = useMemo(() => {
     const byDevice = (c: RepositoryCardData) =>
       device === "all" || c.deviceType === device;
@@ -120,8 +131,8 @@ export default function AuditRepositoryPage() {
     return cards.filter((c) => byDevice(c) && byTag(c) && byQuery(c));
   }, [cards, device, tag, qDebounced]);
 
-  const [filtersKey, setFiltersKey] = useState(0);
-  useMemo(() => {}, [device, tag, qDebounced]);
+  // 'useMemo' kosong ini sepertinya tidak melakukan apa-apa, bisa dihapus
+  // useMemo(() => {}, [device, tag, qDebounced]);
 
   const visible = filtered.slice(0, page * PAGE_SIZE);
   const canLoadMore = visible.length < filtered.length;

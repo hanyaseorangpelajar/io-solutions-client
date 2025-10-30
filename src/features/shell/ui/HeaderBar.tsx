@@ -59,7 +59,6 @@ function ThemeToggle() {
   );
 }
 
-// ... (Komponen BrandBar tetap sama) ...
 function BrandBar({
   title = "I/O SOLUTIONS",
   tagline = "DATA • INFORMATION • KNOWLEDGE • WISDOM",

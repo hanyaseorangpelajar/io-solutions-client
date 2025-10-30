@@ -2,6 +2,14 @@ import apiClient from "@/lib/apiClient";
 import type { StockMovement, StockMoveType } from "../model/types";
 import type { Paginated } from "@/features/tickets/api/tickets";
 
+type ServerPaginatedResponse<T> = {
+  results: T[];
+  page: number;
+  limit: number;
+  totalResults: number;
+  totalPages: number;
+};
+
 type CreateStockMovementInput = {
   partId: string;
   type: StockMoveType;
@@ -40,6 +48,19 @@ export async function listStockMovements(
   };
 
   const endpoint = `/stock-movements${qs(params)}`;
-  const response = await apiClient.get<Paginated<StockMovement>>(endpoint);
-  return response.data;
+
+  const response = await apiClient.get<ServerPaginatedResponse<StockMovement>>(
+    endpoint
+  );
+  const serverData = response.data;
+
+  return {
+    data: serverData.results,
+    meta: {
+      page: serverData.page,
+      limit: serverData.limit,
+      total: serverData.totalResults,
+      totalPages: serverData.totalPages,
+    },
+  };
 }

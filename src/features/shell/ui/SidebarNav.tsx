@@ -60,7 +60,7 @@ export default function SidebarNav({ items, onNavigate }: SidebarNavProps) {
     [list]
   );
   const [open, setOpen] = useState<Record<string, boolean>>(
-    Object.fromEntries(groupKeys.map((k) => [k, true]))
+    Object.fromEntries(groupKeys.map((k) => [k, false]))
   );
   const toggle = (k: string) => setOpen((p) => ({ ...p, [k]: !p[k] }));
 
