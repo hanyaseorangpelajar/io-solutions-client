@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   ActionIcon,
   Avatar,
@@ -10,7 +9,6 @@ import {
   Indicator,
   Menu,
   Text,
-  TextInput,
   Tooltip,
   rem,
   useMantineTheme,
@@ -20,25 +18,18 @@ import {
   IconBell,
   IconLogout,
   IconMoon,
-  IconSearch,
   IconSun,
   IconUser,
 } from "@tabler/icons-react";
 import { useAuth } from "@/features/auth/AuthContext";
-// --- AKHIR BARIS BARU ---
 
 type HeaderBarProps = {
   opened: boolean;
-  setOpened: (v: boolean) => void; // toggle navbar mobile
-  /** Judul brand; default: I/O SOLUTIONS */
+  setOpened: (v: boolean) => void;
   title?: string;
-  /** Tagline kecil uppercase; default: DATA • INFORMATION • KNOWLEDGE • WISDOM */
   tagline?: string;
-  /** Link saat klik kotak I/O; default: /(dashboard)/sysadmin */
-  href?: string;
 };
 
-// ... (Komponen ThemeToggle tetap sama) ...
 function ThemeToggle() {
   const { setColorScheme } = useMantineColorScheme();
   const computed = useComputedColorScheme("dark", {
@@ -62,19 +53,15 @@ function ThemeToggle() {
 function BrandBar({
   title = "I/O SOLUTIONS",
   tagline = "DATA • INFORMATION • KNOWLEDGE • WISDOM",
-  href = "/(dashboard)/sysadmin", // Sesuaikan jika perlu
 }: {
   title?: string;
   tagline?: string;
-  href?: string;
 }) {
   const theme = useMantineTheme();
   return (
     <Group gap={12} wrap="nowrap">
       <Box
-        component={Link}
-        href={href}
-        aria-label="Home"
+        aria-label="Brand Logo"
         style={{
           display: "grid",
           placeItems: "center",
@@ -83,6 +70,7 @@ function BrandBar({
           border: `1px solid ${theme.colors.gray[4]}`,
           borderRadius: rem(6),
           textDecoration: "none",
+          cursor: "default",
         }}
       >
         <Text
@@ -137,33 +125,21 @@ export default function HeaderBar({
   setOpened,
   title,
   tagline,
-  href,
 }: HeaderBarProps) {
   const { logout } = useAuth();
-  // --- AKHIR BARIS BARU ---
 
   return (
     <Group h="100%" px="md" justify="space-between" wrap="nowrap">
-      {/* Bagian Kiri: Burger & Brand */}
       <Group gap="sm" wrap="nowrap">
         <Burger
           opened={opened}
           onClick={() => setOpened(!opened)}
           hiddenFrom="sm"
         />
-        <BrandBar title={title} tagline={tagline} href={href} />
+        <BrandBar title={title} tagline={tagline} />
       </Group>
 
-      {/* Bagian Kanan: Search, Theme, Notif, Profile */}
       <Group gap="sm" wrap="nowrap">
-        <Box visibleFrom="sm">
-          <TextInput
-            placeholder="Cari…"
-            leftSection={<IconSearch size={16} />}
-            miw={260}
-          />
-        </Box>
-
         <ThemeToggle />
 
         <Menu shadow="md" width={200}>
@@ -186,8 +162,6 @@ export default function HeaderBar({
           </Menu.Target>
           <Menu.Dropdown>
             <Menu.Item leftSection={<IconUser size={16} />}>Profil</Menu.Item>
-            {/* --- BARIS DIUBAH --- */}
-            {/* 4. Tambahkan onClick ke Menu.Item Keluar */}
             <Menu.Item
               leftSection={<IconLogout size={16} />}
               color="red"
@@ -195,7 +169,6 @@ export default function HeaderBar({
             >
               Keluar
             </Menu.Item>
-            {/* --- AKHIR BARIS DIUBAH --- */}
           </Menu.Dropdown>
         </Menu>
       </Group>

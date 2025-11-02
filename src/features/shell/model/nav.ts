@@ -36,7 +36,7 @@ export const MASTER_NAV: NavItem[] = [
   {
     group: true,
     label: "Audit",
-    roles: ["Admin"],
+    roles: ["Admin", "Teknisi"],
     children: [
       {
         label: "Ticket Audit Quality",
