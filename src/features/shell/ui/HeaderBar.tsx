@@ -52,7 +52,7 @@ function ThemeToggle() {
 
 function BrandBar({
   title = "I/O SOLUTIONS",
-  tagline = "DATA • INFORMATION • KNOWLEDGE • WISDOM",
+  tagline = "Oleh Golden Service Tembalang",
 }: {
   title?: string;
   tagline?: string;

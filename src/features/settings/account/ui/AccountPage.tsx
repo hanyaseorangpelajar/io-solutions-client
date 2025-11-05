@@ -16,6 +16,8 @@ import {
   Divider,
   FileInput,
 } from "@mantine/core";
+import apiClient from "@/lib/apiClient";
+import { notifications } from "@mantine/notifications";
 import type {
   AccountProfile,
   SecuritySettings,
@@ -23,7 +25,6 @@ import type {
 } from "../model/types";
 
 export default function AccountPage() {
-  // Mock state lokal (UI-only)
   const [profile, setProfile] = useState<AccountProfile>({
     name: "Sysadmin",
     email: "sysadmin@example.com",
@@ -43,10 +44,56 @@ export default function AccountPage() {
     frequency: "immediate",
   });
 
-  // helper sukses sederhana
   const done = () => {
-    // kamu bisa ganti dengan notifications.show / modals / toast dsb.
     console.log("Saved settings");
+  };
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const handleChangePassword = async () => {
+    if (newPassword !== confirmPassword) {
+      notifications.show({
+        title: "Gagal",
+        message: "Konfirmasi password baru tidak cocok.",
+        color: "red",
+      });
+      return;
+    }
+    if (!currentPassword || !newPassword) {
+      notifications.show({
+        title: "Gagal",
+        message: "Semua field password wajib diisi.",
+        color: "red",
+      });
+      return;
+    }
+
+    try {
+      await apiClient.patch("/users/me/password", {
+        currentPassword,
+        newPassword,
+      });
+
+      notifications.show({
+        title: "Sukses",
+        message: "Password berhasil diperbarui.",
+        color: "green",
+      });
+
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message ||
+        "Password lama salah atau terjadi error";
+      notifications.show({
+        title: "Gagal",
+        message: message,
+        color: "red",
+      });
+    }
   };
 
   return (
@@ -68,7 +115,6 @@ export default function AccountPage() {
             <Tabs.Tab value="notifications">Notifikasi</Tabs.Tab>
           </Tabs.List>
 
-          {/* Informasi Akun */}
           <Tabs.Panel value="info" pt="md">
             <Stack gap="md">
               <Group grow>
@@ -125,21 +171,33 @@ export default function AccountPage() {
             </Stack>
           </Tabs.Panel>
 
-          {/* Keamanan */}
           <Tabs.Panel value="security" pt="md">
             <Stack gap="md">
               <Title order={5}>Ubah Password</Title>
               <Group grow>
-                <PasswordInput label="Password saat ini" />
-                <PasswordInput label="Password baru" />
-                <PasswordInput label="Konfirmasi password baru" />
+                <PasswordInput
+                  label="Password saat ini"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.currentTarget.value)}
+                  withAsterisk
+                />
+                <PasswordInput
+                  label="Password baru"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.currentTarget.value)}
+                  withAsterisk
+                />
+                <PasswordInput
+                  label="Konfirmasi password baru"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.currentTarget.value)}
+                  withAsterisk
+                />
               </Group>
               <Group justify="end" mb="sm">
-                <Button onClick={done}>Simpan password</Button>
+                <Button onClick={handleChangePassword}>Simpan password</Button>
               </Group>
-
               <Divider />
-
               <Title order={5}>Two-Factor Authentication</Title>
               <Switch
                 label="Aktifkan 2FA"
@@ -169,7 +227,6 @@ export default function AccountPage() {
             </Stack>
           </Tabs.Panel>
 
-          {/* Notifikasi */}
           <Tabs.Panel value="notifications" pt="md">
             <Stack gap="md">
               <Title order={5}>Preferensi Notifikasi</Title>

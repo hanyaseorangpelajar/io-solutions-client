@@ -115,7 +115,7 @@ export const MASTER_NAV: NavItem[] = [
     roles: ["Teknisi", "Admin", "SysAdmin"],
     children: [
       {
-        label: "Akun",
+        label: "Profile",
         href: "/views/settings/account",
         roles: ["Teknisi", "Admin", "SysAdmin"],
       },
@@ -125,6 +125,11 @@ export const MASTER_NAV: NavItem[] = [
         roles: ["Teknisi", "Admin", "SysAdmin"],
       },
     ],
+  },
+  {
+    label: "Profile",
+    href: "/views/settings/account",
+    roles: ["Teknisi", "Admin", "SysAdmin"],
   },
 ];
 
