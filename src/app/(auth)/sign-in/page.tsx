@@ -16,8 +16,6 @@ export default function SignInPage() {
   useEffect(() => {
     const error = searchParams.get("error");
 
-    // Perbaikan: Tambahkan pengecekan untuk memastikan `error` adalah string
-    // sebelum memanggil metode .toLowerCase().
     if (typeof error === "string") {
       if (error.toLowerCase().includes("credentials")) {
         notifications.show({

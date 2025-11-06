@@ -4,7 +4,6 @@ import Link from "next/link";
 import {
   Anchor,
   Badge,
-  Button,
   Group,
   Paper,
   SimpleGrid,
@@ -14,104 +13,104 @@ import {
   Title,
   LoadingOverlay,
 } from "@mantine/core";
-
 import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/apiClient";
 import type { Ticket } from "@/features/tickets";
-import type { Part } from "@/features/inventory";
-import type { RmaRecord } from "@/features/rma";
-
 import { priorityColor, statusColor } from "@/shared/utils/formatters";
 import { formatDateTime } from "@/features/tickets/utils/format";
 
-function isOpenStatus(s: any) {
+function isOpenStatus(s: unknown) {
   const v = String(s ?? "").toLowerCase();
   return !(v.includes("closed") || v.includes("resolved"));
+}
+
+function isTechnician(role: unknown) {
+  const v = String(role ?? "").toLowerCase();
+  return v.includes("teknisi") || v.includes("technician");
 }
 
 export default function AdminDashboardPage() {
   const { data: ticketsData, isLoading: isLoadingTickets } = useQuery({
     queryKey: ["tickets", "list", "dashboard"],
-    queryFn: () => apiClient.get("/tickets?limit=500"),
-    select: (res: any) => res.data?.data || [],
-  });
-
-  const { data: partsData, isLoading: isLoadingParts } = useQuery({
-    queryKey: ["parts", "list", "dashboard"],
-    queryFn: () => apiClient.get("/parts"),
-    select: (res: any) => res.data?.data || [],
-  });
-
-  const { data: rmasData, isLoading: isLoadingRmas } = useQuery({
-    queryKey: ["rma", "list", "dashboard"],
-    queryFn: () => apiClient.get("/rma"),
-    select: (res: any) => res.data?.data || [],
+    queryFn: () => apiClient.get("/tickets", { params: { limit: 500 } }),
+    select: (res: any) => res?.data?.results ?? res?.data?.data ?? [],
   });
 
   const tickets: Ticket[] = ticketsData ?? [];
-  const parts: Part[] = partsData ?? [];
-  const rmas: RmaRecord[] = rmasData ?? [];
-  const isLoading = isLoadingTickets || isLoadingParts || isLoadingRmas;
-
-  const kpi = {
-    openTickets: tickets.filter((t) => isOpenStatus(t.status)).length,
-    lowStock:
-      parts.filter((p) => {
-        const stock = p.stock ?? 0;
-        const min = p.minStock ?? 0;
-        return stock <= Math.max(0, min);
-      }).length || 0,
-    pendingRma:
-      rmas.filter((r) => {
-        const s = String(r?.status ?? "").toLowerCase();
-        return !(
-          s.includes("closed") ||
-          s.includes("returned") ||
-          s.includes("rejected")
-        );
-      }).length || 0,
-  };
+  const totalTickets = tickets.length;
+  const openTickets = tickets.filter((t) => isOpenStatus(t.status)).length;
 
   const recentTickets = [...tickets]
-    .map((t) => ({
-      id: t.id,
+    .map((t: any) => ({
+      id: t.id ?? t._id ?? t.code,
       code: t.code,
-      subject: t.subject,
+      subject: t.subject ?? t.title ?? "-",
       status: t.status,
-      priority: t.priority,
-      createdAt: t.createdAt,
+      priority: t.priority ?? "NORMAL",
+      createdAt: t.createdAt ?? t.created_at ?? new Date().toISOString(),
     }))
-    .sort((a, b) => {
-      const da = new Date(a.createdAt).getTime();
-      const db = new Date(b.createdAt).getTime();
-      return db - da;
-    })
-    .slice(0, 8);
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )
+    .slice(0, 5);
 
-  const recentRma = [...rmas]
-    .map((r) => ({
-      _id: r.id,
-      code: r.code,
-      customer: r.customerName,
-      status: r.status,
-      createdAt: r.createdAt,
-    }))
-    .sort((a, b) => {
-      const da = new Date(a.createdAt).getTime();
-      const db = new Date(b.createdAt).getTime();
-      return db - da;
-    })
-    .slice(0, 8);
+  const { data: usersData, isLoading: isLoadingUsers } = useQuery({
+    queryKey: ["users", "list", "dashboard"],
+    queryFn: () => apiClient.get("/users", { params: { limit: 500 } }),
+    select: (res: any) => res?.data?.results ?? res?.data?.data ?? [],
+  });
+
+  const users: Array<{ id?: string; role?: string } & Record<string, unknown>> =
+    (usersData as any[]) ?? [];
+  const technicianCount = users.filter((u) =>
+    isTechnician((u as any).role)
+  ).length;
+
+  const isLoading = isLoadingTickets || isLoadingUsers;
 
   return (
     <Stack gap="lg" style={{ position: "relative" }}>
       <LoadingOverlay visible={isLoading} />
 
-      <Group justify="space-between" align="center"></Group>
+      <Group justify="space-between" align="center" />
 
-      <SimpleGrid cols={{ base: 1, sm: 3 }}></SimpleGrid>
+      <SimpleGrid cols={{ base: 1, sm: 3 }}>
+        <Paper withBorder radius="md" p="md">
+          <Text c="dimmed" size="sm">
+            Total Tiket
+          </Text>
+          <Title order={2}>{totalTickets}</Title>
+          <Text size="xs" c="dimmed">
+            Seluruh tiket yang tercatat
+          </Text>
+        </Paper>
+
+        <Paper withBorder radius="md" p="md">
+          <Text c="dimmed" size="sm">
+            Tiket Terbuka
+          </Text>
+          <Title order={2}>{openTickets}</Title>
+          <Text size="xs" c="dimmed">
+            Belum resolved/closed
+          </Text>
+        </Paper>
+
+        <Paper withBorder radius="md" p="md">
+          <Text c="dimmed" size="sm">
+            Total Teknisi
+          </Text>
+          <Title order={2}>{technicianCount}</Title>
+          <Text size="xs" c="dimmed">
+            Pengguna dengan role Teknisi
+          </Text>
+        </Paper>
+      </SimpleGrid>
 
       <Paper withBorder radius="md" p="md">
+        <Title order={4} mb="sm">
+          Tiket Terbaru
+        </Title>
         <Table
           striped
           highlightOnHover
@@ -139,66 +138,23 @@ export default function AdminDashboardPage() {
                 <Table.Td>{t.subject}</Table.Td>
                 <Table.Td>
                   <Badge color={priorityColor(String(t.priority))}>
-                    {t.priority}
+                    {String(t.priority)}
                   </Badge>
                 </Table.Td>
                 <Table.Td>
                   <Badge color={statusColor(String(t.status))}>
-                    {t.status}
+                    {String(t.status)}
                   </Badge>
                 </Table.Td>
                 <Table.Td>{formatDateTime(t.createdAt)}</Table.Td>
               </Table.Tr>
             ))}
-            {recentTickets.length === 0 && (
+
+            {recentTickets.length === 0 && !isLoading && (
               <Table.Tr>
                 <Table.Td colSpan={5}>
                   <Text c="dimmed" ta="center">
                     Tidak ada tiket terbaru.
-                  </Text>
-                </Table.Td>
-              </Table.Tr>
-            )}
-          </Table.Tbody>
-        </Table>
-      </Paper>
-
-      <Paper withBorder radius="md" p="md">
-        <Table
-          striped
-          highlightOnHover
-          withTableBorder
-          withColumnBorders
-          stickyHeader
-        >
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>Kode</Table.Th>
-              <Table.Th>Pelanggan</Table.Th>
-              <Table.Th>Status</Table.Th>
-              <Table.Th>Dibuat</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {recentRma.map((r) => (
-              <Table.Tr key={r._id}>
-                <Table.Td>
-                  <Anchor component={Link} href={`/views/tickets/${r._id}`}>
-                    {r.code}
-                  </Anchor>
-                </Table.Td>
-                <Table.Td>{r.customer}</Table.Td>
-                <Table.Td>
-                  <Badge color={statusColor(r.status)}>{r.status}</Badge>
-                </Table.Td>
-                <Table.Td>{formatDateTime(r.createdAt)}</Table.Td>
-              </Table.Tr>
-            ))}
-            {recentRma.length === 0 && (
-              <Table.Tr>
-                <Table.Td colSpan={4}>
-                  <Text c="dimmed" ta="center">
-                    Tidak ada RMA terbaru.
                   </Text>
                 </Table.Td>
               </Table.Tr>

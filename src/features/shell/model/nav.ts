@@ -19,117 +19,36 @@ export const MASTER_NAV: NavItem[] = [
   { label: "Dashboard", href: "/admin", roles: ["Admin"] },
   { label: "Dashboard", href: "/teknisi", roles: ["Teknisi"] },
 
+  { label: "Staff", href: "/views/access/staff", roles: ["Admin"] },
   {
-    group: true,
-    label: "Access Control",
-    roles: ["SysAdmin"],
-    children: [
-      { label: "Staff", href: "/views/access/staff", roles: ["SysAdmin"] },
-      {
-        label: "Roles & Permissions",
-        href: "/views/access/rbac",
-        roles: ["SysAdmin"],
-      },
-    ],
+    label: "Daftar Ticket",
+    href: "/views/tickets/list",
+    roles: ["Admin"],
   },
-
   {
-    group: true,
-    label: "Audit",
+    label: "Review Ticket Quality",
+    href: "/views/audit/quality",
+    roles: ["Admin"],
+  },
+  {
+    label: "Pekerjaan Saya",
+    href: "/views/tickets/works",
+    roles: ["Teknisi"],
+  },
+  {
+    label: "Pustaka Solusi Ticket",
+    href: "/views/audit/repository",
     roles: ["Admin", "Teknisi"],
-    children: [
-      {
-        label: "Ticket Audit Quality",
-        href: "/views/audit/quality",
-        roles: ["Admin"],
-      },
-      {
-        label: "Repository",
-        href: "/views/audit/repository",
-        roles: ["Admin", "Teknisi"],
-      },
-    ],
-  },
-
-  {
-    group: true,
-    label: "Inventory",
-    roles: ["Teknisi", "Admin"],
-    children: [
-      {
-        label: "Stock Movements",
-        href: "/views/inventory/movements",
-        roles: ["Admin"],
-      },
-      {
-        label: "Inventory Items",
-        href: "/views/inventory/items",
-        roles: ["Teknisi", "Admin"],
-      },
-    ],
   },
   {
-    group: true,
-    label: "Tickets",
-    roles: ["Teknisi", "Admin"],
-    children: [
-      {
-        label: "Tickets List",
-        href: "/views/tickets/list",
-        roles: ["Admin"],
-      },
-      {
-        label: "Audit Log",
-        href: "/views/tickets/history",
-        roles: ["Admin"],
-      },
-      {
-        label: "My Work",
-        href: "/views/tickets/works",
-        roles: ["Teknisi"],
-      },
-    ],
-  },
-
-  {
-    group: true,
-    label: "Miscellaneous",
-    roles: ["Teknisi", "Admin"],
-    children: [
-      {
-        label: "RMA & Warranty",
-        href: "/views/misc/rma",
-        roles: ["Admin"],
-      },
-      {
-        label: "System Builder",
-        href: "/views/misc/system-builder",
-        roles: ["Teknisi"],
-      },
-    ],
-  },
-
-  {
-    group: true,
-    label: "Pengaturan",
-    roles: ["Teknisi", "Admin", "SysAdmin"],
-    children: [
-      {
-        label: "Profile",
-        href: "/views/settings/account",
-        roles: ["Teknisi", "Admin", "SysAdmin"],
-      },
-      {
-        label: "Dukungan Pengguna",
-        href: "/views/settings/support",
-        roles: ["Teknisi", "Admin", "SysAdmin"],
-      },
-    ],
+    label: "Log Aktivitas Ticket",
+    href: "/views/tickets/history",
+    roles: ["Admin", "Teknisi"],
   },
   {
     label: "Profile",
     href: "/views/settings/account",
-    roles: ["Teknisi", "Admin", "SysAdmin"],
+    roles: ["Teknisi", "Admin"],
   },
 ];
 

@@ -63,6 +63,10 @@
 |   `-- page.tsx
 |-- clientTree.txt
 |-- features
+|   |-- admin
+|   |   `-- ui
+|   |       |-- AdminDashboard.tsx
+|   |       `-- TicketStats.tsx
 |   |-- audit
 |   |   |-- api
 |   |   |   `-- audits.ts
@@ -224,4 +228,4 @@
 `-- theme
     `-- mantine.ts
 
-88 directories, 136 files
+90 directories, 138 files

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import LoginHistoryTable from "./LoginHistoryTable";
 import {
   Tabs,
   Paper,
@@ -11,18 +13,15 @@ import {
   TextInput,
   PasswordInput,
   Switch,
-  Select,
   Button,
   Divider,
   FileInput,
+  Table,
+  Badge,
 } from "@mantine/core";
 import apiClient from "@/lib/apiClient";
 import { notifications } from "@mantine/notifications";
-import type {
-  AccountProfile,
-  SecuritySettings,
-  NotificationSettings,
-} from "../model/types";
+import type { AccountProfile, SecuritySettings } from "../model/types";
 
 export default function AccountPage() {
   const [profile, setProfile] = useState<AccountProfile>({
@@ -36,14 +35,6 @@ export default function AccountPage() {
     twoFactorEnabled: false,
     recoveryEmail: "sysadmin.recovery@example.com",
   });
-
-  const [notif, setNotif] = useState<NotificationSettings>({
-    updates: true,
-    announcements: true,
-    alerts: true,
-    frequency: "immediate",
-  });
-
   const done = () => {
     console.log("Saved settings");
   };
@@ -103,18 +94,15 @@ export default function AccountPage() {
           <Title order={3} style={{ lineHeight: 1.2 }}>
             Pengaturan Akun
           </Title>
-          <Text c="dimmed">Kelola profil, keamanan, dan notifikasi.</Text>
+          <Text c="dimmed">Kelola profil dan keamanan.</Text>
         </div>
       </Group>
-
       <Paper withBorder radius="md" p="md">
         <Tabs defaultValue="info" keepMounted={false}>
           <Tabs.List>
             <Tabs.Tab value="info">Informasi Akun</Tabs.Tab>
             <Tabs.Tab value="security">Keamanan</Tabs.Tab>
-            <Tabs.Tab value="notifications">Notifikasi</Tabs.Tab>
           </Tabs.List>
-
           <Tabs.Panel value="info" pt="md">
             <Stack gap="md">
               <Group grow>
@@ -198,82 +186,8 @@ export default function AccountPage() {
                 <Button onClick={handleChangePassword}>Simpan password</Button>
               </Group>
               <Divider />
-              <Title order={5}>Two-Factor Authentication</Title>
-              <Switch
-                label="Aktifkan 2FA"
-                checked={security.twoFactorEnabled}
-                onChange={(e) =>
-                  setSecurity({
-                    ...security,
-                    twoFactorEnabled: e.currentTarget.checked,
-                  })
-                }
-              />
-              <TextInput
-                label="Email pemulihan"
-                value={security.recoveryEmail ?? ""}
-                onChange={(e) =>
-                  setSecurity({
-                    ...security,
-                    recoveryEmail: e.currentTarget.value,
-                  })
-                }
-              />
-
-              <Group justify="end">
-                <Button variant="default">Batalkan</Button>
-                <Button onClick={done}>Simpan</Button>
-              </Group>
-            </Stack>
-          </Tabs.Panel>
-
-          <Tabs.Panel value="notifications" pt="md">
-            <Stack gap="md">
-              <Title order={5}>Preferensi Notifikasi</Title>
-              <Stack gap="xs">
-                <Switch
-                  label="Kirim notifikasi pembaruan tiket/pekerjaan"
-                  checked={notif.updates}
-                  onChange={(e) =>
-                    setNotif({ ...notif, updates: e.currentTarget.checked })
-                  }
-                />
-                <Switch
-                  label="Kirim pengumuman sistem via email"
-                  checked={notif.announcements}
-                  onChange={(e) =>
-                    setNotif({
-                      ...notif,
-                      announcements: e.currentTarget.checked,
-                    })
-                  }
-                />
-                <Switch
-                  label="Kirim alert penting (misalnya SLA, stok kritis)"
-                  checked={notif.alerts}
-                  onChange={(e) =>
-                    setNotif({ ...notif, alerts: e.currentTarget.checked })
-                  }
-                />
-              </Stack>
-
-              <Select
-                label="Frekuensi rangkuman"
-                data={[
-                  { value: "immediate", label: "Langsung (real-time)" },
-                  { value: "daily", label: "Harian" },
-                  { value: "weekly", label: "Mingguan" },
-                ]}
-                value={notif.frequency}
-                onChange={(v) =>
-                  setNotif({ ...notif, frequency: (v as any) ?? "immediate" })
-                }
-              />
-
-              <Group justify="end">
-                <Button variant="default">Batalkan</Button>
-                <Button onClick={done}>Simpan</Button>
-              </Group>
+              <Title order={5}>Riwayat Login</Title>
+              <LoginHistoryTable />
             </Stack>
           </Tabs.Panel>
         </Tabs>

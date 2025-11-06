@@ -9,7 +9,7 @@ import { TextField, PasswordField } from "@/shared/ui";
 import { useAuth } from "../AuthContext";
 
 export function SignInForm() {
-  const { login, user, isLoading: isAuthLoading } = useAuth(); // Use the login function from context
+  const { login, user, isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,11 +22,8 @@ export function SignInForm() {
     setError(null);
 
     try {
-      // Call the login function from the context
       await login({ email, password });
-      // The context will handle the redirect on success
     } catch (err: any) {
-      // Extract the error message from the API response.
       const apiErrorMessage = err.response?.data?.message;
       setError(
         apiErrorMessage ||

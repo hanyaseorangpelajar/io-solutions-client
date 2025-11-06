@@ -16,7 +16,7 @@ function DefaultBrand() {
       <Title order={2} c="gray.1">
         I/O SOLUTIONS
       </Title>
-      <Text c="gray.4">System Information</Text>
+      <Text c="gray.4">GOLDEN SERVICE</Text>
     </Stack>
   );
 }
@@ -28,7 +28,6 @@ export default function AuthLayout({
 }: AuthLayoutProps) {
   return (
     <SimpleGrid cols={{ base: 1, md: 2 }} mih="100dvh">
-      {/* Brand panel (desktop only) */}
       <Stack
         justify="center"
         align="center"
@@ -42,7 +41,6 @@ export default function AuthLayout({
         {brandSlot ?? <DefaultBrand />}
       </Stack>
 
-      {/* Content panel */}
       <Stack justify="center" align="center" p="md">
         <Paper
           withBorder
