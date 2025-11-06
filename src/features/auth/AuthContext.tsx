@@ -12,6 +12,20 @@ import { useRouter } from "next/navigation";
 import apiClient from "@/lib/apiClient";
 import { User } from "./model/types";
 
+function setCookie(name: string, value: string, days: number) {
+  let expires = "";
+  if (days) {
+    const date = new Date();
+    date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+    expires = "; expires=" + date.toUTCString();
+  }
+  document.cookie = name + "=" + (value || "") + expires + "; path=/";
+}
+
+function deleteCookie(name: string) {
+  document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+}
+
 interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
@@ -38,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsAuthenticated(true);
       } catch (error) {
         localStorage.removeItem("authToken");
+        deleteCookie("authToken");
         setIsAuthenticated(false);
         setUser(null);
       }
@@ -71,14 +86,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (token) {
           localStorage.setItem("authToken", token);
+          setCookie("authToken", token, 1);
+
           setIsAuthenticated(true);
           setUser(user);
         }
       } catch (error: any) {
         console.error("Login failed:", error.response?.data || error.message);
+        localStorage.removeItem("authToken");
+        deleteCookie("authToken");
         setIsAuthenticated(false);
         setUser(null);
-        localStorage.removeItem("authToken");
         throw error;
       }
     },
@@ -91,9 +109,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Logout API call failed:", error);
     } finally {
+      localStorage.removeItem("authToken");
+      deleteCookie("authToken");
+
       setIsAuthenticated(false);
       setUser(null);
-      localStorage.removeItem("authToken");
       router.push("/sign-in");
     }
   }, [router]);
