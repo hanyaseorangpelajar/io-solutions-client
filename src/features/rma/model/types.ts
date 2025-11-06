@@ -1,5 +1,3 @@
-// File: features/rma/model/types.ts
-
 export type RmaStatus =
   | "new"
   | "received"
@@ -29,36 +27,31 @@ export type RmaActionType =
   | "reject"
   | "cancel";
 
-// [PERBAIKAN 1]
 export type RmaAction = {
-  id: string; // <-- Ganti dari '_id'
+  id: string;
   type: RmaActionType;
   note?: string;
-  // Ubah 'by' menjadi object User sederhana jika backend mengirimkannya
-  // Jika backend hanya kirim ID string, biarkan 'string'
   by: { id: string; name?: string; username?: string } | string;
-  at: string; // ISO datetime
+  at: string;
   payload?: Record<string, unknown>;
 };
 
-// [PERBAIKAN 2]
 export type RmaRecord = {
-  id: string; // <-- Ganti dari '_id'
+  id: string;
   code: string;
   title: string;
   customerName: string;
   contact?: string;
   productName: string;
   productSku?: string;
-  ticketId?: string; // ID tiket terkait
-  // Tambahkan detail tiket jika backend mengirimkannya setelah populate
+  ticketId?: string;
   ticket?: { id: string; code: string; subject?: string };
 
   warranty: WarrantyInfo;
 
   status: RmaStatus;
-  createdAt: string; // ISO
-  updatedAt: string; // ISO
+  createdAt: string;
+  updatedAt: string;
 
-  actions: RmaAction[]; // timeline
+  actions: RmaAction[];
 };

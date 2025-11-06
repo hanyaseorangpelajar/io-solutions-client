@@ -73,15 +73,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           localStorage.setItem("authToken", token);
           setIsAuthenticated(true);
           setUser(user);
-          const rolePath = (user.role || "user").toLowerCase();
-          router.push(`/${rolePath}`);
         }
       } catch (error: any) {
         console.error("Login failed:", error.response?.data || error.message);
+        setIsAuthenticated(false);
+        setUser(null);
+        localStorage.removeItem("authToken");
         throw error;
       }
     },
-    [router]
+    []
   );
 
   const logout = useCallback(async () => {

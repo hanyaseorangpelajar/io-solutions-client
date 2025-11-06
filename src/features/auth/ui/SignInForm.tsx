@@ -35,6 +35,13 @@ export function SignInForm() {
     }
   };
 
+  useEffect(() => {
+    if (user && !isAuthLoading) {
+      const rolePath = (user.role || "user").toLowerCase();
+      router.push(`/${rolePath}`);
+    }
+  }, [user, isAuthLoading, router]);
+
   return (
     <AuthLayout panelWidth={420}>
       <Stack gap="md">

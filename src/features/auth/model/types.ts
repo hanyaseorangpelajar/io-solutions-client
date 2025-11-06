@@ -9,12 +9,10 @@ export type SignUpInput = z.infer<typeof SignUpSchema>;
  * Representasi data pengguna yang disimpan di client-side.
  */
 export type User = {
-  _id: string;
+  id: string;
   username: string;
-  fullName: string;
+  nama: string;
   role: string;
-  email: string;
-  updatedAt?: string;
 };
 
 export type LoginResponse = {
