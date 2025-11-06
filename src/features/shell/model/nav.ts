@@ -18,37 +18,64 @@ export const MASTER_NAV: NavItem[] = [
   { label: "Dashboard", href: "/sysadmin", roles: ["SysAdmin"] },
   { label: "Dashboard", href: "/admin", roles: ["Admin"] },
   { label: "Dashboard", href: "/teknisi", roles: ["Teknisi"] },
-
-  { label: "Staff", href: "/views/access/staff", roles: ["Admin"] },
   {
-    label: "Daftar Ticket",
-    href: "/views/tickets/list",
+    group: true,
+    label: "Pusat Akun",
     roles: ["Admin"],
+    children: [
+      { label: "Daftar Staff", href: "/views/access/staff", roles: ["Admin"] },
+    ],
   },
   {
-    label: "Review Ticket Quality",
-    href: "/views/audit/quality",
-    roles: ["Admin"],
-  },
-  {
-    label: "Pekerjaan Saya",
-    href: "/views/tickets/works",
-    roles: ["Teknisi"],
-  },
-  {
-    label: "Pustaka Solusi Ticket",
-    href: "/views/audit/repository",
+    group: true,
+    label: "Pusat Tiket",
     roles: ["Admin", "Teknisi"],
+    children: [
+      {
+        label: "Daftar Tiket",
+        href: "/views/tickets/list",
+        roles: ["Admin"],
+      },
+      {
+        label: "Review Tiket",
+        href: "/views/tickets/review",
+        roles: ["Admin"],
+      },
+      {
+        label: "Pekerjaan Saya",
+        href: "/views/tickets/works",
+        roles: ["Teknisi"],
+      },
+      {
+        label: "Log Ticket",
+        href: "/views/tickets/history",
+        roles: ["Admin", "Teknisi"],
+      },
+    ],
   },
   {
-    label: "Log Aktivitas Ticket",
-    href: "/views/tickets/history",
+    group: true,
+    label: "Pusat Pustaka",
     roles: ["Admin", "Teknisi"],
+    children: [
+      {
+        label: "Pustaka Solusi Ticket",
+        href: "/views/audit/repository",
+        roles: ["Admin", "Teknisi"],
+      },
+    ],
   },
   {
-    label: "Profile",
-    href: "/views/settings/account",
-    roles: ["Teknisi", "Admin"],
+    group: true,
+    label: "Pengaturan Akun",
+    roles: ["Admin", "Teknisi"],
+    children: [
+      {
+        label: "Profile",
+        href: "/views/settings/account",
+        roles: ["Teknisi", "Admin"],
+      },
+    ],
   },
 ];
 

@@ -1,4 +1,9 @@
-import { createTheme, MantineColorsTuple, rem } from "@mantine/core";
+import {
+  createTheme,
+  type MantineColorScheme,
+  MantineColorsTuple,
+  rem,
+} from "@mantine/core";
 import type { MantineTheme } from "@mantine/core";
 
 /** Palet “monochrome flat” — netral, high contrast */
@@ -14,7 +19,7 @@ const mono: MantineColorsTuple = [
   "#303030",
   "#121212",
 ];
-
+export const DEFAULT_SCHEME: MantineColorScheme = "auto";
 const theme = createTheme({
   colors: { mono },
   primaryColor: "mono",

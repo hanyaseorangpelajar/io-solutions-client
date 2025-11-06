@@ -39,53 +39,59 @@ export default function LoginHistoryTable() {
   };
 
   return (
-    <Paper withBorder radius="md" p="sm">
-      <Table striped highlightOnHover withTableBorder withColumnBorders>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>Waktu</Table.Th>
-            <Table.Th>IP</Table.Th>
-            <Table.Th>Perangkat</Table.Th>
-            <Table.Th>Status</Table.Th>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {rows.map((e, idx) => (
-            <Table.Tr key={e.id ?? e._id ?? idx}>
-              <Table.Td>{fmt(e.createdAt ?? e.time ?? e.loggedAt)}</Table.Td>
-              <Table.Td>{e.ip ?? e.ipAddress ?? "-"}</Table.Td>
-              <Table.Td>{e.userAgent ?? e.device ?? "-"}</Table.Td>
-              <Table.Td>
-                <Badge>
-                  {e.success ?? e.ok ?? e.status === "success"
-                    ? "Sukses"
-                    : "Gagal"}
-                </Badge>
-              </Table.Td>
-            </Table.Tr>
-          ))}
-          {rows.length === 0 && !isLoading && (
+    <Paper withBorder radius="md">
+      <Table.ScrollContainer minWidth={600}>
+        <Table
+          horizontalSpacing="lg"
+          verticalSpacing="md"
+          striped="odd"
+          highlightOnHover
+          withTableBorder
+          withColumnBorders
+        >
+          <Table.Thead>
             <Table.Tr>
-              <Table.Td colSpan={4}>
-                <Text c="dimmed" ta="center">
-                  Belum ada riwayat login.
-                </Text>
-              </Table.Td>
+              <Table.Th>Waktu</Table.Th>
+              <Table.Th>IP</Table.Th>
+              <Table.Th>Perangkat</Table.Th>
+              <Table.Th>Status</Table.Th>
             </Table.Tr>
-          )}
-        </Table.Tbody>
-      </Table>
-
-      {isLoading && (
-        <Text c="dimmed" size="sm">
-          Memuat riwayat login…
-        </Text>
-      )}
-      {error && !isLoading && (
-        <Text c="red" size="sm">
-          Gagal memuat riwayat login.
-        </Text>
-      )}
+          </Table.Thead>
+          <Table.Tbody>
+            {rows.map((e, idx) => (
+              <Table.Tr key={e.id ?? e._id ?? idx}>
+                <Table.Td>{fmt(e.createdAt ?? e.time ?? e.loggedAt)}</Table.Td>
+                <Table.Td>{e.ip ?? e.ipAddress ?? "-"}</Table.Td>
+                <Table.Td>{e.userAgent ?? e.device ?? "-"}</Table.Td>
+                <Table.Td>
+                  {/* --- PERUBAHAN DI SINI --- */}
+                  <Badge
+                    color={
+                      e.success ?? e.ok ?? e.status === "success"
+                        ? "green"
+                        : "red"
+                    }
+                  >
+                    {e.success ?? e.ok ?? e.status === "success"
+                      ? "Sukses"
+                      : "Gagal"}
+                  </Badge>
+                  {/* --- AKHIR PERUBAHAN --- */}
+                </Table.Td>
+              </Table.Tr>
+            ))}
+            {rows.length === 0 && !isLoading && (
+              <Table.Tr>
+                <Table.Td colSpan={4}>
+                  <Text c="dimmed" ta="center">
+                    Belum ada riwayat login.
+                  </Text>
+                </Table.Td>
+              </Table.Tr>
+            )}
+          </Table.Tbody>
+        </Table>
+      </Table.ScrollContainer>
     </Paper>
   );
 }

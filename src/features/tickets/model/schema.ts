@@ -17,8 +17,10 @@ export const CustomCostSchema = z.object({
 export const CustomCostsArraySchema = z.array(CustomCostSchema).default([]);
 
 export const TicketResolutionSchema = z.object({
-  rootCause: z.string().min(1, "Akar masalah wajib"),
-  solution: z.string().min(1, "Solusi wajib"),
+  solution: z.string().min(10, {
+    message: "Solusi wajib diisi dan minimal 10 karakter.",
+  }),
+  notes: z.string().optional(),
   parts: PartsArraySchema,
   photos: PhotosArraySchema,
   tags: TagsArraySchema,

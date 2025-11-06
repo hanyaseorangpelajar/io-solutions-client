@@ -1,3 +1,5 @@
+// src/features/auth/AuthContext.tsx
+
 "use client";
 
 import {
@@ -18,6 +20,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (credentials: { email: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
+  refetchUser: () => Promise<void>; // <-- PERUBAHAN 1: Ditambahkan ke interface
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,27 +31,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  useEffect(() => {
-    const checkUser = async () => {
-      const token = localStorage.getItem("authToken");
-      if (token) {
-        try {
-          const response = await apiClient.get<{ user: User }>("/auth/me");
-
-          setUser(response.data.user);
-          setIsAuthenticated(true);
-        } catch (error) {
-          localStorage.removeItem("authToken");
-          setIsAuthenticated(false);
-          setUser(null);
-        }
+  // PERUBAHAN 2: 'checkUser' dipindah ke luar 'useEffect' dan dibungkus 'useCallback'
+  const checkUser = useCallback(async () => {
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      try {
+        const response = await apiClient.get<{ user: User }>("/auth/me");
+        setUser(response.data.user);
+        setIsAuthenticated(true);
+      } catch (error) {
+        localStorage.removeItem("authToken");
+        setIsAuthenticated(false);
+        setUser(null);
       }
-      setIsLoading(false);
-    };
-
-    checkUser();
+    }
+    setIsLoading(false);
   }, []);
 
+  useEffect(() => {
+    checkUser();
+  }, [checkUser]); // 'useEffect' sekarang hanya memanggil 'checkUser'
+
+  // PERUBAHAN 3: Fungsi 'refetchUser' yang baru ditambahkan DI SINI
+  const refetchUser = useCallback(async () => {
+    setIsLoading(true);
+    await checkUser();
+    setIsLoading(false);
+  }, [checkUser]);
+
+  // INI ADALAH FUNGSI LOGIN ASLI ANDA (TIDAK DIHAPUS)
   const login = useCallback(
     async (credentials: { email: string; password: string }) => {
       const apiCredentials = {
@@ -72,13 +83,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (error: any) {
         console.error("Login failed:", error.response?.data || error.message);
-
         throw error;
       }
     },
     [router]
   );
 
+  // INI ADALAH FUNGSI LOGOUT ASLI ANDA (TIDAK DIHAPUS)
   const logout = useCallback(async () => {
     try {
       await apiClient.post("/auth/logout");
@@ -94,7 +105,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ isAuthenticated, user, isLoading, login, logout }}
+      value={{
+        isAuthenticated,
+        user,
+        isLoading,
+        login,
+        logout,
+        refetchUser, // <-- PERUBAHAN 4: Ditambahkan ke 'value' provider
+      }}
     >
       {children}
     </AuthContext.Provider>

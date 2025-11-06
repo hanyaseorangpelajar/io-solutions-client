@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button, Group, Modal, Stack, Textarea, Title } from "@mantine/core";
+import { Button, Group, Modal, Stack, Textarea } from "@mantine/core";
 import { useForm } from "react-hook-form";
 import {
   TicketResolutionSchema,
@@ -30,24 +30,16 @@ export default function ResolveTicketModal({
     resolver: zodResolver(TicketResolutionSchema),
     mode: "onChange",
     defaultValues: {
-      rootCause: "",
       solution: "",
-      parts: [],
-      photos: [],
-      tags: [],
-      extraCosts: [],
+      notes: "",
     },
   });
 
   useEffect(() => {
     if (opened) {
       reset({
-        rootCause: ticket?.resolution?.rootCause ?? "",
         solution: ticket?.resolution?.solution ?? "",
-        parts: ticket?.resolution?.parts ?? [],
-        photos: ticket?.resolution?.photos ?? [],
-        tags: ticket?.resolution?.tags ?? [],
-        extraCosts: ticket?.resolution?.extraCosts ?? [],
+        notes: ticket?.resolution?.notes ?? "",
       });
     }
   }, [opened, reset, ticket]);
@@ -72,15 +64,6 @@ export default function ResolveTicketModal({
       >
         <Stack gap="md">
           <Textarea
-            label="Akar Masalah (Root Cause)"
-            placeholder="Jelaskan apa yang menjadi akar penyebab masalah..."
-            error={errors.rootCause?.message}
-            withAsterisk
-            minRows={4}
-            {...register("rootCause")}
-          />
-
-          <Textarea
             label="Solusi yang Diberikan"
             placeholder="Jelaskan langkah-langkah solusi yang telah dilakukan..."
             error={errors.solution?.message}
@@ -88,12 +71,21 @@ export default function ResolveTicketModal({
             minRows={4}
             {...register("solution")}
           />
+
+          <Textarea
+            label="Catatan Tambahan (Opsional)"
+            placeholder="Catatan internal atau informasi tambahan..."
+            error={errors.notes?.message}
+            minRows={3}
+            {...register("notes")}
+          />
+
           <Group justify="end" mt="md">
             <Button variant="default" onClick={onClose}>
               Batal
             </Button>
             <Button type="submit" loading={isSubmitting} disabled={!isValid}>
-              Simpan Resolusi
+              Selesaikan & Buat Knowledge Base
             </Button>
           </Group>
         </Stack>

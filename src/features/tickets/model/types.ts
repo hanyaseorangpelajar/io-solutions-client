@@ -1,59 +1,22 @@
-export type Priority = "low" | "medium" | "high" | "urgent";
-export type TicketPriority = Priority;
-
-export type Status = "open" | "in_progress" | "resolved" | "closed";
-export type TicketStatus = Status;
-
-export type CustomCost = {
-  label: string;
-  amount: number;
+type UserRef = {
+  _id: string;
+  fullName: string;
 };
 
-export type TicketResolution = {
-  rootCause: string;
-  solution: string;
-  parts?: PartUsage[];
-  photos?: string[];
-  tags?: string[];
-  extraCosts?: CustomCost[];
-  resolvedBy: string;
-  resolvedAt: string;
-};
+export type TicketPriority = "low" | "medium" | "high" | "urgent";
 
-export type Ticket = {
-  id: string;
-  code: string;
-  subject: string;
-  requester: string;
-  priority: TicketPriority;
-  status: TicketStatus;
-  assignee: string | null;
-  description: string;
-  resolution: TicketResolution | null;
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
-  diagnostics?: Diagnostic[];
-  actions?: Action[];
-};
+export type TicketStatus = "open" | "in_progress" | "resolved" | "closed";
 
-export const TICKET_PRIORITIES: Priority[] = [
-  "low",
-  "medium",
-  "high",
-  "urgent",
-];
-export const TICKET_STATUSES: Status[] = [
-  "open",
-  "in_progress",
-  "resolved",
-  "closed",
-];
-
-export type PartUsage = {
-  partId: string;
+export type TicketCustomer = {
   name: string;
-  qty: number;
+  phone?: string;
+};
+
+export type TicketDeviceInfo = {
+  type?: string;
+  brand?: string;
+  model?: string;
+  serialNumber?: string;
 };
 
 export type Diagnostic = {
@@ -64,6 +27,64 @@ export type Diagnostic = {
 
 export type Action = {
   actionTaken: string;
-  partsUsed: PartUsage[];
+  partsUsed: {
+    part: string;
+    quantity: number;
+  }[];
   timestamp: string;
+};
+
+export type TicketResolution = {
+  notes?: string;
+  solution: string;
+
+  resolvedBy: string | UserRef;
+  resolvedAt: string;
+
+  knowledgeEntry?: string;
+  knowledgeEntryId?: string;
+};
+
+export type Ticket = {
+  id: string;
+  code: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+
+  customer: TicketCustomer;
+  deviceInfo: TicketDeviceInfo;
+  initialComplaint: string;
+
+  diagnostics?: Diagnostic[];
+  actions?: Action[];
+
+  assignedTo: string | UserRef | null;
+  assignedToId?: string;
+
+  createdBy: string | UserRef;
+  createdById?: string;
+
+  resolution: TicketResolution | null;
+
+  createdAt: string;
+  updatedAt: string;
+};
+
+export const TICKET_PRIORITIES: TicketPriority[] = [
+  "low",
+  "medium",
+  "high",
+  "urgent",
+];
+export const TICKET_STATUSES: TicketStatus[] = [
+  "open",
+  "in_progress",
+  "resolved",
+  "closed",
+];
+
+export type PartUsage = {
+  partId: string;
+  name: string;
+  qty: number;
 };

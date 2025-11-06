@@ -1,7 +1,10 @@
+// src/features/settings/account/ui/AccountPage.tsx
+
 "use client";
 
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { useAuth } from "@/features/auth/AuthContext"; // Pastikan path ini benar
 import LoginHistoryTable from "./LoginHistoryTable";
 import {
   Tabs,
@@ -9,158 +12,200 @@ import {
   Stack,
   Group,
   Title,
-  Text,
   TextInput,
   PasswordInput,
-  Switch,
   Button,
   Divider,
-  FileInput,
-  Table,
-  Badge,
+  LoadingOverlay,
+  Text,
 } from "@mantine/core";
 import apiClient from "@/lib/apiClient";
 import { notifications } from "@mantine/notifications";
-import type { AccountProfile, SecuritySettings } from "../model/types";
+
+// Tipe untuk data form profil
+type ProfileFormData = {
+  fullName: string;
+  email: string;
+};
+
+// Helper untuk format tanggal
+const formatTanggal = (dateString?: string) => {
+  if (!dateString) return "-";
+  return new Date(dateString).toLocaleString("id-ID", {
+    dateStyle: "long",
+    timeStyle: "short",
+  });
+};
 
 export default function AccountPage() {
-  const [profile, setProfile] = useState<AccountProfile>({
-    name: "Sysadmin",
-    email: "sysadmin@example.com",
-    phone: "0812-0000-0000",
-    department: "IT Operations",
+  const queryClient = useQueryClient();
+
+  // --- PERBAIKAN DI SINI ---
+  // 'refetch' diganti namanya menjadi 'refetchUser' agar sesuai dengan context
+  const { user, refetchUser } = useAuth(); // Ambil data user dari context
+  // --- AKHIR PERBAIKAN ---
+
+  // State untuk form profil
+  const [profile, setProfile] = useState<ProfileFormData>({
+    fullName: "",
+    email: "",
   });
 
-  const [security, setSecurity] = useState<SecuritySettings>({
-    twoFactorEnabled: false,
-    recoveryEmail: "sysadmin.recovery@example.com",
-  });
-  const done = () => {
-    console.log("Saved settings");
-  };
+  // State untuk form ganti password
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const handleChangePassword = async () => {
-    if (newPassword !== confirmPassword) {
-      notifications.show({
-        title: "Gagal",
-        message: "Konfirmasi password baru tidak cocok.",
-        color: "red",
+  // Isi form dengan data user ketika data user sudah tersedia
+  useEffect(() => {
+    if (user) {
+      setProfile({
+        fullName: user.fullName || "",
+        email: user.email || "", // Sekarang 'email' ada di tipe User
       });
-      return;
     }
-    if (!currentPassword || !newPassword) {
-      notifications.show({
-        title: "Gagal",
-        message: "Semua field password wajib diisi.",
-        color: "red",
-      });
-      return;
-    }
+  }, [user]);
 
-    try {
-      await apiClient.patch("/users/me/password", {
-        currentPassword,
-        newPassword,
-      });
-
+  // Mutasi untuk update profil (Nama & Email)
+  const { mutate: updateProfile, isPending: isUpdatingProfile } = useMutation({
+    mutationFn: async (data: ProfileFormData) => {
+      const response = await apiClient.patch("/users/me", data);
+      return response.data;
+    },
+    onSuccess: () => {
       notifications.show({
-        title: "Sukses",
-        message: "Password berhasil diperbarui.",
+        title: "Berhasil",
+        message: "Informasi akun berhasil diperbarui.",
         color: "green",
       });
-
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-    } catch (error: any) {
-      const message =
-        error.response?.data?.message ||
-        "Password lama salah atau terjadi error";
+      // Ambil ulang data user di context agar ter-update
+      if (refetchUser) refetchUser(); // Panggil 'refetchUser'
+    },
+    onError: (error: any) => {
       notifications.show({
         title: "Gagal",
-        message: message,
+        message:
+          error?.response?.data?.message || "Gagal memperbarui informasi.",
         color: "red",
       });
+    },
+  });
+
+  // Mutasi untuk ganti password
+  const { mutate: changePassword, isPending: isChangingPassword } = useMutation(
+    {
+      mutationFn: async () => {
+        if (newPassword !== confirmPassword) {
+          throw new Error("Konfirmasi password baru tidak cocok.");
+        }
+        if (!currentPassword || !newPassword) {
+          throw new Error("Semua field password wajib diisi.");
+        }
+
+        await apiClient.patch("/users/me/password", {
+          currentPassword,
+          newPassword,
+        });
+      },
+      onSuccess: () => {
+        notifications.show({
+          title: "Berhasil",
+          message: "Password berhasil diubah.",
+          color: "green",
+        });
+        // Kosongkan field password
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      },
+      onError: (error: any) => {
+        notifications.show({
+          title: "Gagal",
+          message:
+            error?.response?.data?.message ||
+            error.message ||
+            "Gagal mengubah password.",
+          color: "red",
+        });
+      },
     }
+  );
+
+  const handleProfileSave = () => {
+    updateProfile(profile);
   };
+
+  const handlePasswordSave = () => {
+    changePassword();
+  };
+
+  if (!user) {
+    return <LoadingOverlay visible />;
+  }
 
   return (
     <Stack gap="md">
-      <Group justify="space-between" align="center">
-        <div>
-          <Title order={3} style={{ lineHeight: 1.2 }}>
-            Pengaturan Akun
-          </Title>
-          <Text c="dimmed">Kelola profil dan keamanan.</Text>
-        </div>
-      </Group>
-      <Paper withBorder radius="md" p="md">
-        <Tabs defaultValue="info" keepMounted={false}>
+      <Title order={3}>Pengaturan Akun</Title>
+      <Paper withBorder p="lg" radius="md">
+        <Tabs defaultValue="profile">
           <Tabs.List>
-            <Tabs.Tab value="info">Informasi Akun</Tabs.Tab>
-            <Tabs.Tab value="security">Keamanan</Tabs.Tab>
+            <Tabs.Tab value="profile">Informasi Akun</Tabs.Tab>
+            <Tabs.Tab value="security">Keamanan & Riwayat</Tabs.Tab>
           </Tabs.List>
-          <Tabs.Panel value="info" pt="md">
-            <Stack gap="md">
+
+          <Tabs.Panel value="profile" pt="md">
+            <Stack gap="md" pos="relative">
+              <LoadingOverlay visible={isUpdatingProfile} />
+              <Title order={5}>Profil Anda</Title>
               <Group grow>
                 <TextInput
-                  label="Nama"
-                  value={profile.name}
-                  onChange={(e) =>
-                    setProfile({ ...profile, name: e.currentTarget.value })
-                  }
+                  label="Nama Lengkap"
                   withAsterisk
+                  value={profile.fullName}
+                  onChange={(e) =>
+                    setProfile((p) => ({
+                      ...p,
+                      fullName: e.currentTarget.value,
+                    }))
+                  }
                 />
                 <TextInput
-                  label="Email"
-                  value={profile.email}
-                  onChange={(e) =>
-                    setProfile({ ...profile, email: e.currentTarget.value })
-                  }
+                  label="Alamat Email"
                   withAsterisk
+                  value={profile.email} // Sekarang 'email' valid
+                  onChange={(e) =>
+                    setProfile((p) => ({ ...p, email: e.currentTarget.value }))
+                  }
                 />
               </Group>
 
               <Group grow>
                 <TextInput
-                  label="Telepon"
-                  value={profile.phone ?? ""}
-                  onChange={(e) =>
-                    setProfile({ ...profile, phone: e.currentTarget.value })
-                  }
+                  label="Role"
+                  value={user.role}
+                  readOnly
+                  disabled
+                  description="Role tidak dapat diubah."
                 />
                 <TextInput
-                  label="Departemen"
-                  value={profile.department ?? ""}
-                  onChange={(e) =>
-                    setProfile({
-                      ...profile,
-                      department: e.currentTarget.value,
-                    })
-                  }
-                />
-              </Group>
-
-              <Group grow>
-                <FileInput
-                  label="Foto profil"
-                  placeholder="Pilih file..."
-                  accept="image/*"
+                  label="Terakhir Diperbarui"
+                  value={formatTanggal(user.updatedAt)} // Sekarang 'updatedAt' valid
+                  readOnly
+                  disabled
                 />
               </Group>
 
               <Group justify="end">
-                <Button variant="default">Batalkan</Button>
-                <Button onClick={done}>Simpan</Button>
+                <Button onClick={handleProfileSave} loading={isUpdatingProfile}>
+                  Simpan Perubahan
+                </Button>
               </Group>
             </Stack>
           </Tabs.Panel>
 
           <Tabs.Panel value="security" pt="md">
-            <Stack gap="md">
+            <Stack gap="md" pos="relative">
+              <LoadingOverlay visible={isChangingPassword} />
               <Title order={5}>Ubah Password</Title>
               <Group grow>
                 <PasswordInput
@@ -183,7 +228,12 @@ export default function AccountPage() {
                 />
               </Group>
               <Group justify="end" mb="sm">
-                <Button onClick={handleChangePassword}>Simpan password</Button>
+                <Button
+                  onClick={handlePasswordSave}
+                  loading={isChangingPassword}
+                >
+                  Simpan Password
+                </Button>
               </Group>
               <Divider />
               <Title order={5}>Riwayat Login</Title>
