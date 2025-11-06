@@ -1,5 +1,3 @@
-// src/features/auth/AuthContext.tsx
-
 "use client";
 
 import {
@@ -20,7 +18,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (credentials: { email: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
-  refetchUser: () => Promise<void>; // <-- PERUBAHAN 1: Ditambahkan ke interface
+  refetchUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,7 +29,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // PERUBAHAN 2: 'checkUser' dipindah ke luar 'useEffect' dan dibungkus 'useCallback'
   const checkUser = useCallback(async () => {
     const token = localStorage.getItem("authToken");
     if (token) {
@@ -50,20 +47,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     checkUser();
-  }, [checkUser]); // 'useEffect' sekarang hanya memanggil 'checkUser'
+  }, [checkUser]);
 
-  // PERUBAHAN 3: Fungsi 'refetchUser' yang baru ditambahkan DI SINI
   const refetchUser = useCallback(async () => {
     setIsLoading(true);
     await checkUser();
     setIsLoading(false);
   }, [checkUser]);
 
-  // INI ADALAH FUNGSI LOGIN ASLI ANDA (TIDAK DIHAPUS)
   const login = useCallback(
     async (credentials: { email: string; password: string }) => {
       const apiCredentials = {
-        identifier: credentials.email,
+        username: credentials.email,
         password: credentials.password,
       };
 
@@ -89,7 +84,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [router]
   );
 
-  // INI ADALAH FUNGSI LOGOUT ASLI ANDA (TIDAK DIHAPUS)
   const logout = useCallback(async () => {
     try {
       await apiClient.post("/auth/logout");
@@ -111,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         login,
         logout,
-        refetchUser, // <-- PERUBAHAN 4: Ditambahkan ke 'value' provider
+        refetchUser,
       }}
     >
       {children}
