@@ -10,11 +10,11 @@ import TicketPriorityBadge from "./TicketPriorityBadge";
 import TicketStatusBadge from "./TicketStatusBadge";
 import ResolveTicketModal from "./ResolveTicketModal";
 import type { Ticket } from "../model/types";
-import type { TicketResolutionInput } from "../model/schema";
+import type { TicketCompleteInput } from "../model/schema";
 import { formatDateTime } from "../utils/format";
 import { ActionsDropdown } from "@/shared/ui/menus";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { listTickets, resolveTicket } from "../api/tickets";
+import { listTickets, completeTicketAndCreateKB } from "../api/tickets";
 import { notifications } from "@mantine/notifications";
 
 export default function TicketsMyWorkPage() {
@@ -34,26 +34,26 @@ export default function TicketsMyWorkPage() {
       const res = await listTickets({
         q: q || undefined,
         assignee: currentTechId,
-        // [PERBAIKAN 2] Pastikan filter 'status' sudah dihapus dari sini
         limit: 100,
       });
       return res.data;
     },
-    // [PERBAIKAN 3] Filter 'select' ini sudah benar, biarkan saja
     select: (data) =>
-      data.filter((t) => t.status === "open" || t.status === "in_progress"),
+      data.filter(
+        (t) => t.status === "Diagnosis" || t.status === "DalamProses"
+      ),
 
-    // Sekarang `currentTechId` akan berisi ID, dan `enabled` akan menjadi `true`
     enabled: !!currentTechId,
   });
 
-  const resolveMutation = useMutation({
-    mutationFn: (vars: { id: string; payload: TicketResolutionInput }) =>
-      resolveTicket(vars.id, vars.payload),
-    onSuccess: (updatedTicket) => {
+  const completeMutation = useMutation({
+    mutationFn: (vars: { id: string; payload: TicketCompleteInput }) =>
+      completeTicketAndCreateKB(vars.id, vars.payload),
+    onSuccess: (result) => {
+      const updatedTicket = result.ticket;
       notifications.show({
-        title: "Ticket Resolved",
-        message: `Tiket #${updatedTicket.code} telah diselesaikan.`,
+        title: "Ticket Selesai",
+        message: `Tiket #${updatedTicket.nomorTiket} telah diselesaikan.`,
       });
       setResolveFor(null);
       queryClient.invalidateQueries({
@@ -66,16 +66,25 @@ export default function TicketsMyWorkPage() {
     onError: (e: any) => {
       notifications.show({
         color: "red",
-        title: "Gagal Resolve",
+        title: "Gagal Menyelesaikan",
         message: e.message,
       });
     },
   });
 
   const columns: Column<Ticket>[] = [
-    { key: "code", header: "Kode", width: 160, cell: (r) => r.code },
-    { key: "subject", header: "Subjek", width: "30%", cell: (r) => r.subject },
-    { key: "requester", header: "Pemohon", cell: (r) => r.requester },
+    { key: "code", header: "Kode", width: 160, cell: (r) => r.nomorTiket },
+    {
+      key: "subject",
+      header: "Keluhan",
+      width: "30%",
+      cell: (r) => r.keluhanAwal,
+    },
+    {
+      key: "requester",
+      header: "Pemohon",
+      cell: (r) => r.customerId?.nama ?? "-",
+    },
     {
       key: "priority",
       header: "Prioritas",
@@ -92,7 +101,7 @@ export default function TicketsMyWorkPage() {
       key: "updatedAt",
       header: "Diperbarui",
       width: 180,
-      cell: (r) => formatDateTime(r.updatedAt),
+      cell: (r) => formatDateTime(r.diperbaruiPada),
     },
     {
       key: "actions",
@@ -111,7 +120,7 @@ export default function TicketsMyWorkPage() {
               label: "Tandai selesai",
               icon: <IconCircleCheck size={16} />,
               onClick: () => setResolveFor(r),
-              disabled: resolveMutation.isPending,
+              disabled: completeMutation.isPending,
             },
           ]}
         />
@@ -125,7 +134,7 @@ export default function TicketsMyWorkPage() {
         <Title order={3}>My Work</Title>
         <TextField
           label="Cari"
-          placeholder="Kode / Subjek / Pemohon"
+          placeholder="Kode / Keluhan / Pemohon"
           value={q}
           onChange={(e) => setQ(e.currentTarget.value)}
           style={{ minWidth: 260 }}
@@ -133,7 +142,7 @@ export default function TicketsMyWorkPage() {
       </Group>
 
       <div style={{ position: "relative" }}>
-        <LoadingOverlay visible={isLoading || resolveMutation.isPending} />
+        <LoadingOverlay visible={isLoading || completeMutation.isPending} />
         <SimpleTable<Ticket>
           dense="sm"
           zebra
@@ -151,7 +160,7 @@ export default function TicketsMyWorkPage() {
         ticket={resolveFor}
         onSubmit={async (payload) => {
           if (!resolveFor) return;
-          await resolveMutation.mutateAsync({ id: resolveFor.id, payload });
+          await completeMutation.mutateAsync({ id: resolveFor.id, payload });
         }}
       />
     </Stack>

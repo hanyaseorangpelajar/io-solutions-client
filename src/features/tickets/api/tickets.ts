@@ -1,5 +1,5 @@
 import apiClient from "@/lib/apiClient";
-import type { Ticket } from "../model/types";
+import type { Ticket, TicketStatus } from "../model/types";
 import type {
   TicketFormInput,
   TicketResolutionInput,
@@ -34,6 +34,8 @@ export async function listTickets(
   if (p.assignee === "unassigned") {
     p.assignee = "";
   }
+  if (p.status === "open") p.status = "Diagnosis";
+  if (p.status === "in_progress") p.status = "DalamProses";
 
   const response = await apiClient.get<ServerPaginatedResponse<Ticket>>(
     `/tickets${qs(p)}`
@@ -77,43 +79,42 @@ export async function assignTicket(
 
 export async function updateTicketStatus(
   id: string,
-  status: string
+  status: TicketStatus,
+  catatan?: string
 ): Promise<Ticket> {
   const response = await apiClient.patch<Ticket>(
     `/tickets/${encodeURIComponent(id)}/status`,
-    { status }
+    { status, catatan }
   );
   return response.data;
 }
 
-export async function resolveTicket(
+export type AddItemInput = {
+  namaKomponen: string;
+  qty: number;
+  keterangan?: string;
+};
+export async function addReplacementItem(
   id: string,
-  payload: TicketResolutionInput
+  payload: AddItemInput
 ): Promise<Ticket> {
-  const response = await apiClient.put<Ticket>(
-    `/tickets/${encodeURIComponent(id)}/resolve`,
+  const response = await apiClient.post<Ticket>(
+    `/tickets/${encodeURIComponent(id)}/items`,
     payload
   );
   return response.data;
 }
 
-export async function addDiagnosis(
+export type CompleteTicketInput = {
+  diagnosis: string;
+  solusi: string;
+};
+export async function completeTicketAndCreateKB(
   id: string,
-  payload: { symptom: string; diagnosis: string }
-): Promise<Ticket> {
-  const response = await apiClient.put<Ticket>(
-    `/tickets/${encodeURIComponent(id)}/diagnose`,
-    payload
-  );
-  return response.data;
-}
-
-export async function addAction(
-  id: string,
-  payload: { actionTaken: string; partsUsed: PartUsageInput[] }
-): Promise<Ticket> {
-  const response = await apiClient.put<Ticket>(
-    `/tickets/${encodeURIComponent(id)}/action`,
+  payload: CompleteTicketInput
+): Promise<{ ticket: Ticket; kbEntry: any }> {
+  const response = await apiClient.post<{ ticket: Ticket; kbEntry: any }>(
+    `/tickets/${encodeURIComponent(id)}/complete`,
     payload
   );
   return response.data;

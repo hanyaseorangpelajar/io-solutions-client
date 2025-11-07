@@ -19,8 +19,13 @@ import { useDebouncedValue } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { listAudits } from "../api/audits";
-import type { AuditLogItem, AuditRecord } from "../model/types";
+
+// --- PERUBAHAN 1: Impor API dan Tipe baru ---
+import { listKBSolutions, type KBEntryBackend } from "../api/audits";
+// Hapus tipe AuditLogItem
+// import type { AuditLogItem, AuditRecord } from "../model/types";
+// --- AKHIR PERUBAHAN 1 ---
+
 import RepositoryCard, { type RepositoryCardData } from "./RepositoryCard";
 
 function inferDeviceFromTags(tags: string[]): string | undefined {
@@ -42,24 +47,19 @@ export default function AuditRepositoryPage() {
   const PAGE_SIZE = 9;
   const [page, setPage] = useState(1);
 
-  // [PERBAIKAN PADA 'useQuery']
+  // --- PERUBAHAN 2: Ganti useQuery ---
   const {
-    data: auditData,
+    data: kbData, // Ganti nama data
     isLoading,
     error,
-  } = useQuery<Paginated<AuditLogItem>>({
-    // 1. QueryKey disederhanakan: kita hanya mengambil 'approved' audits
-    queryKey: ["audits", "list", { status: "approved" }],
-    queryFn: () =>
-      listAudits({
-        // 2. Minta status 'approved', karena inilah yang menjadi SOP
-        status: "approved",
-        // 3. Hapus 'q' dan 'tag'. Kita filter itu di client-side.
-        // 4. Set limit tinggi agar kita mendapatkan SEMUA SOP untuk difilter di client
-        limit: 500,
-      }),
-    // 5. Query ini tidak perlu dijalankan ulang saat filter client berubah
+  } = useQuery<Paginated<KBEntryBackend>>({
+    // Ganti queryKey
+    queryKey: ["kb-entry", "list"],
+    // Ganti queryFn
+    queryFn: () => listKBSolutions({}),
+    // Hapus 'limit: 500' karena API backend akan mengembalikan semua
   });
+  // --- AKHIR PERUBAHAN 2 ---
 
   useEffect(() => {
     if (error) {
@@ -71,29 +71,31 @@ export default function AuditRepositoryPage() {
     }
   }, [error]);
 
-  const publishedAudits: AuditLogItem[] = auditData?.data ?? [];
+  const allEntries: KBEntryBackend[] = kbData?.data ?? [];
 
-  // 'cards' sekarang berisi SEMUA SOP yang 'approved'
+  // --- PERUBAHAN 3: Perbarui logika 'useMemo' (mapping data) ---
   const cards = useMemo<RepositoryCardData[]>(() => {
-    return publishedAudits
-      .map((a: AuditLogItem) => {
-        const allTags = a.tags ?? [];
+    return allEntries
+      .map((kb: KBEntryBackend) => {
+        // 'tags' dari backend adalah objek, ubah jadi string
+        const allTags = (kb.tags ?? []).map((t) => t.nama);
+
         return {
-          code: a.ticketCode,
-          ticketId: a.ticketId,
-          // [PERBAIKAN KECIL] Gunakan 'notes' dari audit sebagai rootCause
-          subject: a.description ?? `Audit for ${a.ticketCode}`,
-          deviceType: inferDeviceFromTags(allTags),
-          resolvedAt: formatDateTime(a.at),
+          code: kb.sourceTicketId?.nomorTiket ?? "N/A",
+          ticketId: kb.sourceTicketId?._id ?? kb.id, // Fallback ke ID KB jika tiket tidak ada
+          subject: kb.gejala, // 'gejala' sebagai 'subject'
+          deviceType: inferDeviceFromTags(allTags), // Tetap gunakan infer
+          resolvedAt: formatDateTime(kb.dibuatPada), // Gunakan tanggal KB
           tags: allTags,
-          rootCause: a.description ?? "N/A", // Gunakan 'notes' (description)
-          solution: "Lihat detail tiket",
+          rootCause: kb.diagnosis, // 'diagnosis' sebagai 'rootCause'
+          solution: kb.solusi, // 'solusi' sebagai 'solution'
         };
       })
-      .reverse(); // .reverse() mungkin tidak diperlukan jika sort backend sudah benar
-  }, [publishedAudits]);
+      .reverse();
+  }, [allEntries]);
+  // --- AKHIR PERUBAHAN 3 ---
 
-  // Opsi filter ini sekarang dibuat dari daftar 'cards' yang lengkap
+  // Opsi filter (tetap sama, mengandalkan data 'cards' yang sudah di-map)
   const deviceOptions = useMemo(() => {
     const devices = new Set(
       cards.map((c) => c.deviceType).filter((d): d is string => !!d)
@@ -115,7 +117,7 @@ export default function AuditRepositoryPage() {
     ];
   }, [cards]);
 
-  // Logika filter client-side ini SEKARANG AKAN BERFUNGSI DENGAN BENAR
+  // Logika filter (tetap sama)
   const filtered = useMemo(() => {
     const byDevice = (c: RepositoryCardData) =>
       device === "all" || c.deviceType === device;
@@ -130,9 +132,6 @@ export default function AuditRepositoryPage() {
     };
     return cards.filter((c) => byDevice(c) && byTag(c) && byQuery(c));
   }, [cards, device, tag, qDebounced]);
-
-  // 'useMemo' kosong ini sepertinya tidak melakukan apa-apa, bisa dihapus
-  // useMemo(() => {}, [device, tag, qDebounced]);
 
   const visible = filtered.slice(0, page * PAGE_SIZE);
   const canLoadMore = visible.length < filtered.length;
@@ -157,7 +156,7 @@ export default function AuditRepositoryPage() {
       <Group gap="sm" align="end" wrap="wrap">
         <TextField
           label="Cari SOP"
-          placeholder="Kata kunci..."
+          placeholder="Gejala, Diagnosis, Solusi..." // Perbarui placeholder
           value={q}
           onChange={(e) => setQ(e.currentTarget.value)}
           style={{ flexGrow: 1, minWidth: 250 }}

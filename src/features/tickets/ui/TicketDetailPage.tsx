@@ -17,21 +17,41 @@ import {
   Button,
   Timeline,
   ThemeIcon,
+  Alert,
+  LoadingOverlay,
 } from "@mantine/core";
-import { IconX, IconNotes, IconTool, IconFileText } from "@tabler/icons-react";
+import {
+  IconX,
+  IconNotes,
+  IconFileText,
+  IconHistory,
+  IconTool,
+  IconPlus,
+} from "@tabler/icons-react";
 import { useParams, useRouter } from "next/navigation";
-import type { Ticket, Diagnostic, Action, PartUsage } from "../model/types";
+import type {
+  Ticket,
+  ReplacementItem,
+  StatusHistory,
+  TicketStatus,
+} from "../model/types";
 import TicketPriorityBadge from "./TicketPriorityBadge";
 import TicketStatusBadge from "./TicketStatusBadge";
 import { formatDateTime } from "../utils/format";
-import { getTicket, addDiagnosis, addAction } from "../api/tickets";
+import {
+  getTicket,
+  updateTicketStatus,
+  addReplacementItem,
+} from "../api/tickets";
+import type { UpdateStatusInput, AddItemInput } from "../model/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { notifications } from "@mantine/notifications";
 
-import AddDiagnosisModal from "./AddDiagnosisModal";
-import AddActionModal from "./AddActionModal";
+import UpdateStatusModal from "./UpdateStatusModal";
+import AddItemModal from "./AddItemModal";
 
-import { listParts, type Part } from "@/features/inventory/api/parts";
+// Hapus impor inventory
+// import { listParts, type Part } from "@/features/inventory/api/parts";
 import { getStaffList } from "@/features/staff/api/staff";
 import type { Staff } from "@/features/staff/model/types";
 
@@ -42,18 +62,33 @@ export default function TicketDetailPage() {
   const id = String(params?.id ?? "");
 
   const [ticket, setTicket] = useState<Ticket | null>(null);
-  const [inventoryParts, setInventoryParts] = useState<Part[]>([]);
+  // Hapus state inventory
+  // const [inventoryParts, setInventoryParts] = useState<Part[]>([]);
   const [users, setUsers] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [diagModalOpen, setDiagModalOpen] = useState(false);
-  const [actionModalOpen, setActionModalOpen] = useState(false);
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [itemModalOpen, setItemModalOpen] = useState(false);
 
   const closeDetail = () => {
     if (typeof window !== "undefined" && window.history.length > 1) {
       router.back();
     } else {
-      router.push("/views/tickets");
+      router.push("/views/tickets/list");
+    }
+  };
+
+  const reloadTicket = async () => {
+    try {
+      const ticketData = await getTicket(id);
+      setTicket(ticketData);
+      queryClient.setQueryData(["tickets", id, "detailForNote"], ticketData);
+    } catch (e: any) {
+      notifications.show({
+        color: "red",
+        title: "Gagal memuat ulang data",
+        message: e.message,
+      });
     }
   };
 
@@ -62,15 +97,15 @@ export default function TicketDetailPage() {
     (async () => {
       setLoading(true);
       try {
-        const [ticketData, partsData, usersData] = await Promise.all([
+        // Hapus 'listParts' dari Promise.all
+        const [ticketData, usersData] = await Promise.all([
           getTicket(id),
-          listParts(),
           getStaffList(),
         ]);
 
         if (active) {
           setTicket(ticketData);
-          setInventoryParts(partsData);
+          // setInventoryParts(partsData); // Hapus
           setUsers(usersData);
         }
       } catch (e: any) {
@@ -89,54 +124,48 @@ export default function TicketDetailPage() {
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [id, queryClient]);
 
   const userNameMap = useMemo(
-    () => new Map(users.map((u) => [u.id, u.name])),
+    () => new Map(users.map((u) => [u.id, u.nama])),
     [users]
   );
 
-  const diagnosisMutation = useMutation({
-    mutationFn: (vars: {
-      id: string;
-      payload: { symptom: string; diagnosis: string };
-    }) => addDiagnosis(vars.id, vars.payload),
-    onSuccess: (updatedTicket) => {
-      setTicket(updatedTicket);
-      queryClient.invalidateQueries({ queryKey: ["tickets", id] });
+  const statusMutation = useMutation({
+    mutationFn: (data: UpdateStatusInput) =>
+      updateTicketStatus(id, data.status, data.catatan),
+    onSuccess: () => {
       notifications.show({
         color: "green",
-        title: "Diagnosis disimpan",
+        title: "Status Diperbarui",
         message: "Timeline telah diperbarui.",
       });
+      reloadTicket();
+      queryClient.invalidateQueries({ queryKey: ["tickets", "list"] });
     },
     onError: (e: any) => {
       notifications.show({
         color: "red",
-        title: "Gagal menyimpan",
+        title: "Gagal Menyimpan",
         message: e.message,
       });
     },
   });
 
-  const actionMutation = useMutation({
-    mutationFn: (vars: {
-      id: string;
-      payload: { actionTaken: string; partsUsed: PartUsage[] };
-    }) => addAction(vars.id, vars.payload),
-    onSuccess: (updatedTicket) => {
-      setTicket(updatedTicket);
-      queryClient.invalidateQueries({ queryKey: ["tickets", id] });
+  const itemMutation = useMutation({
+    mutationFn: (data: AddItemInput) => addReplacementItem(id, data),
+    onSuccess: () => {
       notifications.show({
         color: "green",
-        title: "Tindakan disimpan",
-        message: "Timeline telah diperbarui.",
+        title: "Item Ditambahkan",
+        message: "Daftar item pengganti telah diperbarui.",
       });
+      reloadTicket();
     },
     onError: (e: any) => {
       notifications.show({
         color: "red",
-        title: "Gagal menyimpan",
+        title: "Gagal Menyimpan",
         message: e.message,
       });
     },
@@ -144,38 +173,37 @@ export default function TicketDetailPage() {
 
   const timelineEvents = useMemo(() => {
     if (!ticket) return [];
-
-    const diags = (ticket.diagnostics || []).map((d: Diagnostic) => ({
-      ...d,
-      type: "diagnosis" as const,
-      timestamp: d.timestamp || ticket.createdAt,
+    const history = (ticket.statusHistory || []).map((h: StatusHistory) => ({
+      type: "status" as const,
+      timestamp: h.waktu,
+      status: h.statusBaru,
+      note: h.catatan,
     }));
-    const acts = (ticket.actions || []).map((a: Action) => ({
-      ...a,
-      type: "action" as const,
-      timestamp: a.timestamp || ticket.createdAt,
-    }));
-
-    return [...diags, ...acts].sort(
+    return history.sort(
       (a, b) =>
         new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
   }, [ticket]);
 
-  const hasResolution = !!ticket?.resolution;
+  const hasResolution = useMemo(
+    () => ticket?.status === "Selesai" || ticket?.status === "Dibatalkan",
+    [ticket?.status]
+  );
 
   const partLines = useMemo(
     () =>
-      ticket?.resolution?.parts?.map((p: PartUsage) => ({
-        name: p.name,
+      ticket?.replacementItems?.map((p: ReplacementItem) => ({
+        name: p.namaKomponen,
         qty: p.qty,
+        keterangan: p.keterangan,
       })) ?? [],
-    [ticket?.resolution]
+    [ticket?.replacementItems]
   );
 
   if (loading) {
     return (
       <Paper withBorder p="lg" radius="md">
+        <LoadingOverlay visible />
         <Text>Memuat...</Text>
       </Paper>
     );
@@ -184,23 +212,25 @@ export default function TicketDetailPage() {
   if (!ticket) {
     return (
       <Paper withBorder p="lg" radius="md">
-        <Text>Ticket tidak ditemukan.</Text>
+        <Alert color="red" title="Error">
+          Ticket tidak ditemukan.
+        </Alert>
       </Paper>
     );
   }
 
   const {
-    code,
-    subject,
-    requester,
-    assignee,
+    nomorTiket,
+    keluhanAwal,
+    customerId,
+    teknisiId,
     priority,
     status,
-    createdAt,
-    updatedAt,
-    description,
-    resolution,
+    tanggalMasuk,
+    diperbaruiPada,
   } = ticket;
+
+  const isFinalStatus = status === "Selesai" || status === "Dibatalkan";
 
   return (
     <Stack gap="md">
@@ -208,12 +238,12 @@ export default function TicketDetailPage() {
         <Stack gap={4}>
           <Group gap="xs" wrap="wrap">
             <Title order={3} style={{ lineHeight: 1.15 }}>
-              {code}
+              {nomorTiket}
             </Title>
             <TicketStatusBadge status={status} />
             <TicketPriorityBadge priority={priority} />
           </Group>
-          <Text c="dimmed">{subject}</Text>
+          <Text c="dimmed">{keluhanAwal}</Text>
         </Stack>
 
         <Tooltip label="Tutup detail">
@@ -231,20 +261,20 @@ export default function TicketDetailPage() {
       <Paper withBorder radius="md" p="sm">
         <Group>
           <Button
-            leftSection={<IconNotes size={16} />}
+            leftSection={<IconHistory size={16} />}
             variant="outline"
-            onClick={() => setDiagModalOpen(true)}
-            disabled={status === "resolved" || status === "closed"}
+            onClick={() => setStatusModalOpen(true)}
+            disabled={isFinalStatus || statusMutation.isPending}
           >
-            Tambah Diagnosis
+            Ubah Status
           </Button>
           <Button
-            leftSection={<IconTool size={16} />}
+            leftSection={<IconPlus size={16} />}
             variant="outline"
-            onClick={() => setActionModalOpen(true)}
-            disabled={status === "resolved" || status === "closed"}
+            onClick={() => setItemModalOpen(true)}
+            disabled={isFinalStatus || itemMutation.isPending}
           >
-            Tambah Tindakan
+            Tambah Item
           </Button>
           <Button
             component={Link}
@@ -266,42 +296,36 @@ export default function TicketDetailPage() {
             <Text size="sm" c="dimmed">
               Pemohon
             </Text>
-            <Text fw={600}>{requester}</Text>
+            <Text fw={600}>{customerId?.nama ?? "N/A"}</Text>
           </Stack>
           <Stack gap={4}>
             <Text size="sm" c="dimmed">
               Assignee
             </Text>
-            <Text fw={600}>
-              {(assignee ? userNameMap.get(assignee) : null) ?? "-"}
-            </Text>
+            <Text fw={600}>{teknisiId?.nama ?? "-"}</Text>
           </Stack>
 
           <Stack gap={4}>
             <Text size="sm" c="dimmed">
               Dibuat
             </Text>
-            <Text fw={600}>{formatDateTime(createdAt)}</Text>
+            <Text fw={600}>{formatDateTime(tanggalMasuk)}</Text>
           </Stack>
           <Stack gap={4}>
             <Text size="sm" c="dimmed">
               Diperbarui
             </Text>
-            <Text fw={600}>{formatDateTime(updatedAt)}</Text>
+            <Text fw={600}>{formatDateTime(diperbaruiPada)}</Text>
           </Stack>
         </SimpleGrid>
 
-        {description && (
-          <>
-            <Divider my="md" />
-            <Stack gap={6}>
-              <Text fw={600}>Deskripsi</Text>
-              <Text c="dimmed" style={{ whiteSpace: "pre-wrap" }}>
-                {description}
-              </Text>
-            </Stack>
-          </>
-        )}
+        <Divider my="md" />
+        <Stack gap={6}>
+          <Text fw={600}>Deskripsi Keluhan Awal</Text>
+          <Text c="dimmed" style={{ whiteSpace: "pre-wrap" }}>
+            {keluhanAwal}
+          </Text>
+        </Stack>
       </Paper>
 
       <Paper withBorder radius="md" p="md">
@@ -317,86 +341,17 @@ export default function TicketDetailPage() {
             {timelineEvents.map((event, index) => (
               <Timeline.Item
                 key={index}
-                title={
-                  event.type === "diagnosis" ? "Diagnosis" : "Tindakan Diambil"
-                }
+                title={event.status}
                 bullet={
-                  event.type === "diagnosis" ? (
-                    <ThemeIcon
-                      size={18}
-                      variant="light"
-                      radius="xl"
-                      color="blue"
-                    >
-                      <IconNotes size={12} />
-                    </ThemeIcon>
-                  ) : (
-                    <ThemeIcon
-                      size={18}
-                      variant="light"
-                      radius="xl"
-                      color="orange"
-                    >
-                      <IconTool size={12} />
-                    </ThemeIcon>
-                  )
+                  <ThemeIcon size={18} variant="light" radius="xl" color="gray">
+                    <IconHistory size={12} />
+                  </ThemeIcon>
                 }
               >
                 <Stack gap="xs" pt={4}>
-                  {event.type === "diagnosis" && (
-                    <>
-                      <Text fw={500} size="sm">
-                        Gejala:
-                      </Text>
-                      <Text
-                        c="dimmed"
-                        size="sm"
-                        style={{ whiteSpace: "pre-wrap" }}
-                      >
-                        {event.symptom}
-                      </Text>
-                      <Text fw={500} size="sm" mt="xs">
-                        Diagnosis:
-                      </Text>
-                      <Text
-                        c="dimmed"
-                        size="sm"
-                        style={{ whiteSpace: "pre-wrap" }}
-                      >
-                        {event.diagnosis}
-                      </Text>
-                    </>
-                  )}
-                  {event.type === "action" && (
-                    <>
-                      <Text fw={500} size="sm">
-                        Tindakan:
-                      </Text>
-                      <Text
-                        c="dimmed"
-                        size="sm"
-                        style={{ whiteSpace: "pre-wrap" }}
-                      >
-                        {event.actionTaken}
-                      </Text>
-                      {event.partsUsed && event.partsUsed.length > 0 && (
-                        <>
-                          <Text fw={500} size="sm" mt="xs">
-                            Parts Digunakan:
-                          </Text>
-                          <ul style={{ margin: 0, paddingLeft: 20 }}>
-                            {event.partsUsed.map((p: PartUsage, i: number) => (
-                              <li key={i}>
-                                <Text c="dimmed" size="sm">
-                                  {p.name} (Qty: {p.qty})
-                                </Text>
-                              </li>
-                            ))}
-                          </ul>
-                        </>
-                      )}
-                    </>
-                  )}
+                  <Text c="dimmed" size="sm" style={{ whiteSpace: "pre-wrap" }}>
+                    {event.note}
+                  </Text>
                   <Text size="xs" c="dimmed" mt="xs">
                     {formatDateTime(event.timestamp)}
                   </Text>
@@ -406,7 +361,7 @@ export default function TicketDetailPage() {
           </Timeline>
         ) : (
           <Text c="dimmed" ta="center" py="md">
-            Belum ada diagnosis atau tindakan yang dicatat.
+            Belum ada riwayat status yang dicatat.
           </Text>
         )}
       </Paper>
@@ -415,12 +370,41 @@ export default function TicketDetailPage() {
         <Paper withBorder radius="md" p="md">
           <Group justify="space-between" mb="xs">
             <Text fw={700}>Ringkasan Penyelesaian</Text>
-            {resolution?.resolvedAt && (
-              <Badge variant="light" color="green">
-                Selesai {formatDateTime(String(resolution.resolvedAt))}
+            {ticket.tanggalSelesai && (
+              <Badge
+                variant="light"
+                color={ticket.status === "Selesai" ? "green" : "red"}
+              >
+                {ticket.status} {formatDateTime(String(ticket.tanggalSelesai))}
               </Badge>
             )}
           </Group>
+
+          {partLines.length > 0 && (
+            <>
+              <Text size="sm" fw={500} mt="md">
+                Suku Cadang Digunakan:
+              </Text>
+              <Table striped mt="xs">
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>Nama Komponen</Table.Th>
+                    <Table.Th>Qty</Table.Th>
+                    <Table.Th>Keterangan</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {partLines.map((p, i) => (
+                    <Table.Tr key={i}>
+                      <Table.Td>{p.name}</Table.Td>
+                      <Table.Td>{p.qty}</Table.Td>
+                      <Table.Td>{p.keterangan ?? "-"}</Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+              </Table>
+            </>
+          )}
         </Paper>
       ) : (
         <Paper withBorder radius="md" p="md">
@@ -428,20 +412,20 @@ export default function TicketDetailPage() {
         </Paper>
       )}
 
-      <AddDiagnosisModal
-        opened={diagModalOpen}
-        onClose={() => setDiagModalOpen(false)}
+      <UpdateStatusModal
+        opened={statusModalOpen}
+        onClose={() => setStatusModalOpen(false)}
+        currentStatus={status as TicketStatus}
         onSubmit={async (data) => {
-          await diagnosisMutation.mutateAsync({ id, payload: data });
+          await statusMutation.mutateAsync(data);
         }}
       />
 
-      <AddActionModal
-        opened={actionModalOpen}
-        onClose={() => setActionModalOpen(false)}
-        inventoryParts={inventoryParts}
+      <AddItemModal
+        opened={itemModalOpen}
+        onClose={() => setItemModalOpen(false)}
         onSubmit={async (data) => {
-          await actionMutation.mutateAsync({ id, payload: data });
+          await itemMutation.mutateAsync(data);
         }}
       />
     </Stack>

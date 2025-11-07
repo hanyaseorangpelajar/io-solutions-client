@@ -1,6 +1,23 @@
 import apiClient from "@/lib/apiClient";
 import type { Paginated } from "@/features/tickets/api/tickets";
-import type { AuditRecord, AuditStatus, AuditLogItem } from "../model/types";
+import type { KBEntry } from "@/features/kb/model/types";
+
+export type KBEntryBackend = {
+  id: string;
+  gejala: string;
+  modelPerangkat: string;
+  diagnosis: string;
+  solusi: string;
+  sourceTicketId: {
+    _id: string;
+    nomorTiket: string;
+  };
+  tags: {
+    id: string;
+    nama: string;
+  }[];
+  dibuatPada: string;
+};
 
 type ServerPaginatedResponse<T> = {
   results: T[];
@@ -20,55 +37,29 @@ function qs(params: Record<string, any>): string {
   return q ? `?${q}` : "";
 }
 
-type UpdateAuditInput = {
-  status?: AuditStatus;
-  score?: number;
-  notes?: string;
-  tags?: string[];
-  publish?: boolean;
-};
-
 /**
- * Mengambil daftar audit records (paginasi).
- * Memanggil GET /api/v1/audits
+ * Mengambil daftar SOP (Knowledge Base).
+ * Memanggil GET /api/v1/kb-entry
  */
-export async function listAudits(
+export async function listKBSolutions(
   params: Record<string, any>
-): Promise<Paginated<AuditLogItem>> {
-  const endpoint = `/audits${qs(params)}`;
+): Promise<Paginated<KBEntryBackend>> {
+  const endpoint = `/kb-entry${qs(params)}`;
 
-  const response = await apiClient.get<ServerPaginatedResponse<AuditLogItem>>(
+  const response = await apiClient.get<ServerPaginatedResponse<KBEntryBackend>>(
     endpoint
   );
   const serverData = response.data;
+  const results = serverData.results ?? [];
+  const total = serverData.totalResults ?? results.length;
 
   return {
-    data: serverData.results,
+    data: results,
     meta: {
-      page: serverData.page,
-      limit: serverData.limit,
-      total: serverData.totalResults,
-      totalPages: serverData.totalPages,
+      page: 1,
+      limit: total,
+      total: total,
+      totalPages: 1,
     },
   };
-}
-
-/**
- * Memperbarui audit record.
- */
-export async function updateAudit(
-  id: string,
-  data: UpdateAuditInput
-): Promise<AuditLogItem> {
-  const endpoint = `/audits/${encodeURIComponent(id)}`;
-  const response = await apiClient.patch<AuditLogItem>(endpoint, data);
-  return response.data;
-}
-
-/**
- * Menghapus audit record.
- */
-export async function deleteAudit(id: string): Promise<void> {
-  const endpoint = `/audits/${encodeURIComponent(id)}`;
-  await apiClient.delete<void>(endpoint);
 }

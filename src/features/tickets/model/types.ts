@@ -24,30 +24,16 @@ export type TicketDeviceInfo = {
   serialNumber?: string;
 };
 
-export type Diagnostic = {
-  symptom: string;
-  diagnosis: string;
-  timestamp: string;
+export type StatusHistory = {
+  waktu: string;
+  statusBaru: TicketStatus;
+  catatan: string;
 };
 
-export type Action = {
-  actionTaken: string;
-  partsUsed: {
-    part: string;
-    quantity: number;
-  }[];
-  timestamp: string;
-};
-
-export type TicketResolution = {
-  notes?: string;
-  solution: string;
-
-  resolvedBy: string | UserRef;
-  resolvedAt: string;
-
-  knowledgeEntry?: string;
-  knowledgeEntryId?: string;
+export type ReplacementItem = {
+  namaKomponen: string;
+  qty: number;
+  keterangan?: string;
 };
 
 export type Ticket = {
@@ -89,9 +75,9 @@ export type Ticket = {
   assignedTo?: string | UserRef | null;
   createdAt?: string;
   updatedAt?: string;
-  resolution: TicketResolution | null;
-  diagnostics?: Diagnostic[];
-  actions?: Action[];
+
+  statusHistory: StatusHistory[];
+  replacementItems: ReplacementItem[];
 };
 
 export const TICKET_PRIORITIES: TicketPriority[] = [
@@ -100,13 +86,18 @@ export const TICKET_PRIORITIES: TicketPriority[] = [
   "high",
   "urgent",
 ];
-export const TICKET_STATUSES: TicketStatus[] = [
+
+// --- PERBAIKAN DI SINI ---
+// Ubah dari "TicketStatus[]" menjadi "as const"
+// Ini akan mengubah tipe dari string[] menjadi readonly ["Diagnosis", "DalamProses", ...]
+export const TICKET_STATUSES = [
   "Diagnosis",
   "DalamProses",
   "MenungguSparepart",
   "Selesai",
   "Dibatalkan",
-];
+] as const;
+// --- AKHIR PERBAIKAN ---
 
 export type PartUsage = {
   partId: string;

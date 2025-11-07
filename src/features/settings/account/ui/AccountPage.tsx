@@ -1,11 +1,8 @@
-// src/features/settings/account/ui/AccountPage.tsx
-
 "use client";
 
 import { useEffect, useState } from "react";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
-import { useAuth } from "@/features/auth/AuthContext"; // Pastikan path ini benar
-import LoginHistoryTable from "./LoginHistoryTable";
+import { useAuth } from "@/features/auth/AuthContext";
 import {
   Tabs,
   Paper,
@@ -22,13 +19,11 @@ import {
 import apiClient from "@/lib/apiClient";
 import { notifications } from "@mantine/notifications";
 
-// Tipe untuk data form profil
 type ProfileFormData = {
-  fullName: string;
-  email: string;
+  nama: string;
+  username: string;
 };
 
-// Helper untuk format tanggal
 const formatTanggal = (dateString?: string) => {
   if (!dateString) return "-";
   return new Date(dateString).toLocaleString("id-ID", {
@@ -40,33 +35,26 @@ const formatTanggal = (dateString?: string) => {
 export default function AccountPage() {
   const queryClient = useQueryClient();
 
-  // --- PERBAIKAN DI SINI ---
-  // 'refetch' diganti namanya menjadi 'refetchUser' agar sesuai dengan context
-  const { user, refetchUser } = useAuth(); // Ambil data user dari context
-  // --- AKHIR PERBAIKAN ---
+  const { user, refetchUser } = useAuth();
 
-  // State untuk form profil
   const [profile, setProfile] = useState<ProfileFormData>({
-    fullName: "",
-    email: "",
+    nama: "",
+    username: "",
   });
 
-  // State untuk form ganti password
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // Isi form dengan data user ketika data user sudah tersedia
   useEffect(() => {
     if (user) {
       setProfile({
-        fullName: user.fullName || "",
-        email: user.email || "", // Sekarang 'email' ada di tipe User
+        nama: user.nama || "",
+        username: user.username || "",
       });
     }
   }, [user]);
 
-  // Mutasi untuk update profil (Nama & Email)
   const { mutate: updateProfile, isPending: isUpdatingProfile } = useMutation({
     mutationFn: async (data: ProfileFormData) => {
       const response = await apiClient.patch("/users/me", data);
@@ -78,8 +66,7 @@ export default function AccountPage() {
         message: "Informasi akun berhasil diperbarui.",
         color: "green",
       });
-      // Ambil ulang data user di context agar ter-update
-      if (refetchUser) refetchUser(); // Panggil 'refetchUser'
+      if (refetchUser) refetchUser();
     },
     onError: (error: any) => {
       notifications.show({
@@ -91,7 +78,6 @@ export default function AccountPage() {
     },
   });
 
-  // Mutasi untuk ganti password
   const { mutate: changePassword, isPending: isChangingPassword } = useMutation(
     {
       mutationFn: async () => {
@@ -113,7 +99,6 @@ export default function AccountPage() {
           message: "Password berhasil diubah.",
           color: "green",
         });
-        // Kosongkan field password
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
@@ -150,7 +135,7 @@ export default function AccountPage() {
         <Tabs defaultValue="profile">
           <Tabs.List>
             <Tabs.Tab value="profile">Informasi Akun</Tabs.Tab>
-            <Tabs.Tab value="security">Keamanan & Riwayat</Tabs.Tab>
+            <Tabs.Tab value="security">Keamanan</Tabs.Tab>
           </Tabs.List>
 
           <Tabs.Panel value="profile" pt="md">
@@ -161,21 +146,21 @@ export default function AccountPage() {
                 <TextInput
                   label="Nama Lengkap"
                   withAsterisk
-                  value={profile.fullName}
+                  value={profile.nama}
                   onChange={(e) =>
                     setProfile((p) => ({
                       ...p,
-                      fullName: e.currentTarget.value,
+                      nama: e.currentTarget.value,
                     }))
                   }
                 />
                 <TextInput
-                  label="Alamat Email"
+                  label="Username"
                   withAsterisk
-                  value={profile.email} // Sekarang 'email' valid
-                  onChange={(e) =>
-                    setProfile((p) => ({ ...p, email: e.currentTarget.value }))
-                  }
+                  value={profile.username}
+                  description="Username tidak dapat diubah."
+                  readOnly
+                  disabled
                 />
               </Group>
 
@@ -189,7 +174,7 @@ export default function AccountPage() {
                 />
                 <TextInput
                   label="Terakhir Diperbarui"
-                  value={formatTanggal(user.updatedAt)} // Sekarang 'updatedAt' valid
+                  value={formatTanggal(user.diperbaruiPada)}
                   readOnly
                   disabled
                 />
@@ -235,9 +220,6 @@ export default function AccountPage() {
                   Simpan Password
                 </Button>
               </Group>
-              <Divider />
-              <Title order={5}>Riwayat Login</Title>
-              <LoginHistoryTable />
             </Stack>
           </Tabs.Panel>
         </Tabs>

@@ -5,8 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button, Group, Modal, Stack, Textarea } from "@mantine/core";
 import { useForm } from "react-hook-form";
 import {
-  TicketResolutionSchema,
-  type TicketResolutionInput,
+  TicketCompleteSchema,
+  type TicketCompleteInput,
 } from "../model/schema";
 import type { Ticket } from "../model/types";
 
@@ -18,7 +18,7 @@ export default function ResolveTicketModal({
 }: {
   opened: boolean;
   onClose: () => void;
-  onSubmit: (data: TicketResolutionInput) => Promise<void> | void;
+  onSubmit: (data: TicketCompleteInput) => Promise<void> | void;
   ticket: Ticket | null;
 }) {
   const {
@@ -26,20 +26,20 @@ export default function ResolveTicketModal({
     handleSubmit,
     reset,
     formState: { errors, isSubmitting, isValid },
-  } = useForm<TicketResolutionInput>({
-    resolver: zodResolver(TicketResolutionSchema),
+  } = useForm<TicketCompleteInput>({
+    resolver: zodResolver(TicketCompleteSchema),
     mode: "onChange",
     defaultValues: {
-      solution: "",
-      notes: "",
+      diagnosis: "",
+      solusi: "",
     },
   });
 
   useEffect(() => {
     if (opened) {
       reset({
-        solution: ticket?.resolution?.solution ?? "",
-        notes: ticket?.resolution?.notes ?? "",
+        diagnosis: "",
+        solusi: "",
       });
     }
   }, [opened, reset, ticket]);
@@ -50,7 +50,7 @@ export default function ResolveTicketModal({
     <Modal
       opened={opened}
       onClose={onClose}
-      title={`Resolve Ticket: #${ticket.code}`}
+      title={`Selesaikan Tiket: #${ticket.nomorTiket}`}
       radius="lg"
       size="xl"
       centered
@@ -64,20 +64,21 @@ export default function ResolveTicketModal({
       >
         <Stack gap="md">
           <Textarea
-            label="Solusi yang Diberikan"
-            placeholder="Jelaskan langkah-langkah solusi yang telah dilakukan..."
-            error={errors.solution?.message}
+            label="Diagnosis"
+            placeholder="Jelaskan diagnosis akhir dari masalah..."
+            error={errors.diagnosis?.message}
             withAsterisk
-            minRows={4}
-            {...register("solution")}
+            minRows={3}
+            {...register("diagnosis")}
           />
 
           <Textarea
-            label="Catatan Tambahan (Opsional)"
-            placeholder="Catatan internal atau informasi tambahan..."
-            error={errors.notes?.message}
-            minRows={3}
-            {...register("notes")}
+            label="Solusi yang Diberikan"
+            placeholder="Jelaskan langkah-langkah solusi yang telah dilakukan..."
+            error={errors.solusi?.message}
+            withAsterisk
+            minRows={4}
+            {...register("solusi")}
           />
 
           <Group justify="end" mt="md">

@@ -2,7 +2,15 @@
 
 import { useEffect, useMemo } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button, Group, Modal, Select, Stack, Textarea } from "@mantine/core";
+import {
+  Button,
+  Group,
+  Modal,
+  Select,
+  Stack,
+  Textarea,
+  SimpleGrid,
+} from "@mantine/core";
 import { useForm, Controller } from "react-hook-form";
 import TextField from "@/shared/ui/inputs/TextField";
 import { TicketFormSchema, type TicketFormInput } from "../model/schema";
@@ -29,11 +37,18 @@ export default function TicketFormModal({
     resolver: zodResolver(TicketFormSchema),
     mode: "onChange",
     defaultValues: {
-      subject: "",
-      requester: "",
+      keluhanAwal: "",
+      customer: {
+        nama: "",
+        noHp: "",
+      },
+      device: {
+        model: "",
+        brand: "",
+        serialNumber: "",
+      },
       priority: "medium",
       assignee: "",
-      description: "",
     },
   });
 
@@ -45,9 +60,9 @@ export default function TicketFormModal({
 
   const technicianOptions = useMemo(() => {
     return [
-      { value: "", label: "Unassigned" }, // Opsi unassigned
+      { value: "", label: "Unassigned" },
       ...users
-        .filter((user) => user.role === "Teknisi") // <-- LOGIKA FILTER UTAMA
+        .filter((user) => user.role === "Teknisi")
         .map((user) => ({
           value: user.id,
           label: user.nama,
@@ -72,20 +87,54 @@ export default function TicketFormModal({
         noValidate
       >
         <Stack gap="sm">
-          <TextField
-            label="Subjek"
-            placeholder="Masalah yang ingin dilaporkan"
-            error={errors.subject?.message}
+          <Textarea
+            label="Keluhan Awal"
+            placeholder="Jelaskan keluhan pelanggan atau masalah perangkat"
+            error={errors.keluhanAwal?.message}
             autoFocus
-            {...register("subject")}
+            withAsterisk
+            minRows={3}
+            {...register("keluhanAwal")}
           />
 
-          <TextField
-            label="Pemohon"
-            placeholder="Nama pemohon"
-            error={errors.requester?.message}
-            {...register("requester")}
-          />
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
+            <TextField
+              label="Nama Pelanggan"
+              placeholder="Nama pelanggan"
+              error={errors.customer?.nama?.message}
+              withAsterisk
+              {...register("customer.nama")}
+            />
+            <TextField
+              label="No. HP Pelanggan"
+              placeholder="0812..."
+              error={errors.customer?.noHp?.message}
+              withAsterisk
+              {...register("customer.noHp")}
+            />
+          </SimpleGrid>
+
+          <SimpleGrid cols={{ base: 1, sm: 3 }}>
+            <TextField
+              label="Model Perangkat"
+              placeholder="Mis: Laptop, Printer, PC"
+              error={errors.device?.model?.message}
+              withAsterisk
+              {...register("device.model")}
+            />
+            <TextField
+              label="Brand (Opsional)"
+              placeholder="Mis: HP, Asus, Canon"
+              error={errors.device?.brand?.message}
+              {...register("device.brand")}
+            />
+            <TextField
+              label="Serial No. (Opsional)"
+              placeholder="S/N jika ada"
+              error={errors.device?.serialNumber?.message}
+              {...register("device.serialNumber")}
+            />
+          </SimpleGrid>
 
           <Group grow>
             <Controller
@@ -105,30 +154,22 @@ export default function TicketFormModal({
                 />
               )}
             />
+            <Controller
+              name="assignee"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  {...field}
+                  label="Teknisi (opsional)"
+                  placeholder="Pilih teknisi..."
+                  data={technicianOptions}
+                  error={errors.assignee?.message}
+                  searchable
+                  clearable
+                />
+              )}
+            />
           </Group>
-
-          <Controller
-            name="assignee"
-            control={control}
-            render={({ field }) => (
-              <Select
-                {...field}
-                label="Teknisi (opsional)"
-                placeholder="Pilih teknisi..."
-                data={technicianOptions}
-                error={errors.assignee?.message}
-                searchable
-                clearable
-              />
-            )}
-          />
-
-          <Textarea
-            label="Deskripsi"
-            minRows={3}
-            autosize
-            {...register("description")}
-          />
 
           <Group justify="end" mt="xs">
             <Button variant="default" onClick={onClose}>

@@ -4,7 +4,6 @@ import TextField from "@/shared/ui/inputs/TextField";
 import { SimpleTable, type Column } from "@/shared/ui/table/SimpleTable";
 import {
   Button,
-  Checkbox,
   Group,
   Select,
   Stack,
@@ -26,7 +25,7 @@ import {
   IconDots,
 } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { TicketResolutionInput } from "../model/schema";
+import type { TicketCompleteInput } from "../model/schema";
 import type { Ticket, TicketPriority, TicketStatus } from "../model/types";
 import { formatDateTime } from "../utils/format";
 import ResolveTicketModal from "./ResolveTicketModal";
@@ -37,7 +36,7 @@ import { Modal } from "@mantine/core";
 import {
   createTicket,
   listTickets,
-  resolveTicket,
+  completeTicketAndCreateKB,
   assignTicket,
   updateTicketStatus,
 } from "../api/tickets";
@@ -83,8 +82,7 @@ export function TicketsListPage() {
   const [users, setUsers] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
-  const [resolveFor, setResolveFor] = useState<null | "bulk" | Ticket>(null);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [resolveFor, setResolveFor] = useState<null | Ticket>(null);
   const [assignFor, setAssignFor] = useState<Ticket | null>(null);
   const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(
     null
@@ -170,29 +168,6 @@ export function TicketsListPage() {
     [users]
   );
 
-  const filteredIds = rows.map((r) => r.id);
-  const allSelectedInFiltered =
-    filteredIds.length > 0 && filteredIds.every((id) => selected.has(id));
-  const someSelectedInFiltered =
-    filteredIds.some((id) => selected.has(id)) && !allSelectedInFiltered;
-
-  const toggleRow = (id: string, checked: boolean) => {
-    setSelected((prev) => {
-      const s = new Set(prev);
-      if (checked) s.add(id);
-      else s.delete(id);
-      return s;
-    });
-  };
-  const toggleSelectedFiltered = (checked: boolean) => {
-    setSelected((prev) => {
-      const s = new Set(prev);
-      if (checked) filteredIds.forEach((id) => s.add(id));
-      else filteredIds.forEach((id) => s.delete(id));
-      return s;
-    });
-  };
-
   const createMutation = useMutation({
     mutationFn: createTicket,
     onSuccess: (newTicket) => {
@@ -212,22 +187,21 @@ export function TicketsListPage() {
     },
   });
 
-  const resolveMutation = useMutation({
-    mutationFn: (vars: { id: string; payload: TicketResolutionInput }) =>
-      resolveTicket(vars.id, vars.payload),
+  const completeMutation = useMutation({
+    mutationFn: (vars: { id: string; payload: TicketCompleteInput }) =>
+      completeTicketAndCreateKB(vars.id, vars.payload),
     onSuccess: () => {
       notifications.show({
-        title: "Ticket resolved",
-        message: "Perubahan tersimpan",
+        title: "Tiket Selesai",
+        message: "Perubahan tersimpan dan KB Entry dibuat.",
       });
-      setSelected(new Set());
       closeResolve();
       fetchRows();
     },
     onError: (e: any) => {
       notifications.show({
         color: "red",
-        title: "Gagal resolve",
+        title: "Gagal Selesaikan Tiket",
         message: e.message,
       });
     },
@@ -285,26 +259,6 @@ export function TicketsListPage() {
 
   const columns: Column<Ticket>[] = useMemo(
     () => [
-      {
-        key: "select",
-        header: (
-          <Checkbox
-            aria-label="Pilih semua"
-            checked={allSelectedInFiltered}
-            indeterminate={someSelectedInFiltered}
-            onChange={(e) => toggleSelectedFiltered(e.currentTarget.checked)}
-          />
-        ),
-        cell: (r) => (
-          <Checkbox
-            aria-label={`Pilih ${r.code}`}
-            checked={selected.has(r.id)}
-            onChange={(e) => toggleRow(r.id, e.currentTarget.checked)}
-          />
-        ),
-        width: 40,
-        align: "center",
-      },
       { key: "code", header: "Kode", cell: (r) => r.nomorTiket, width: 140 },
       {
         key: "requester",
@@ -428,11 +382,11 @@ export function TicketsListPage() {
                   disabled={
                     r.status === "Selesai" ||
                     r.status === "Dibatalkan" ||
-                    resolveMutation.isPending
+                    completeMutation.isPending
                   }
                   hidden={!isAdmin}
                 >
-                  Resolve
+                  Selesaikan (Resolve)
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>
@@ -441,14 +395,11 @@ export function TicketsListPage() {
       },
     ],
     [
-      allSelectedInFiltered,
-      someSelectedInFiltered,
-      selected,
       userNameMap,
       users,
       assignMutation,
       statusMutation,
-      resolveMutation,
+      completeMutation,
       userRole,
       currentUserId,
     ]
@@ -457,24 +408,16 @@ export function TicketsListPage() {
   const resolveOpen = resolveFor !== null;
   const closeResolve = () => setResolveFor(null);
 
-  const handleResolveSubmit = async (payload: TicketResolutionInput) => {
+  const handleResolveSubmit = async (payload: TicketCompleteInput) => {
     if (!resolveFor) return;
     try {
-      if (resolveFor === "bulk") {
-        await Promise.all(
-          Array.from(selected).map((id) =>
-            resolveMutation.mutateAsync({ id, payload })
-          )
-        );
-      } else {
-        await resolveMutation.mutateAsync({ id: resolveFor.id, payload });
-      }
+      await completeMutation.mutateAsync({ id: resolveFor.id, payload });
     } catch (e) {}
   };
 
   const isMutating =
     createMutation.isPending ||
-    resolveMutation.isPending ||
+    completeMutation.isPending ||
     assignMutation.isPending ||
     statusMutation.isPending;
 
@@ -541,25 +484,6 @@ export function TicketsListPage() {
         </Button>
       </Group>
 
-      {selected.size > 0 && (
-        <Group justify="space-between">
-          <Text size="sm" c="dimmed">
-            {selected.size} tiket dipilih
-          </Text>
-          <Group gap="xs">
-            <Button
-              leftSection={<IconCircleCheck size={16} />}
-              onClick={() => setResolveFor("bulk")}
-            >
-              Tandai selesai
-            </Button>
-            <Button variant="subtle" onClick={() => setSelected(new Set())}>
-              Batalkan pilihan
-            </Button>
-          </Group>
-        </Group>
-      )}
-
       <div style={{ position: "relative" }}>
         <LoadingOverlay visible={loading || isMutating} />
         <SimpleTable<Ticket>
@@ -586,7 +510,7 @@ export function TicketsListPage() {
         opened={resolveOpen}
         onClose={closeResolve}
         onSubmit={handleResolveSubmit}
-        ticket={resolveFor === "bulk" ? null : resolveFor}
+        ticket={resolveFor}
       />
 
       <Modal

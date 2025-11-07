@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TICKET_STATUSES } from "./types";
 
 export const PartUsageSchema = z.object({
   partId: z.string().min(1),
@@ -30,12 +31,49 @@ export type TicketResolutionInput = z.infer<typeof TicketResolutionSchema>;
 export type PartUsageInput = z.infer<typeof PartUsageSchema>;
 export type CustomCostInput = z.infer<typeof CustomCostSchema>;
 
-export const TicketFormSchema = z.object({
-  subject: z.string().min(1, "Subjek wajib"),
-  requester: z.string().min(1, "Pemohon wajib"),
-  priority: z.enum(["low", "medium", "high", "urgent"]),
+export const TicketCompleteSchema = z.object({
+  diagnosis: z.string().min(5, "Diagnosis wajib diisi, minimal 5 karakter."),
+  solusi: z.string().min(10, "Solusi wajib diisi, minimal 10 karakter."),
+});
+export type TicketCompleteInput = z.infer<typeof TicketCompleteSchema>;
 
+const CustomerSchema = z.object({
+  nama: z.string().min(1, "Nama pelanggan wajib diisi"),
+  noHp: z.string().min(6, "No. HP pelanggan wajib diisi"),
+});
+const DeviceSchema = z.object({
+  model: z.string().min(1, "Model perangkat wajib diisi"),
+  brand: z.string().optional(),
+  serialNumber: z.string().optional(),
+});
+export const TicketFormSchema = z.object({
+  keluhanAwal: z.string().min(5, "Keluhan awal minimal 5 karakter"),
+  customer: CustomerSchema,
+  device: DeviceSchema,
+  priority: z.enum(["low", "medium", "high", "urgent"]).default("medium"),
   assignee: z.string().optional().default(""),
-  description: z.string().optional().default(""),
 });
 export type TicketFormInput = z.infer<typeof TicketFormSchema>;
+
+/**
+ * SKEMA BARU: Untuk modal Update Status
+ * Sesuai dengan serviceTicket.service.js -> updateServiceTicketStatus
+ */
+export const UpdateStatusSchema = z.object({
+  status: z.enum(TICKET_STATUSES, {
+    required_error: "Status baru wajib dipilih",
+  }),
+  catatan: z.string().min(1, "Catatan wajib diisi untuk histori"),
+});
+export type UpdateStatusInput = z.infer<typeof UpdateStatusSchema>;
+
+/**
+ * SKEMA BARU: Untuk modal Tambah Item
+ * Sesuai dengan serviceTicket.service.js -> addReplacementItem
+ */
+export const AddItemSchema = z.object({
+  namaKomponen: z.string().min(3, "Nama komponen wajib diisi"),
+  qty: z.number().min(1, "Qty minimal 1"),
+  keterangan: z.string().optional(),
+});
+export type AddItemInput = z.infer<typeof AddItemSchema>;
