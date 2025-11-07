@@ -70,6 +70,7 @@ export function TicketsListPage() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const userRole = user?.role;
+  const currentUserId = user?.id;
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<TicketStatus | "all">("all");
   const [priority, setPriority] = useState<TicketPriority | "all">("all");
@@ -306,12 +307,6 @@ export function TicketsListPage() {
       },
       { key: "code", header: "Kode", cell: (r) => r.nomorTiket, width: 140 },
       {
-        key: "subject",
-        header: "Subjek",
-        cell: (r) => r.keluhanAwal,
-        width: "26%",
-      },
-      {
         key: "requester",
         header: "Pemohon",
         cell: (r) => r.customerId?.nama ?? "-",
@@ -347,6 +342,10 @@ export function TicketsListPage() {
         align: "right",
         cell: (r) => {
           const hasAssignee = !!r.teknisiId;
+          const isAssignedToMe = currentUserId === r.teknisiId?.id;
+          const isAdmin = userRole === "Admin" || userRole === "SysAdmin";
+          const canChangeStatus =
+            isAdmin || (userRole === "Teknisi" && isAssignedToMe);
           return (
             <Menu withinPortal position="bottom-end" shadow="sm">
               <Menu.Target>
@@ -382,43 +381,44 @@ export function TicketsListPage() {
                     </Menu.Item>
                   </Menu.Target>
                 </Menu>
-
-                <Menu
-                  withinPortal
-                  position="left-start"
-                  withArrow
-                  shadow="sm"
-                  trigger="hover"
-                >
-                  <Menu.Target>
-                    <Menu.Item
-                      leftSection={<IconArrowsExchange size={14} />}
-                      rightSection={<IconChevronRight size={14} />}
-                    >
-                      Ubah Status
-                    </Menu.Item>
-                  </Menu.Target>
-                  <Menu.Dropdown>
-                    {STATUS_OPTIONS.filter((s) => s.value !== "all").map(
-                      (opt) => (
-                        <Menu.Item
-                          key={opt.value}
-                          onClick={() =>
-                            statusMutation.mutate({
-                              ticketId: r.id,
-                              status: opt.value as TicketStatus,
-                            })
-                          }
-                          disabled={
-                            statusMutation.isPending || r.status === opt.value
-                          }
-                        >
-                          {opt.label}
-                        </Menu.Item>
-                      )
-                    )}
-                  </Menu.Dropdown>
-                </Menu>
+                {userRole === "Teknisi" && isAssignedToMe && (
+                  <Menu
+                    withinPortal
+                    position="left-start"
+                    withArrow
+                    shadow="sm"
+                    trigger="hover"
+                  >
+                    <Menu.Target>
+                      <Menu.Item
+                        leftSection={<IconArrowsExchange size={14} />}
+                        rightSection={<IconChevronRight size={14} />}
+                      >
+                        Ubah Status
+                      </Menu.Item>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      {STATUS_OPTIONS.filter((s) => s.value !== "all").map(
+                        (opt) => (
+                          <Menu.Item
+                            key={opt.value}
+                            onClick={() =>
+                              statusMutation.mutate({
+                                ticketId: r.id,
+                                status: opt.value as TicketStatus,
+                              })
+                            }
+                            disabled={
+                              statusMutation.isPending || r.status === opt.value
+                            }
+                          >
+                            {opt.label}
+                          </Menu.Item>
+                        )
+                      )}
+                    </Menu.Dropdown>
+                  </Menu>
+                )}
 
                 <Menu.Divider />
 
@@ -430,10 +430,9 @@ export function TicketsListPage() {
                     r.status === "Dibatalkan" ||
                     resolveMutation.isPending
                   }
-                  // 5. SEMBUNYIKAN TANDAI SELESAI JIKA BUKAN ADMIN/SYSADMIN
-                  hidden={userRole !== "Admin" && userRole !== "SysAdmin"}
+                  hidden={!isAdmin}
                 >
-                  Tandai selesai
+                  Resolve
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>
@@ -451,6 +450,7 @@ export function TicketsListPage() {
       statusMutation,
       resolveMutation,
       userRole,
+      currentUserId,
     ]
   );
 
