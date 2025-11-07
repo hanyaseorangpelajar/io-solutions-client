@@ -1,5 +1,3 @@
-// File: features/tickets/api/tickets.ts
-
 import apiClient from "@/lib/apiClient";
 import type { Ticket } from "../model/types";
 import type {
@@ -8,14 +6,11 @@ import type {
   PartUsageInput,
 } from "../model/schema";
 
-// Tipe ini (Paginated) adalah standar internal frontend kita.
-// Ini yang DIHARAPKAN oleh komponen UI.
 export type Paginated<T> = {
   data: T[];
   meta: { page: number; limit: number; total: number; totalPages: number };
 };
 
-// [BARU] Tipe ini adalah apa yang DIKIRIM oleh server.
 type ServerPaginatedResponse<T> = {
   results: T[];
   page: number;
@@ -32,25 +27,22 @@ function qs(params: Record<string, any>): string {
   return q ? `?${q}` : "";
 }
 
-// [PERBAIKAN PADA FUNGSI INI]
 export async function listTickets(
-  params: Record<string, any> // Lebih baik gunakan Record<string, any> daripada {}
+  params: Record<string, any>
 ): Promise<Paginated<Ticket>> {
   const p: any = { ...params };
   if (p.assignee === "unassigned") {
     p.assignee = "";
   }
 
-  // 1. Beri tahu Axios tipe data yang BENAR-BENAR dikirim server
   const response = await apiClient.get<ServerPaginatedResponse<Ticket>>(
     `/tickets${qs(p)}`
   );
 
   const serverData = response.data;
 
-  // 2. Terjemahkan/Mapelkan respons server ke tipe data internal frontend
   return {
-    data: serverData.results, // <-- Map 'results' ke 'data'
+    data: serverData.results,
     meta: {
       page: serverData.page,
       limit: serverData.limit,
@@ -59,7 +51,6 @@ export async function listTickets(
     },
   };
 }
-// [AKHIR PERBAIKAN]
 
 export async function getTicket(id: string): Promise<Ticket> {
   const response = await apiClient.get<Ticket>(
@@ -77,9 +68,9 @@ export async function assignTicket(
   id: string,
   userId: string | null
 ): Promise<Ticket> {
-  const response = await apiClient.put<Ticket>(
+  const response = await apiClient.patch<Ticket>(
     `/tickets/${encodeURIComponent(id)}/assign`,
-    { userId: userId || null }
+    { teknisiId: userId || null }
   );
   return response.data;
 }
@@ -88,7 +79,7 @@ export async function updateTicketStatus(
   id: string,
   status: string
 ): Promise<Ticket> {
-  const response = await apiClient.patch<Ticket>( // <-- GANTI MENJADI .patch
+  const response = await apiClient.patch<Ticket>(
     `/tickets/${encodeURIComponent(id)}/status`,
     { status }
   );
@@ -148,14 +139,13 @@ export async function getTicketHistory(id: string): Promise<AuditLogEvent[]> {
 export async function getGlobalAuditLog(
   params: Record<string, any>
 ): Promise<Paginated<AuditLogEvent>> {
-  // 3. Terapkan perbaikan yang sama di sini untuk global audit log
   const response = await apiClient.get<ServerPaginatedResponse<AuditLogEvent>>(
     `/audits${qs(params)}`
   );
 
   const serverData = response.data;
   return {
-    data: serverData.results, // Map 'results' ke 'data'
+    data: serverData.results,
     meta: {
       page: serverData.page,
       limit: serverData.limit,

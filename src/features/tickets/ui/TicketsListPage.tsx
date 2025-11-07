@@ -41,7 +41,7 @@ import {
   assignTicket,
   updateTicketStatus,
 } from "../api/tickets";
-
+import { useAuth } from "@/features/auth";
 import { getStaffList } from "@/features/staff/api/staff";
 import type { Staff } from "@/features/staff/model/types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -68,7 +68,8 @@ const statusLabelMap = new Map(STATUS_OPTIONS.map((s) => [s.value, s.label]));
 
 export function TicketsListPage() {
   const queryClient = useQueryClient();
-
+  const { user } = useAuth();
+  const userRole = user?.role;
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<TicketStatus | "all">("all");
   const [priority, setPriority] = useState<TicketPriority | "all">("all");
@@ -429,6 +430,8 @@ export function TicketsListPage() {
                     r.status === "Dibatalkan" ||
                     resolveMutation.isPending
                   }
+                  // 5. SEMBUNYIKAN TANDAI SELESAI JIKA BUKAN ADMIN/SYSADMIN
+                  hidden={userRole !== "Admin" && userRole !== "SysAdmin"}
                 >
                   Tandai selesai
                 </Menu.Item>
@@ -447,6 +450,7 @@ export function TicketsListPage() {
       assignMutation,
       statusMutation,
       resolveMutation,
+      userRole,
     ]
   );
 
