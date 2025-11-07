@@ -42,9 +42,9 @@ export default function AdminDashboardPage() {
 
   const recentTickets = [...tickets]
     .map((t: any) => ({
-      id: t.id ?? t._id ?? t.code,
-      code: t.code,
-      subject: t.subject ?? t.title ?? "-",
+      id: t.id ?? t._id ?? t.nomorTiket,
+      code: t.nomorTiket,
+      subject: t.keluhanAwal ?? "-",
       status: t.status,
       priority: t.priority ?? "NORMAL",
       createdAt: t.createdAt ?? t.created_at ?? new Date().toISOString(),
