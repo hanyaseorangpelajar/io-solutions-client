@@ -6,7 +6,7 @@ import type { Ticket } from "@/features/tickets";
  * @returns Nama assignee atau "Unassigned".
  */
 export function getAssigneeName(t: Partial<Ticket>): string {
-  const a = t?.assignee;
+  const a = t?.teknisiId;
   if (!a) return "Unassigned";
   if (typeof a === "string") return a || "Unassigned";
   if (typeof a === "object" && "name" in a && (a as any).name) {

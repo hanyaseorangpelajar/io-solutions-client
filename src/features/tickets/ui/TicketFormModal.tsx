@@ -17,7 +17,7 @@ export default function TicketFormModal({
   opened: boolean;
   onClose: () => void;
   onSubmit: (data: TicketFormInput) => Promise<void> | void;
-  users: Pick<Staff, "id" | "name" | "role">[];
+  users: Pick<Staff, "id" | "nama" | "role">[];
 }) {
   const {
     register,
@@ -50,7 +50,7 @@ export default function TicketFormModal({
         .filter((user) => user.role === "Teknisi") // <-- LOGIKA FILTER UTAMA
         .map((user) => ({
           value: user.id,
-          label: user.name,
+          label: user.nama,
         })),
     ];
   }, [users]);

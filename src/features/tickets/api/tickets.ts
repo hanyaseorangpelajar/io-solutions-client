@@ -86,9 +86,9 @@ export async function assignTicket(
 
 export async function updateTicketStatus(
   id: string,
-  status: "open" | "in_progress" | "resolved" | "closed"
+  status: string
 ): Promise<Ticket> {
-  const response = await apiClient.put<Ticket>(
+  const response = await apiClient.patch<Ticket>( // <-- GANTI MENJADI .patch
     `/tickets/${encodeURIComponent(id)}/status`,
     { status }
   );

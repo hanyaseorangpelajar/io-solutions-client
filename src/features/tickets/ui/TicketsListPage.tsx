@@ -50,10 +50,11 @@ type RangeValue = [Date | null, Date | null];
 
 const STATUS_OPTIONS = [
   { value: "all", label: "Semua" },
-  { value: "open", label: "Open" },
-  { value: "in_progress", label: "In progress" },
-  { value: "resolved", label: "Resolved" },
-  { value: "closed", label: "Closed" },
+  { value: "Diagnosis", label: "Diagnosis" },
+  { value: "DalamProses", label: "Dalam Proses" },
+  { value: "MenungguSparepart", label: "Menunggu Sparepart" },
+  { value: "Selesai", label: "Selesai" },
+  { value: "Dibatalkan", label: "Dibatalkan" },
 ];
 const PRIORITY_OPTIONS = [
   { value: "all", label: "Semua" },
@@ -157,13 +158,13 @@ export function TicketsListPage() {
       { value: "unassigned", label: "Tidak ditetapkan" },
       ...users
         .filter((u) => u.role === "Teknisi" || u.role === "Admin")
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .map((u) => ({ value: u.id, label: u.name })),
+        .sort((a, b) => a.nama.localeCompare(b.nama))
+        .map((u) => ({ value: u.id, label: u.nama })),
     ];
   }, [users]);
 
   const userNameMap = useMemo(
-    () => new Map(users.map((u) => [u.id, u.name])),
+    () => new Map(users.map((u) => [u.id, u.nama])),
     [users]
   );
 
@@ -193,7 +194,10 @@ export function TicketsListPage() {
   const createMutation = useMutation({
     mutationFn: createTicket,
     onSuccess: (newTicket) => {
-      notifications.show({ title: "Tiket dibuat", message: newTicket.subject });
+      notifications.show({
+        title: "Tiket dibuat",
+        message: newTicket.keluhanAwal,
+      });
       setFormOpen(false);
       fetchRows();
     },
@@ -233,7 +237,7 @@ export function TicketsListPage() {
     onSuccess: (updatedTicket) => {
       notifications.show({
         title: "Teknisi diubah",
-        message: `Tiket #${updatedTicket.code} ditugaskan.`,
+        message: `Tiket #${updatedTicket.nomorTiket} ditugaskan.`,
       });
       setRows((prevRows) =>
         prevRows.map((t) => (t.id === updatedTicket.id ? updatedTicket : t))
@@ -257,9 +261,9 @@ export function TicketsListPage() {
     onSuccess: (updatedTicket) => {
       notifications.show({
         title: "Status diubah",
-        message: `Tiket #${updatedTicket.code} menjadi ${statusLabelMap.get(
-          updatedTicket.status
-        )}.`,
+        message: `Tiket #${
+          updatedTicket.nomorTiket
+        } menjadi ${statusLabelMap.get(updatedTicket.status)}.`,
       });
       setRows((prevRows) =>
         prevRows.map((t) => (t.id === updatedTicket.id ? updatedTicket : t))
@@ -299,18 +303,22 @@ export function TicketsListPage() {
         width: 40,
         align: "center",
       },
-      { key: "code", header: "Kode", cell: (r) => r.code, width: 140 },
+      { key: "code", header: "Kode", cell: (r) => r.nomorTiket, width: 140 },
       {
         key: "subject",
         header: "Subjek",
-        cell: (r) => r.subject,
+        cell: (r) => r.keluhanAwal,
         width: "26%",
       },
-      { key: "requester", header: "Pemohon", cell: (r) => r.requester },
+      {
+        key: "requester",
+        header: "Pemohon",
+        cell: (r) => r.customerId?.nama ?? "-",
+      },
       {
         key: "assignee",
         header: "Teknisi",
-        cell: (r) => (r.assignee ? userNameMap.get(r.assignee) : null) ?? "-",
+        cell: (r) => r.teknisiId?.nama ?? "-",
         align: "center",
       },
       {
@@ -328,7 +336,7 @@ export function TicketsListPage() {
       {
         key: "createdAt",
         header: "Dibuat",
-        cell: (r) => formatDateTime(r.createdAt),
+        cell: (r) => formatDateTime(r.tanggalMasuk),
         width: 180,
       },
       {
@@ -337,8 +345,7 @@ export function TicketsListPage() {
         width: 56,
         align: "right",
         cell: (r) => {
-          const hasAssignee = !!r.assignee;
-
+          const hasAssignee = !!r.teknisiId;
           return (
             <Menu withinPortal position="bottom-end" shadow="sm">
               <Menu.Target>
@@ -367,7 +374,7 @@ export function TicketsListPage() {
                       leftSection={<IconUser size={14} />}
                       onClick={() => {
                         setAssignFor(r);
-                        setSelectedAssigneeId(r.assignee ?? null);
+                        setSelectedAssigneeId(r.teknisiId?.id ?? null);
                       }}
                     >
                       {hasAssignee ? "Ubah Penugasan" : "Tugaskan Teknisi"}
@@ -418,8 +425,8 @@ export function TicketsListPage() {
                   leftSection={<IconCircleCheck size={14} />}
                   onClick={() => setResolveFor(r)}
                   disabled={
-                    r.status === "resolved" ||
-                    r.status === "closed" ||
+                    r.status === "Selesai" ||
+                    r.status === "Dibatalkan" ||
                     resolveMutation.isPending
                   }
                 >
@@ -583,7 +590,7 @@ export function TicketsListPage() {
         onClose={() => setAssignFor(null)}
         title={
           assignFor
-            ? `Tentukan teknisi untuk #${assignFor.code}`
+            ? `Tentukan teknisi untuk #${assignFor.nomorTiket}`
             : "Tentukan teknisi"
         }
         withinPortal
@@ -596,8 +603,8 @@ export function TicketsListPage() {
             placeholder="Ketik untuk mencari…"
             data={users
               .filter((u) => (u.role ?? "").toLowerCase() === "teknisi")
-              .sort((a, b) => a.name.localeCompare(b.name))
-              .map((u) => ({ value: u.id, label: u.name }))}
+              .sort((a, b) => a.nama.localeCompare(b.nama))
+              .map((u) => ({ value: u.id, label: u.nama }))}
             value={selectedAssigneeId}
             onChange={(v) => setSelectedAssigneeId(v)}
             nothingFoundMessage="Tidak ditemukan"

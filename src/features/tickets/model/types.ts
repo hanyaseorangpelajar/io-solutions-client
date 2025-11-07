@@ -5,7 +5,12 @@ type UserRef = {
 
 export type TicketPriority = "low" | "medium" | "high" | "urgent";
 
-export type TicketStatus = "open" | "in_progress" | "resolved" | "closed";
+export type TicketStatus =
+  | "Diagnosis"
+  | "DalamProses"
+  | "MenungguSparepart"
+  | "Selesai"
+  | "Dibatalkan";
 
 export type TicketCustomer = {
   name: string;
@@ -47,27 +52,46 @@ export type TicketResolution = {
 
 export type Ticket = {
   id: string;
-  code: string;
-  status: TicketStatus;
-  priority: TicketPriority;
+  _id: string;
 
-  customer: TicketCustomer;
-  deviceInfo: TicketDeviceInfo;
-  initialComplaint: string;
+  nomorTiket: string;
+  status: string;
+  keluhanAwal: string;
+  tanggalMasuk: string;
+  diperbaruiPada: string;
+  tanggalSelesai?: string;
 
+  customerId: {
+    id: string;
+    _id: string;
+    nama: string;
+    noHp?: string;
+  };
+  deviceId: {
+    id: string;
+    _id: string;
+    brand?: string;
+    model?: string;
+    serialNumber?: string;
+    tipe?: string;
+  };
+  teknisiId?: {
+    id: string;
+    _id: string;
+    nama: string;
+  } | null;
+
+  code?: string;
+  priority?: TicketPriority;
+  customer?: TicketCustomer;
+  deviceInfo?: TicketDeviceInfo;
+  initialComplaint?: string;
+  assignedTo?: string | UserRef | null;
+  createdAt?: string;
+  updatedAt?: string;
+  resolution: TicketResolution | null;
   diagnostics?: Diagnostic[];
   actions?: Action[];
-
-  assignedTo: string | UserRef | null;
-  assignedToId?: string;
-
-  createdBy: string | UserRef;
-  createdById?: string;
-
-  resolution: TicketResolution | null;
-
-  createdAt: string;
-  updatedAt: string;
 };
 
 export const TICKET_PRIORITIES: TicketPriority[] = [
@@ -77,10 +101,11 @@ export const TICKET_PRIORITIES: TicketPriority[] = [
   "urgent",
 ];
 export const TICKET_STATUSES: TicketStatus[] = [
-  "open",
-  "in_progress",
-  "resolved",
-  "closed",
+  "Diagnosis",
+  "DalamProses",
+  "MenungguSparepart",
+  "Selesai",
+  "Dibatalkan",
 ];
 
 export type PartUsage = {
