@@ -36,11 +36,15 @@ export const MASTER_NAV: NavItem[] = [
         href: "/views/tickets/list",
         roles: ["Admin"],
       },
+      // --- PERUBAHAN DI SINI: Hapus tautan "Review Tiket" ---
+      /*
       {
         label: "Review Tiket",
         href: "/views/tickets/review",
         roles: ["Admin"],
       },
+      */
+      // --- AKHIR PERUBAHAN ---
       {
         label: "Pekerjaan Saya",
         href: "/views/tickets/works",

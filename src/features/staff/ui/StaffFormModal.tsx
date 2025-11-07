@@ -15,7 +15,8 @@ import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { StaffFormInput } from "../model/schema";
 import { StaffFormSchema } from "../model/schema";
-import type { Role } from "@/features/rbac/model/types";
+
+type Role = { id: string; name: string };
 
 export default function StaffFormModal({
   opened,
@@ -29,7 +30,7 @@ export default function StaffFormModal({
   opened: boolean;
   onClose: () => void;
   onSubmit: (v: StaffFormInput) => Promise<void>;
-  initial?: Partial<StaffFormInput & { name?: string }>;
+  initial?: Partial<StaffFormInput>;
   roles: Role[];
   title?: string;
   isSubmitting?: boolean;
@@ -50,13 +51,12 @@ export default function StaffFormModal({
   useEffect(() => {
     if (opened) {
       const defaultValues: StaffFormInput = {
-        fullName: "",
+        nama: "",
         username: "",
-        // email: "", // <-- HAPUS
         password: "",
         confirmPassword: "",
         role: "Teknisi",
-        statusAktif: true, // <-- GANTI DARI 'active'
+        statusAktif: true,
       };
 
       reset({
@@ -67,7 +67,7 @@ export default function StaffFormModal({
   }, [initial, opened, reset]);
 
   const role = watch("role");
-  const active = watch("statusAktif"); // <-- GANTI DARI 'active'
+  const active = watch("statusAktif");
 
   const handleClose = () => {
     onClose();
@@ -87,8 +87,8 @@ export default function StaffFormModal({
           <TextInput
             label="Nama Lengkap"
             withAsterisk
-            error={errors.fullName?.message}
-            {...register("fullName")}
+            error={errors.nama?.message}
+            {...register("nama")}
           />
 
           {isNewUser && (

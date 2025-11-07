@@ -6,7 +6,10 @@ export const StaffFormSchema = z
   .object({
     id: z.string().optional(),
 
-    fullName: z.string().min(2, "Nama lengkap minimal 2 karakter"),
+    // --- PERUBAHAN DI SINI ---
+    nama: z.string().min(2, "Nama lengkap minimal 2 karakter"),
+    // 'fullName' diganti menjadi 'nama'
+    // --- AKHIR PERUBAHAN ---
 
     username: z.string().min(3, "Username minimal 3 karakter"),
 

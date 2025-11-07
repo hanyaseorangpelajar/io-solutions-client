@@ -36,7 +36,9 @@ import {
   deleteStaff,
 } from "@/features/staff/api/staff";
 import { useModals } from "@mantine/modals";
-import { Notifications } from "@mantine/notifications";
+// --- PERBAIKAN 1: Ganti nama impor ---
+import { notifications as Notifications } from "@mantine/notifications";
+// --- AKHIR PERBAIKAN 1 ---
 
 const STATIC_ROLES: Role[] = [
   { id: "SysAdmin", name: "SysAdmin", permissions: [] },
@@ -122,8 +124,6 @@ export default function StaffListPage() {
 
   const rows = useMemo(() => {
     if (!staffData) return [];
-    // Salin array (...) agar tidak mengubah cache react-query
-    // lalu urutkan berdasarkan 'nama' menggunakan localeCompare
     return [...staffData].sort((a, b) => a.nama.localeCompare(b.nama));
   }, [staffData]);
   const roles = useMemo(() => STATIC_ROLES, []);
@@ -211,7 +211,8 @@ export default function StaffListPage() {
         </Stack>
         <Group wrap="wrap">
           <TextInput
-            placeholder="Cari (nama, email, username)..."
+            // --- PERUBAHAN 2: Perbarui placeholder ---
+            placeholder="Cari (nama, username)..."
             value={q}
             onChange={(e) => setQ(e.currentTarget.value)}
           />
@@ -388,14 +389,9 @@ export default function StaffListPage() {
         opened={modalOpen}
         onClose={() => setModalOpen(false)}
         title={editing ? `Edit Staff — ${editing.nama}` : "Tambah Staff"}
-        initial={
-          editing
-            ? {
-                ...editing,
-                fullName: editing.nama,
-              }
-            : undefined
-        }
+        // --- PERUBAHAN 3: Cukup kirim 'editing' ---
+        initial={editing ?? undefined}
+        // --- AKHIR PERUBAHAN 3 ---
         roles={roles}
         isSubmitting={createMutation.isPending || updateMutation.isPending}
         onSubmit={async (v) => {
