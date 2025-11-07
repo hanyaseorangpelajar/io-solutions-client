@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   ActionIcon,
   Badge,
@@ -12,7 +12,8 @@ import {
   Paper,
   Select,
   Stack,
-  Switch,
+  SegmentedControl,
+  Pagination,
   Table,
   Text,
   TextInput,
@@ -61,8 +62,8 @@ export default function StaffListPage() {
         color: "green",
       });
       queryClient.setQueryData<Staff[]>(["staff"], (old = []) => [
-        ...old,
         newStaff,
+        ...old,
       ]);
       setModalOpen(false);
     },
@@ -119,20 +120,32 @@ export default function StaffListPage() {
     },
   });
 
-  const rows = useMemo(() => staffData ?? [], [staffData]);
+  const rows = useMemo(() => {
+    if (!staffData) return [];
+    // Salin array (...) agar tidak mengubah cache react-query
+    // lalu urutkan berdasarkan 'nama' menggunakan localeCompare
+    return [...staffData].sort((a, b) => a.nama.localeCompare(b.nama));
+  }, [staffData]);
   const roles = useMemo(() => STATIC_ROLES, []);
 
   const [q, setQ] = useState("");
   const [roleFilter, setRoleFilter] = useState<string | "all">("all");
-  const [onlyActive, setOnlyActive] = useState(false);
-
+  type StatusFilter = "all" | "active" | "inactive";
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Staff | null>(null);
+
+  const [page, setPage] = useState(1);
+  const PAGE_LIMIT = 5;
 
   const roleMap = useMemo(
     () => Object.fromEntries(roles.map((r) => [r.id, r.name])),
     [roles]
   );
+
+  useEffect(() => {
+    setPage(1);
+  }, [q, roleFilter, statusFilter]);
 
   const filtered = useMemo(() => {
     const qq = q.trim().toLowerCase();
@@ -144,11 +157,26 @@ export default function StaffListPage() {
             s.username.toLowerCase().includes(qq);
 
           const okRole = roleFilter === "all" || s.role === roleFilter;
-          const okActive = onlyActive ? s.statusAktif : true;
+
+          const okActive =
+            statusFilter === "all"
+              ? true
+              : statusFilter === "active"
+              ? s.statusAktif
+              : !s.statusAktif;
+
           return okQ && okRole && okActive;
         })
       : [];
-  }, [rows, q, roleFilter, onlyActive]);
+  }, [rows, q, roleFilter, statusFilter]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_LIMIT);
+
+  const paginatedData = useMemo(() => {
+    const start = (page - 1) * PAGE_LIMIT;
+    const end = start + PAGE_LIMIT;
+    return filtered.slice(start, end);
+  }, [filtered, page, PAGE_LIMIT]);
 
   const openDeleteModal = (staff: Staff) => {
     modals.openConfirmModal({
@@ -195,10 +223,14 @@ export default function StaffListPage() {
             value={roleFilter}
             onChange={(v) => setRoleFilter((v as any) ?? "all")}
           />
-          <Switch
-            label="Hanya aktif"
-            checked={onlyActive}
-            onChange={(e) => setOnlyActive(e.currentTarget.checked)}
+          <SegmentedControl
+            value={statusFilter}
+            onChange={(value) => setStatusFilter(value as StatusFilter)}
+            data={[
+              { label: "Nonaktif", value: "inactive" },
+              { label: "Semua", value: "all" },
+              { label: "Aktif", value: "active" },
+            ]}
           />
           <Button
             leftSection={<IconPlus size={16} />}
@@ -228,8 +260,8 @@ export default function StaffListPage() {
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {filtered.length > 0 ? (
-                filtered.map((s) => (
+              {paginatedData.length > 0 ? (
+                paginatedData.map((s) => (
                   <Table.Tr key={s.id}>
                     <Table.Td>
                       <Text fw={600}>{s.nama}</Text>
@@ -292,7 +324,7 @@ export default function StaffListPage() {
                               onClick={() =>
                                 updateMutation.mutate({
                                   id: s.id,
-                                  data: { active: false },
+                                  data: { statusAktif: false },
                                 })
                               }
                               disabled={updateMutation.isPending}
@@ -339,6 +371,18 @@ export default function StaffListPage() {
           </Table>
         </Table.ScrollContainer>
       </Paper>
+
+      <Group justify="space-between" align="center" mt="md">
+        <Text size="sm" c="dimmed">
+          Menampilkan {paginatedData.length} dari {filtered.length} staff
+        </Text>
+        <Pagination
+          total={totalPages}
+          value={page}
+          onChange={setPage}
+          disabled={totalPages <= 1}
+        />
+      </Group>
 
       <StaffFormModal
         opened={modalOpen}
