@@ -140,12 +140,11 @@ export default function StaffListPage() {
       ? rows.filter((s: Staff) => {
           const okQ =
             qq.length === 0 ||
-            s.name.toLowerCase().includes(qq) ||
-            s.email.toLowerCase().includes(qq) ||
+            s.nama.toLowerCase().includes(qq) ||
             s.username.toLowerCase().includes(qq);
 
           const okRole = roleFilter === "all" || s.role === roleFilter;
-          const okActive = onlyActive ? s.active : true;
+          const okActive = onlyActive ? s.statusAktif : true;
           return okQ && okRole && okActive;
         })
       : [];
@@ -156,7 +155,7 @@ export default function StaffListPage() {
       title: "Konfirmasi Hapus Staff",
       children: (
         <Text size="sm">
-          Apakah Anda yakin ingin menghapus staff <strong>{staff.name}</strong>?
+          Apakah Anda yakin ingin menghapus staff <strong>{staff.nama}</strong>?
           Tindakan ini akan menonaktifkan user.
         </Text>
       ),
@@ -221,7 +220,6 @@ export default function StaffListPage() {
               <Table.Tr>
                 <Table.Th>Nama Lengkap</Table.Th>
                 <Table.Th>Username</Table.Th>
-                <Table.Th>Email</Table.Th>
                 <Table.Th>Role</Table.Th>
                 <Table.Th>Status</Table.Th>
                 <Table.Th>Dibuat Pada</Table.Th>
@@ -234,14 +232,12 @@ export default function StaffListPage() {
                 filtered.map((s) => (
                   <Table.Tr key={s.id}>
                     <Table.Td>
-                      <Text fw={600}>{s.name}</Text>
+                      <Text fw={600}>{s.nama}</Text>
                     </Table.Td>
 
                     <Table.Td>
                       <Text c="dimmed">{s.username}</Text>
                     </Table.Td>
-
-                    <Table.Td>{s.email}</Table.Td>
 
                     <Table.Td>
                       <Badge variant="light">{roleMap[s.role] ?? s.role}</Badge>
@@ -249,15 +245,15 @@ export default function StaffListPage() {
 
                     <Table.Td>
                       <Badge
-                        color={s.active ? "green" : "gray"}
+                        color={s.statusAktif ? "green" : "gray"}
                         variant="light"
                       >
-                        {s.active ? "Aktif" : "Nonaktif"}
+                        {s.statusAktif ? "Aktif" : "Nonaktif"}
                       </Badge>
                     </Table.Td>
 
                     <Table.Td>
-                      {new Date(s.createdAt).toLocaleDateString("id-ID", {
+                      {new Date(s.dibuatPada).toLocaleDateString("id-ID", {
                         day: "2-digit",
                         month: "short",
                         year: "numeric",
@@ -265,7 +261,7 @@ export default function StaffListPage() {
                     </Table.Td>
 
                     <Table.Td>
-                      {new Date(s.updatedAt).toLocaleDateString("id-ID", {
+                      {new Date(s.diperbaruiPada).toLocaleDateString("id-ID", {
                         day: "2-digit",
                         month: "short",
                         year: "numeric",
@@ -290,7 +286,7 @@ export default function StaffListPage() {
                             Edit
                           </Menu.Item>
 
-                          {s.active ? (
+                          {s.statusAktif ? (
                             <Menu.Item
                               leftSection={<IconUserOff size={16} />}
                               onClick={() =>
@@ -309,7 +305,7 @@ export default function StaffListPage() {
                               onClick={() =>
                                 updateMutation.mutate({
                                   id: s.id,
-                                  data: { active: true },
+                                  data: { statusAktif: true },
                                 })
                               }
                               disabled={updateMutation.isPending}
@@ -347,12 +343,12 @@ export default function StaffListPage() {
       <StaffFormModal
         opened={modalOpen}
         onClose={() => setModalOpen(false)}
-        title={editing ? `Edit Staff — ${editing.name}` : "Tambah Staff"}
+        title={editing ? `Edit Staff — ${editing.nama}` : "Tambah Staff"}
         initial={
           editing
             ? {
                 ...editing,
-                fullName: editing.name,
+                fullName: editing.nama,
               }
             : undefined
         }

@@ -3,14 +3,10 @@ export type StaffRole = (typeof ROLES)[number];
 
 export type Staff = {
   id: string;
-  name: string;
+  nama: string;
   username: string;
-  email: string;
-  phone?: string;
-  active: boolean;
+  statusAktif: boolean;
   role: StaffRole;
-  department?: string;
-  avatarUrl?: string;
-  createdAt: string;
-  updatedAt: string;
+  dibuatPada: string;
+  diperbaruiPada: string;
 };

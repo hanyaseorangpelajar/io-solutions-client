@@ -9,7 +9,6 @@ export function getAssigneeName(t: Partial<Ticket>): string {
   const a = t?.assignee;
   if (!a) return "Unassigned";
   if (typeof a === "string") return a || "Unassigned";
-  // Jika assignee adalah objek { id, name }
   if (typeof a === "object" && "name" in a && (a as any).name) {
     return String((a as any).name);
   }
@@ -33,11 +32,19 @@ export function priorityColor(p?: string): string {
  */
 export function statusColor(s?: string): string {
   const v = (s ?? "").toLowerCase();
+
+  if (v.includes("diagnosis")) return "blue";
+  if (v.includes("dalamproses")) return "indigo";
+  if (v.includes("menunggusparepart")) return "yellow";
+  if (v.includes("selesai")) return "green";
+  if (v.includes("dibatalkan")) return "red";
+
   if (v.includes("new") || v.includes("open")) return "blue";
   if (v.includes("progress") || v.includes("work")) return "indigo";
   if (v.includes("hold") || v.includes("pending")) return "yellow";
-  if (v.includes("resolved")) return "teal";
-  if (v.includes("closed") || v.includes("done")) return "green";
+  if (v.includes("resolved")) return "green";
+  if (v.includes("closed") || v.includes("done")) return "gray";
   if (v.includes("cancel")) return "red";
+
   return "gray";
 }

@@ -10,8 +10,6 @@ export const StaffFormSchema = z
 
     username: z.string().min(3, "Username minimal 3 karakter"),
 
-    email: z.string().email("Email tidak valid"),
-
     password: z.string().optional(),
     confirmPassword: z.string().optional(),
 
@@ -19,7 +17,7 @@ export const StaffFormSchema = z
       required_error: "Pilih role",
     }),
 
-    active: z.boolean().default(true),
+    statusAktif: z.boolean().default(true),
   })
   .refine(
     (data) => {

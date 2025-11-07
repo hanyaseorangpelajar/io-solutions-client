@@ -52,11 +52,11 @@ export default function StaffFormModal({
       const defaultValues: StaffFormInput = {
         fullName: "",
         username: "",
-        email: "",
+        // email: "", // <-- HAPUS
         password: "",
         confirmPassword: "",
         role: "Teknisi",
-        active: true,
+        statusAktif: true, // <-- GANTI DARI 'active'
       };
 
       reset({
@@ -67,7 +67,7 @@ export default function StaffFormModal({
   }, [initial, opened, reset]);
 
   const role = watch("role");
-  const active = watch("active");
+  const active = watch("statusAktif"); // <-- GANTI DARI 'active'
 
   const handleClose = () => {
     onClose();
@@ -99,12 +99,6 @@ export default function StaffFormModal({
               {...register("username")}
             />
           )}
-          <TextInput
-            label="Email"
-            withAsterisk
-            error={errors.email?.message}
-            {...register("email")}
-          />
           {isNewUser && (
             <>
               <PasswordInput
@@ -137,7 +131,7 @@ export default function StaffFormModal({
             label="Aktif"
             checked={active}
             onChange={(e) =>
-              setValue("active", e.currentTarget.checked, {
+              setValue("statusAktif", e.currentTarget.checked, {
                 shouldValidate: true,
               })
             }
