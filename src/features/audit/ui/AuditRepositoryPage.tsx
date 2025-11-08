@@ -1,7 +1,10 @@
 "use client";
 
+import { useAuth } from "@/features/auth";
+import { useModals } from "@mantine/modals";
 import type { Paginated } from "@/features/tickets/api/tickets";
 import { formatDateTime } from "@/features/tickets/utils/format";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import TextField from "@/shared/ui/inputs/TextField";
 import {
   Button,
@@ -18,9 +21,17 @@ import { notifications } from "@mantine/notifications";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 
-import { listKBSolutions, type KBEntryBackend } from "../api/audits";
+import {
+  listKBSolutions,
+  updateKBEntry,
+  deleteKBEntry,
+  type KBEntryBackend,
+  type KBEntryUpdateInput,
+} from "../api/audits";
 
 import RepositoryCard, { type RepositoryCardData } from "./RepositoryCard";
+
+import KBEntryEditModal from "./KBEntryEditModal";
 
 function inferDeviceFromTags(tags: string[]): string | undefined {
   if (!Array.isArray(tags)) return undefined;
@@ -33,6 +44,9 @@ function inferDeviceFromTags(tags: string[]): string | undefined {
 }
 
 export default function AuditRepositoryPage() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const modals = useModals();
   const [device, setDevice] = useState<string | "all">("all");
   const [tag, setTag] = useState<string | "all">("all");
   const [q, setQ] = useState("");
@@ -41,10 +55,13 @@ export default function AuditRepositoryPage() {
   const PAGE_SIZE = 9;
   const [page, setPage] = useState(1);
 
+  const [editingEntry, setEditingEntry] = useState<KBEntryBackend | null>(null);
+
   const {
     data: kbData,
     isLoading,
     error,
+    refetch,
   } = useQuery<Paginated<KBEntryBackend>>({
     queryKey: ["kb-entry", "list"],
     queryFn: () => listKBSolutions({}),
@@ -62,28 +79,29 @@ export default function AuditRepositoryPage() {
 
   const allEntries: KBEntryBackend[] = kbData?.data ?? [];
 
-  const cards = useMemo<RepositoryCardData[]>(() => {
-    return allEntries
-      .map((kb: KBEntryBackend) => {
-        const allTags = (kb.tags ?? []).map((t) => t.nama);
-
-        return {
-          code: kb.sourceTicketId?.nomorTiket ?? "N/A",
-          ticketId: kb.sourceTicketId?._id ?? null,
-          subject: kb.gejala,
-          deviceType: inferDeviceFromTags(allTags),
-          resolvedAt: formatDateTime(kb.dibuatPada),
-          tags: allTags,
-          rootCause: kb.diagnosis,
-          solution: kb.solusi,
-        };
-      })
-      .reverse();
+  const mappedCardData = useMemo(() => {
+    const cardDataMap = new Map<string, RepositoryCardData>();
+    for (const kb of allEntries) {
+      const allTags = (kb.tags ?? []).map((t) => t.nama);
+      cardDataMap.set(kb.id, {
+        code: kb.sourceTicketId?.nomorTiket ?? "N/A",
+        ticketId: kb.sourceTicketId?._id ?? null,
+        subject: kb.gejala,
+        deviceType: inferDeviceFromTags(allTags),
+        resolvedAt: formatDateTime(kb.dibuatPada),
+        tags: allTags,
+        rootCause: kb.diagnosis,
+        solution: kb.solusi,
+      });
+    }
+    return cardDataMap;
   }, [allEntries]);
 
   const deviceOptions = useMemo(() => {
     const devices = new Set(
-      cards.map((c) => c.deviceType).filter((d): d is string => !!d)
+      Array.from(mappedCardData.values())
+        .map((c) => c.deviceType)
+        .filter((d): d is string => !!d)
     );
     return [
       { value: "all", label: "Semua Perangkat" },
@@ -91,34 +109,98 @@ export default function AuditRepositoryPage() {
         .sort()
         .map((d) => ({ value: d, label: d })),
     ];
-  }, [cards]);
+  }, [mappedCardData]);
+
   const tagOptions = useMemo(() => {
-    const tags = new Set(cards.flatMap((c) => c.tags ?? []));
+    const tags = new Set(
+      Array.from(mappedCardData.values()).flatMap((c) => c.tags ?? [])
+    );
     return [
       { value: "all", label: "Semua Tag" },
       ...Array.from(tags)
         .sort()
         .map((t) => ({ value: t, label: t })),
     ];
-  }, [cards]);
+  }, [mappedCardData]);
 
-  const filtered = useMemo(() => {
-    const byDevice = (c: RepositoryCardData) =>
-      device === "all" || c.deviceType === device;
-    const byTag = (c: RepositoryCardData) =>
-      tag === "all" || c.tags.includes(tag);
-    const byQuery = (c: RepositoryCardData) => {
-      if (!qDebounced) return true;
-      const hay = `${c.subject} ${c.code} ${c.rootCause} ${
-        c.solution
-      } ${c.tags.join(" ")}`.toLowerCase();
-      return hay.includes(qDebounced);
-    };
-    return cards.filter((c) => byDevice(c) && byTag(c) && byQuery(c));
-  }, [cards, device, tag, qDebounced]);
+  const filteredEntries = useMemo(() => {
+    return allEntries.filter((kb) => {
+      const cardData = mappedCardData.get(kb.id);
+      if (!cardData) return false;
 
-  const visible = filtered.slice(0, page * PAGE_SIZE);
-  const canLoadMore = visible.length < filtered.length;
+      const byDevice = device === "all" || cardData.deviceType === device;
+      const byTag = tag === "all" || cardData.tags.includes(tag);
+      const byQuery = () => {
+        if (!qDebounced) return true;
+        const hay = `${cardData.subject} ${cardData.code} ${
+          cardData.rootCause
+        } ${cardData.solution} ${cardData.tags.join(" ")}`.toLowerCase();
+        return hay.includes(qDebounced);
+      };
+
+      return byDevice && byTag && byQuery();
+    });
+  }, [allEntries, mappedCardData, device, tag, qDebounced]);
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: KBEntryUpdateInput }) =>
+      updateKBEntry(id, data),
+    onSuccess: () => {
+      notifications.show({
+        color: "green",
+        title: "Sukses",
+        message: "Entri Knowledge Base telah diperbarui.",
+      });
+      refetch();
+      setEditingEntry(null);
+    },
+    onError: (e: any) => {
+      notifications.show({
+        color: "red",
+        title: "Gagal Memperbarui",
+        message: e.message,
+      });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteKBEntry,
+    onSuccess: () => {
+      notifications.show({
+        color: "green",
+        title: "Sukses",
+        message: "Entri Knowledge Base telah dihapus.",
+      });
+      refetch();
+    },
+    onError: (e: any) => {
+      notifications.show({
+        color: "red",
+        title: "Gagal Menghapus",
+        message: e.message,
+      });
+    },
+  });
+
+  const openDeleteModal = (entry: KBEntryBackend) => {
+    modals.openConfirmModal({
+      title: "Hapus Entri KB",
+      centered: true,
+      children: (
+        <Text size="sm">
+          Apakah Anda yakin ingin menghapus entri untuk:{" "}
+          <strong>{entry.gejala}</strong>? Tindakan ini tidak dapat dibatalkan.
+        </Text>
+      ),
+      labels: { confirm: "Hapus", cancel: "Batal" },
+      confirmProps: { color: "red", loading: deleteMutation.isPending },
+      onConfirm: () => deleteMutation.mutate(entry.id),
+    });
+  };
+
+  const visibleEntries = filteredEntries.slice(0, page * PAGE_SIZE);
+  const canLoadMore = visibleEntries.length < filteredEntries.length;
+
   const clearFilters = () => {
     setQ("");
     setDevice("all");
@@ -128,12 +210,12 @@ export default function AuditRepositoryPage() {
 
   return (
     <Stack gap="md" style={{ position: "relative" }}>
-      <LoadingOverlay visible={isLoading} />
+      <LoadingOverlay visible={isLoading || deleteMutation.isPending} />
 
       <Group justify="space-between" align="center">
         <Title order={3}>Repository (SOP Library)</Title>
         <Text size="sm" c="dimmed">
-          {filtered.length} entri ditemukan
+          {filteredEntries.length} entri ditemukan
         </Text>
       </Group>
 
@@ -166,15 +248,24 @@ export default function AuditRepositoryPage() {
       </Group>
 
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
-        {visible.map((cardData) => (
-          <RepositoryCard
-            key={cardData.ticketId ?? cardData.code}
-            data={cardData}
-          />
-        ))}
+        {visibleEntries.map((kb) => {
+          const cardData = mappedCardData.get(kb.id);
+          if (!cardData) return null;
+
+          return (
+            <RepositoryCard
+              key={kb.id}
+              data={cardData}
+              currentUser={user}
+              sourceTeknisiId={kb.sourceTicketId?.teknisiId}
+              onEdit={() => setEditingEntry(kb)}
+              onDelete={() => openDeleteModal(kb)}
+            />
+          );
+        })}
       </SimpleGrid>
 
-      {filtered.length === 0 && !isLoading && (
+      {filteredEntries.length === 0 && !isLoading && (
         <Text c="dimmed" ta="center" py="xl">
           Tidak ada entri SOP yang cocok ditemukan.
         </Text>
@@ -183,10 +274,23 @@ export default function AuditRepositoryPage() {
       {canLoadMore && (
         <Group justify="center" mt="md">
           <Button variant="light" onClick={() => setPage((p) => p + 1)}>
-            Muat lebih banyak ({filtered.length - visible.length} tersisa)
+            Muat lebih banyak ({filteredEntries.length - visibleEntries.length}{" "}
+            tersisa)
           </Button>
         </Group>
       )}
+
+      <KBEntryEditModal
+        opened={!!editingEntry}
+        onClose={() => setEditingEntry(null)}
+        entry={editingEntry}
+        isSubmitting={updateMutation.isPending}
+        onSubmit={async (data) => {
+          if (editingEntry) {
+            await updateMutation.mutateAsync({ id: editingEntry.id, data });
+          }
+        }}
+      />
     </Stack>
   );
 }

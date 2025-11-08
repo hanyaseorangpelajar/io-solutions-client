@@ -11,12 +11,17 @@ export type KBEntryBackend = {
   sourceTicketId: {
     _id: string;
     nomorTiket: string;
+    teknisiId?: string;
   };
   tags: {
     id: string;
     nama: string;
   }[];
   dibuatPada: string;
+  dibuatOleh: {
+    _id: string;
+    nama: string;
+  };
 };
 
 type ServerPaginatedResponse<T> = {
@@ -52,7 +57,6 @@ export async function listKBSolutions(
   const serverData = response.data;
   const results = serverData.results ?? [];
   const total = serverData.totalResults ?? results.length;
-
   return {
     data: results,
     meta: {
@@ -62,4 +66,35 @@ export async function listKBSolutions(
       totalPages: 1,
     },
   };
+}
+
+export type KBEntryUpdateInput = {
+  gejala?: string;
+  modelPerangkat?: string;
+  diagnosis?: string;
+  solusi?: string;
+  tags?: string[];
+};
+
+/**
+ * Mengupdate KB Entry
+ * Memanggil PATCH /api/v1/kb-entry/:id
+ */
+export async function updateKBEntry(
+  id: string,
+  data: KBEntryUpdateInput
+): Promise<KBEntryBackend> {
+  const response = await apiClient.patch<KBEntryBackend>(
+    `/kb-entry/${id}`,
+    data
+  );
+  return response.data;
+}
+
+/**
+ * Menghapus KB Entry
+ * Memanggil DELETE /api/v1/kb-entry/:id
+ */
+export async function deleteKBEntry(id: string): Promise<void> {
+  await apiClient.delete(`/kb-entry/${id}`);
 }

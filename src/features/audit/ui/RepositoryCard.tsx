@@ -11,8 +11,19 @@ import {
   Stack,
   Text,
   Title,
+  Menu,
+  ActionIcon,
+  rem,
 } from "@mantine/core";
-import { IconCalendar, IconHash, IconDeviceDesktop } from "@tabler/icons-react";
+import {
+  IconCalendar,
+  IconHash,
+  IconDeviceDesktop,
+  IconDots,
+  IconPencil,
+  IconTrash,
+} from "@tabler/icons-react";
+import type { User } from "@/features/auth";
 
 export type RepositoryCardData = {
   code: string;
@@ -28,9 +39,19 @@ export type RepositoryCardData = {
 
 type Props = {
   data: RepositoryCardData;
+  currentUser: User | null;
+  sourceTeknisiId?: string;
+  onEdit: () => void;
+  onDelete: () => void;
 };
 
-export default function RepositoryCard({ data }: Props) {
+export default function RepositoryCard({
+  data,
+  currentUser,
+  sourceTeknisiId,
+  onEdit,
+  onDelete,
+}: Props) {
   const {
     code,
     ticketId,
@@ -42,6 +63,12 @@ export default function RepositoryCard({ data }: Props) {
     solution,
     cover,
   } = data;
+
+  const isAdmin =
+    currentUser?.role === "Admin" || currentUser?.role === "SysAdmin";
+  const isOwner =
+    !!currentUser && !!sourceTeknisiId && currentUser.id === sourceTeknisiId;
+  const canManage = isAdmin || isOwner;
 
   return (
     <Card withBorder radius="md" p="md">
@@ -107,8 +134,8 @@ export default function RepositoryCard({ data }: Props) {
           </Text>
         </Stack>
 
-        <Group justify="end" mt="xs">
-          {ticketId && (
+        <Group justify="space-between" mt="xs">
+          {ticketId ? (
             <Button
               component={Link}
               href={`/views/tickets/${encodeURIComponent(ticketId)}`}
@@ -117,6 +144,37 @@ export default function RepositoryCard({ data }: Props) {
             >
               Lihat Ticket
             </Button>
+          ) : (
+            <span />
+          )}
+
+          {canManage && (
+            <Menu shadow="md" width={160} withinPortal position="bottom-end">
+              <Menu.Target>
+                <ActionIcon variant="subtle" color="gray" aria-label="Aksi KB">
+                  <IconDots style={{ width: rem(18), height: rem(18) }} />
+                </ActionIcon>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item
+                  leftSection={
+                    <IconPencil style={{ width: rem(14), height: rem(14) }} />
+                  }
+                  onClick={onEdit}
+                >
+                  Edit
+                </Menu.Item>
+                <Menu.Item
+                  color="red"
+                  leftSection={
+                    <IconTrash style={{ width: rem(14), height: rem(14) }} />
+                  }
+                  onClick={onDelete}
+                >
+                  Hapus
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
           )}
         </Group>
       </Stack>
