@@ -16,14 +16,14 @@ import { IconCalendar, IconHash, IconDeviceDesktop } from "@tabler/icons-react";
 
 export type RepositoryCardData = {
   code: string;
-  ticketId: string;
+  ticketId: string | null;
   subject: string;
   deviceType?: string;
-  resolvedAt?: string; // formatted text
+  resolvedAt?: string;
   tags: string[];
   rootCause: string;
   solution: string;
-  cover?: string; // optional image url
+  cover?: string;
 };
 
 type Props = {
@@ -46,7 +46,6 @@ export default function RepositoryCard({ data }: Props) {
   return (
     <Card withBorder radius="md" p="md">
       <Stack gap="sm">
-        {/* Cover optional */}
         {cover ? (
           <Image
             src={cover}
@@ -109,14 +108,16 @@ export default function RepositoryCard({ data }: Props) {
         </Stack>
 
         <Group justify="end" mt="xs">
-          <Button
-            component={Link}
-            href={`/views/tickets/${encodeURIComponent(ticketId)}`}
-            variant="light"
-            size="xs"
-          >
-            Lihat Ticket
-          </Button>
+          {ticketId && (
+            <Button
+              component={Link}
+              href={`/views/tickets/${encodeURIComponent(ticketId)}`}
+              variant="light"
+              size="xs"
+            >
+              Lihat Ticket
+            </Button>
+          )}
         </Group>
       </Stack>
     </Card>

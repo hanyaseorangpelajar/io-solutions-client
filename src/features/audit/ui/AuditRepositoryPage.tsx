@@ -1,5 +1,3 @@
-// File: features/audit/ui/AuditRepositoryPage.tsx
-
 "use client";
 
 import type { Paginated } from "@/features/tickets/api/tickets";
@@ -20,11 +18,7 @@ import { notifications } from "@mantine/notifications";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 
-// --- PERUBAHAN 1: Impor API dan Tipe baru ---
 import { listKBSolutions, type KBEntryBackend } from "../api/audits";
-// Hapus tipe AuditLogItem
-// import type { AuditLogItem, AuditRecord } from "../model/types";
-// --- AKHIR PERUBAHAN 1 ---
 
 import RepositoryCard, { type RepositoryCardData } from "./RepositoryCard";
 
@@ -47,19 +41,14 @@ export default function AuditRepositoryPage() {
   const PAGE_SIZE = 9;
   const [page, setPage] = useState(1);
 
-  // --- PERUBAHAN 2: Ganti useQuery ---
   const {
-    data: kbData, // Ganti nama data
+    data: kbData,
     isLoading,
     error,
   } = useQuery<Paginated<KBEntryBackend>>({
-    // Ganti queryKey
     queryKey: ["kb-entry", "list"],
-    // Ganti queryFn
     queryFn: () => listKBSolutions({}),
-    // Hapus 'limit: 500' karena API backend akan mengembalikan semua
   });
-  // --- AKHIR PERUBAHAN 2 ---
 
   useEffect(() => {
     if (error) {
@@ -73,29 +62,25 @@ export default function AuditRepositoryPage() {
 
   const allEntries: KBEntryBackend[] = kbData?.data ?? [];
 
-  // --- PERUBAHAN 3: Perbarui logika 'useMemo' (mapping data) ---
   const cards = useMemo<RepositoryCardData[]>(() => {
     return allEntries
       .map((kb: KBEntryBackend) => {
-        // 'tags' dari backend adalah objek, ubah jadi string
         const allTags = (kb.tags ?? []).map((t) => t.nama);
 
         return {
           code: kb.sourceTicketId?.nomorTiket ?? "N/A",
-          ticketId: kb.sourceTicketId?._id ?? kb.id, // Fallback ke ID KB jika tiket tidak ada
-          subject: kb.gejala, // 'gejala' sebagai 'subject'
-          deviceType: inferDeviceFromTags(allTags), // Tetap gunakan infer
-          resolvedAt: formatDateTime(kb.dibuatPada), // Gunakan tanggal KB
+          ticketId: kb.sourceTicketId?._id ?? null,
+          subject: kb.gejala,
+          deviceType: inferDeviceFromTags(allTags),
+          resolvedAt: formatDateTime(kb.dibuatPada),
           tags: allTags,
-          rootCause: kb.diagnosis, // 'diagnosis' sebagai 'rootCause'
-          solution: kb.solusi, // 'solusi' sebagai 'solution'
+          rootCause: kb.diagnosis,
+          solution: kb.solusi,
         };
       })
       .reverse();
   }, [allEntries]);
-  // --- AKHIR PERUBAHAN 3 ---
 
-  // Opsi filter (tetap sama, mengandalkan data 'cards' yang sudah di-map)
   const deviceOptions = useMemo(() => {
     const devices = new Set(
       cards.map((c) => c.deviceType).filter((d): d is string => !!d)
@@ -117,7 +102,6 @@ export default function AuditRepositoryPage() {
     ];
   }, [cards]);
 
-  // Logika filter (tetap sama)
   const filtered = useMemo(() => {
     const byDevice = (c: RepositoryCardData) =>
       device === "all" || c.deviceType === device;
@@ -156,7 +140,7 @@ export default function AuditRepositoryPage() {
       <Group gap="sm" align="end" wrap="wrap">
         <TextField
           label="Cari SOP"
-          placeholder="Gejala, Diagnosis, Solusi..." // Perbarui placeholder
+          placeholder="Gejala, Diagnosis, Solusi..."
           value={q}
           onChange={(e) => setQ(e.currentTarget.value)}
           style={{ flexGrow: 1, minWidth: 250 }}
@@ -183,7 +167,10 @@ export default function AuditRepositoryPage() {
 
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
         {visible.map((cardData) => (
-          <RepositoryCard key={cardData.ticketId} data={cardData} />
+          <RepositoryCard
+            key={cardData.ticketId ?? cardData.code}
+            data={cardData}
+          />
         ))}
       </SimpleGrid>
 
