@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { TICKET_STATUSES } from "./types";
+import { TICKET_STATUSES, TICKET_PRIORITIES } from "./types";
 
 export const PartUsageSchema = z.object({
   partId: z.string().min(1),
@@ -50,7 +50,7 @@ export const TicketFormSchema = z.object({
   keluhanAwal: z.string().min(5, "Keluhan awal minimal 5 karakter"),
   customer: CustomerSchema,
   device: DeviceSchema,
-  priority: z.enum(["low", "medium", "high", "urgent"]).default("medium"),
+  priority: z.enum(TICKET_PRIORITIES).default("medium"),
   assignee: z.string().optional().default(""),
 });
 export type TicketFormInput = z.infer<typeof TicketFormSchema>;

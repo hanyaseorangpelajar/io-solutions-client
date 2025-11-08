@@ -14,18 +14,22 @@ import {
 import { useForm, Controller } from "react-hook-form";
 import TextField from "@/shared/ui/inputs/TextField";
 import { TicketFormSchema, type TicketFormInput } from "../model/schema";
-import type { Staff } from "@/features/staff/model/types";
+import type { Staff } from "@/features/staff";
 
 export default function TicketFormModal({
   opened,
   onClose,
   onSubmit,
   users,
+  defaultAssigneeId,
+  userRole,
 }: {
   opened: boolean;
   onClose: () => void;
   onSubmit: (data: TicketFormInput) => Promise<void> | void;
   users: Pick<Staff, "id" | "nama" | "role">[];
+  defaultAssigneeId?: string;
+  userRole?: string;
 }) {
   const {
     register,
@@ -36,27 +40,28 @@ export default function TicketFormModal({
   } = useForm<TicketFormInput>({
     resolver: zodResolver(TicketFormSchema),
     mode: "onChange",
-    defaultValues: {
-      keluhanAwal: "",
-      customer: {
-        nama: "",
-        noHp: "",
-      },
-      device: {
-        model: "",
-        brand: "",
-        serialNumber: "",
-      },
-      priority: "medium",
-      assignee: "",
-    },
   });
+
+  const isTechnician = userRole === "Teknisi";
 
   useEffect(() => {
     if (opened) {
-      reset();
+      reset({
+        keluhanAwal: "",
+        customer: {
+          nama: "",
+          noHp: "",
+        },
+        device: {
+          model: "",
+          brand: "",
+          serialNumber: "",
+        },
+        priority: "medium",
+        assignee: defaultAssigneeId ?? "",
+      });
     }
-  }, [opened, reset]);
+  }, [opened, reset, defaultAssigneeId]);
 
   const technicianOptions = useMemo(() => {
     return [
@@ -160,12 +165,13 @@ export default function TicketFormModal({
               render={({ field }) => (
                 <Select
                   {...field}
-                  label="Teknisi (opsional)"
+                  label={isTechnician ? "Ditugaskan Ke" : "Teknisi (opsional)"}
                   placeholder="Pilih teknisi..."
                   data={technicianOptions}
                   error={errors.assignee?.message}
                   searchable
-                  clearable
+                  clearable={!isTechnician}
+                  readOnly={isTechnician}
                 />
               )}
             />

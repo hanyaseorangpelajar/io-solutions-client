@@ -80,16 +80,8 @@ export type Ticket = {
   replacementItems: ReplacementItem[];
 };
 
-export const TICKET_PRIORITIES: TicketPriority[] = [
-  "low",
-  "medium",
-  "high",
-  "urgent",
-];
+export const TICKET_PRIORITIES = ["low", "medium", "high", "urgent"] as const;
 
-// --- PERBAIKAN DI SINI ---
-// Ubah dari "TicketStatus[]" menjadi "as const"
-// Ini akan mengubah tipe dari string[] menjadi readonly ["Diagnosis", "DalamProses", ...]
 export const TICKET_STATUSES = [
   "Diagnosis",
   "DalamProses",
@@ -97,7 +89,6 @@ export const TICKET_STATUSES = [
   "Selesai",
   "Dibatalkan",
 ] as const;
-// --- AKHIR PERBAIKAN ---
 
 export type PartUsage = {
   partId: string;

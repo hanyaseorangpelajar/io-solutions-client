@@ -1,36 +1,51 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useAuth, type User } from "@/features/auth";
-import { Group, Stack, Title, LoadingOverlay, Text } from "@mantine/core";
-import { IconCircleCheck, IconEye } from "@tabler/icons-react";
+import {
+  Group,
+  Stack,
+  Title,
+  LoadingOverlay,
+  Text,
+  Button,
+} from "@mantine/core";
+import { IconCircleCheck, IconEye, IconPlus } from "@tabler/icons-react";
 import { SimpleTable, type Column } from "@/shared/ui/table/SimpleTable";
 import TextField from "@/shared/ui/inputs/TextField";
 import TicketPriorityBadge from "./TicketPriorityBadge";
 import TicketStatusBadge from "./TicketStatusBadge";
 import ResolveTicketModal from "./ResolveTicketModal";
+import TicketFormModal from "./TicketFormModal";
 import type { Ticket } from "../model/types";
 import type { TicketCompleteInput } from "../model/schema";
 import { formatDateTime } from "../utils/format";
 import { ActionsDropdown } from "@/shared/ui/menus";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { listTickets, completeTicketAndCreateKB } from "../api/tickets";
+import {
+  listTickets,
+  completeTicketAndCreateKB,
+  createTicket,
+} from "../api/tickets";
 import { notifications } from "@mantine/notifications";
+import { getStaffList } from "@/features/staff/api/staff";
+import type { Staff } from "@/features/staff/model/types";
 
 export default function TicketsMyWorkPage() {
   const queryClient = useQueryClient();
   const [q, setQ] = useState("");
   const [resolveFor, setResolveFor] = useState<null | Ticket>(null);
 
-  const { user } = useAuth();
+  const [formOpen, setFormOpen] = useState(false);
+  const [users, setUsers] = useState<Staff[]>([]);
 
+  const { user } = useAuth();
   const currentTechId = (user as User & { id: string })?.id;
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["tickets", "list", { assignee: currentTechId, q }],
     queryFn: async () => {
       if (!currentTechId) return [];
-
       const res = await listTickets({
         q: q || undefined,
         assignee: currentTechId,
@@ -42,8 +57,44 @@ export default function TicketsMyWorkPage() {
       data.filter(
         (t) => t.status === "Diagnosis" || t.status === "DalamProses"
       ),
-
     enabled: !!currentTechId,
+  });
+
+  useEffect(() => {
+    getStaffList()
+      .then((staffData) => {
+        setUsers(staffData ?? []);
+      })
+      .catch((e) => {
+        console.error("Gagal mengambil daftar staff:", e.message);
+        notifications.show({
+          color: "red",
+          title: "Gagal memuat data staff",
+          message: e.message,
+        });
+      });
+  }, []);
+
+  const createMutation = useMutation({
+    mutationFn: createTicket,
+    onSuccess: (newTicket) => {
+      notifications.show({
+        title: "Tiket dibuat",
+        message: `Tiket #${newTicket.nomorTiket} telah dibuat.`,
+        color: "green",
+      });
+      setFormOpen(false);
+      queryClient.invalidateQueries({
+        queryKey: ["tickets", "list", { assignee: currentTechId }],
+      });
+    },
+    onError: (e: any) => {
+      notifications.show({
+        color: "red",
+        title: "Gagal membuat tiket",
+        message: e.message,
+      });
+    },
   });
 
   const completeMutation = useMutation({
@@ -132,17 +183,30 @@ export default function TicketsMyWorkPage() {
     <Stack gap="md">
       <Group justify="space-between" align="center">
         <Title order={3}>My Work</Title>
-        <TextField
-          label="Cari"
-          placeholder="Kode / Keluhan / Pemohon"
-          value={q}
-          onChange={(e) => setQ(e.currentTarget.value)}
-          style={{ minWidth: 260 }}
-        />
+        <Group>
+          <Button
+            leftSection={<IconPlus size={16} />}
+            onClick={() => setFormOpen(true)}
+            loading={createMutation.isPending}
+          >
+            Buat Tiket
+          </Button>
+          <TextField
+            label="Cari"
+            placeholder="Kode / Keluhan / Pemohon"
+            value={q}
+            onChange={(e) => setQ(e.currentTarget.value)}
+            style={{ minWidth: 260 }}
+          />
+        </Group>
       </Group>
 
       <div style={{ position: "relative" }}>
-        <LoadingOverlay visible={isLoading || completeMutation.isPending} />
+        <LoadingOverlay
+          visible={
+            isLoading || completeMutation.isPending || createMutation.isPending
+          }
+        />
         <SimpleTable<Ticket>
           dense="sm"
           zebra
@@ -162,6 +226,17 @@ export default function TicketsMyWorkPage() {
           if (!resolveFor) return;
           await completeMutation.mutateAsync({ id: resolveFor.id, payload });
         }}
+      />
+
+      <TicketFormModal
+        opened={formOpen}
+        onClose={() => setFormOpen(false)}
+        users={users}
+        onSubmit={async (v) => {
+          await createMutation.mutateAsync(v);
+        }}
+        defaultAssigneeId={currentTechId}
+        userRole={user?.role}
       />
     </Stack>
   );
