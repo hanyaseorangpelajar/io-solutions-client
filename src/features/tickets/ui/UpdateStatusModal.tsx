@@ -5,10 +5,24 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button, Group, Modal, Stack, Textarea, Select } from "@mantine/core";
 import { useForm, Controller } from "react-hook-form";
 import { UpdateStatusSchema, type UpdateStatusInput } from "../model/schema";
+// Kita tetap perlu TICKET_STATUSES untuk tipe data
 import { TICKET_STATUSES, type TicketStatus } from "../model/types";
 
-// Opsi status yang dapat dipilih
-const statusOptions = TICKET_STATUSES.map((s) => ({ value: s, label: s }));
+// --- PERBAIKAN ADA DI SINI ---
+
+// 1. Definisikan status progres yang boleh diubah
+const ALLOWED_PROGRESS_STATUSES: TicketStatus[] = [
+  "Diagnosis",
+  "DalamProses",
+  "MenungguSparepart",
+];
+
+// 2. Buat opsi HANYA SEKALI dari status yang diizinkan
+const statusOptions = ALLOWED_PROGRESS_STATUSES.map((s) => ({
+  value: s,
+  label: s,
+}));
+// --- AKHIR PERBAIKAN ---
 
 export default function UpdateStatusModal({
   opened,
@@ -26,7 +40,7 @@ export default function UpdateStatusModal({
     reset,
     formState: { errors, isSubmitting, isValid },
     control,
-    register, // <-- PERBAIKAN: Tambahkan 'register' di sini
+    register,
   } = useForm<UpdateStatusInput>({
     resolver: zodResolver(UpdateStatusSchema),
     mode: "onChange",
@@ -46,7 +60,7 @@ export default function UpdateStatusModal({
     <Modal
       opened={opened}
       onClose={onClose}
-      title="Ubah Status Tiket"
+      title="Ubah Status Progres Tiket"
       radius="lg"
       size="md"
       centered
@@ -66,7 +80,7 @@ export default function UpdateStatusModal({
               <Select
                 {...field}
                 label="Status Baru"
-                data={statusOptions}
+                data={statusOptions} // <-- Gunakan opsi yang sudah difilter
                 error={errors.status?.message}
                 withAsterisk
               />

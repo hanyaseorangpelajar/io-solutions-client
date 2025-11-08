@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link"; // <-- PERBAIKAN: Tambahkan impor ini
+import Link from "next/link";
 import TextField from "@/shared/ui/inputs/TextField";
 import { SimpleTable, type Column } from "@/shared/ui/table/SimpleTable";
 import {
@@ -18,7 +18,7 @@ import {
 import { DatePickerInput } from "@mantine/dates";
 import { notifications } from "@mantine/notifications";
 import {
-  IconCircleCheck,
+  IconArchive,
   IconEye,
   IconPlus,
   IconUser,
@@ -30,7 +30,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { TicketCompleteInput } from "../model/schema";
 import type { Ticket, TicketPriority, TicketStatus } from "../model/types";
 import { formatDateTime } from "../utils/format";
-import ResolveTicketModal from "./ResolveTicketModal";
+import ReviewTicketModal from "./ReviewTicketModal";
 import TicketFormModal from "./TicketFormModal";
 import TicketPriorityBadge from "./TicketPriorityBadge";
 import TicketStatusBadge from "./TicketStatusBadge";
@@ -53,9 +53,11 @@ const STATUS_OPTIONS = [
   { value: "Diagnosis", label: "Diagnosis" },
   { value: "DalamProses", label: "Dalam Proses" },
   { value: "MenungguSparepart", label: "Menunggu Sparepart" },
-  { value: "Selesai", label: "Selesai" },
+  { value: "Selesai", label: "Selesai (Menunggu Review)" },
+  { value: "Diarsipkan", label: "Diarsipkan" },
   { value: "Dibatalkan", label: "Dibatalkan" },
 ];
+
 const PRIORITY_OPTIONS = [
   { value: "all", label: "Semua" },
   { value: "low", label: "Low" },
@@ -83,7 +85,7 @@ export function TicketsListPage() {
   const [users, setUsers] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
-  const [resolveFor, setResolveFor] = useState<null | Ticket>(null);
+  const [reviewFor, setReviewFor] = useState<null | Ticket>(null);
   const [assignFor, setAssignFor] = useState<Ticket | null>(null);
   const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(
     null
@@ -101,10 +103,8 @@ export function TicketsListPage() {
     setLoading(true);
     try {
       const [from, to] = range;
-
       const fromISO = from ? new Date(from).toISOString() : undefined;
       const toISO = to ? new Date(to).toISOString() : undefined;
-
       const res = await listTickets({
         q: q || undefined,
         status: status === "all" ? undefined : status,
@@ -188,21 +188,21 @@ export function TicketsListPage() {
     },
   });
 
-  const completeMutation = useMutation({
+  const reviewMutation = useMutation({
     mutationFn: (vars: { id: string; payload: TicketCompleteInput }) =>
       completeTicketAndCreateKB(vars.id, vars.payload),
     onSuccess: () => {
       notifications.show({
-        title: "Tiket Selesai",
-        message: "Perubahan tersimpan dan KB Entry dibuat.",
+        title: "Tiket Diarsipkan",
+        message: "Tiket telah di-review dan KB Entry dibuat.",
       });
-      closeResolve();
+      closeReview();
       fetchRows();
     },
     onError: (e: any) => {
       notifications.show({
         color: "red",
-        title: "Gagal Selesaikan Tiket",
+        title: "Gagal Review Tiket",
         message: e.message,
       });
     },
@@ -304,8 +304,15 @@ export function TicketsListPage() {
           const hasAssignee = !!r.teknisiId;
           const isAssignedToMe = currentUserId === r.teknisiId?.id;
           const isAdmin = userRole === "Admin" || userRole === "SysAdmin";
-          const canChangeStatus =
-            isAdmin || (userRole === "Teknisi" && isAssignedToMe);
+
+          const isTechnician = userRole === "Teknisi";
+          const isReviewable =
+            isAdmin && (r.status === "Selesai" || r.status === "Dibatalkan");
+          const isFinal =
+            r.status === "Diarsipkan" ||
+            (isTechnician &&
+              (r.status === "Selesai" || r.status === "Dibatalkan"));
+
           return (
             <Menu withinPortal position="bottom-end" shadow="sm">
               <Menu.Target>
@@ -341,7 +348,8 @@ export function TicketsListPage() {
                     </Menu.Item>
                   </Menu.Target>
                 </Menu>
-                {userRole === "Teknisi" && isAssignedToMe && (
+
+                {isTechnician && isAssignedToMe && (
                   <Menu
                     withinPortal
                     position="left-start"
@@ -353,29 +361,30 @@ export function TicketsListPage() {
                       <Menu.Item
                         leftSection={<IconArrowsExchange size={14} />}
                         rightSection={<IconChevronRight size={14} />}
+                        disabled={isFinal}
                       >
                         Ubah Status
                       </Menu.Item>
                     </Menu.Target>
                     <Menu.Dropdown>
-                      {STATUS_OPTIONS.filter((s) => s.value !== "all").map(
-                        (opt) => (
-                          <Menu.Item
-                            key={opt.value}
-                            onClick={() =>
-                              statusMutation.mutate({
-                                ticketId: r.id,
-                                status: opt.value as TicketStatus,
-                              })
-                            }
-                            disabled={
-                              statusMutation.isPending || r.status === opt.value
-                            }
-                          >
-                            {opt.label}
-                          </Menu.Item>
-                        )
-                      )}
+                      {STATUS_OPTIONS.filter(
+                        (s) => s.value !== "all" && s.value !== "Diarsipkan"
+                      ).map((opt) => (
+                        <Menu.Item
+                          key={opt.value}
+                          onClick={() =>
+                            statusMutation.mutate({
+                              ticketId: r.id,
+                              status: opt.value as TicketStatus,
+                            })
+                          }
+                          disabled={
+                            statusMutation.isPending || r.status === opt.value
+                          }
+                        >
+                          {opt.label}
+                        </Menu.Item>
+                      ))}
                     </Menu.Dropdown>
                   </Menu>
                 )}
@@ -383,16 +392,12 @@ export function TicketsListPage() {
                 <Menu.Divider />
 
                 <Menu.Item
-                  leftSection={<IconCircleCheck size={14} />}
-                  onClick={() => setResolveFor(r)}
-                  disabled={
-                    r.status === "Selesai" ||
-                    r.status === "Dibatalkan" ||
-                    completeMutation.isPending
-                  }
+                  leftSection={<IconArchive size={14} />}
+                  onClick={() => setReviewFor(r)}
+                  disabled={!isReviewable || reviewMutation.isPending}
                   hidden={!isAdmin}
                 >
-                  Selesaikan (Resolve)
+                  Review & Arsipkan
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>
@@ -405,24 +410,24 @@ export function TicketsListPage() {
       users,
       assignMutation,
       statusMutation,
-      completeMutation,
+      reviewMutation,
       userRole,
       currentUserId,
     ]
   );
 
-  const closeResolve = () => setResolveFor(null);
+  const closeReview = () => setReviewFor(null);
 
-  const handleResolveSubmit = async (payload: TicketCompleteInput) => {
-    if (!resolveFor) return;
+  const handleReviewSubmit = async (payload: TicketCompleteInput) => {
+    if (!reviewFor) return;
     try {
-      await completeMutation.mutateAsync({ id: resolveFor.id, payload });
+      await reviewMutation.mutateAsync({ id: reviewFor.id, payload });
     } catch (e) {}
   };
 
   const isMutating =
     createMutation.isPending ||
-    completeMutation.isPending ||
+    reviewMutation.isPending ||
     assignMutation.isPending ||
     statusMutation.isPending;
 
@@ -430,7 +435,6 @@ export function TicketsListPage() {
     <Stack gap="md">
       <Group justify="space-between" align="center">
         <Title order={3}>Tickets</Title>
-
         <Group gap="xs" wrap="nowrap">
           <Button
             leftSection={<IconPlus size={16} />}
@@ -449,21 +453,18 @@ export function TicketsListPage() {
           onChange={(e) => setQ(e.currentTarget.value)}
           style={{ minWidth: 260 }}
         />
-
         <Select
           label="Status"
           data={STATUS_OPTIONS}
           value={status}
           onChange={(v) => setStatus((v as any) ?? "all")}
         />
-
         <Select
           label="Prioritas"
           data={PRIORITY_OPTIONS}
           value={priority}
           onChange={(v) => setPriority((v as any) ?? "all")}
         />
-
         <Select
           searchable
           clearable={false}
@@ -473,7 +474,6 @@ export function TicketsListPage() {
           onChange={(v) => setAssignee((v as any) ?? "all")}
           style={{ minWidth: 200 }}
         />
-
         <DatePickerInput
           type="range"
           label="Rentang tanggal (dibuat)"
@@ -483,7 +483,6 @@ export function TicketsListPage() {
           style={{ minWidth: 260 }}
           popoverProps={{ withinPortal: true }}
         />
-
         <Button variant="light" onClick={clearFilters}>
           Bersihkan Filter
         </Button>
@@ -512,11 +511,11 @@ export function TicketsListPage() {
         userRole={userRole}
       />
 
-      <ResolveTicketModal
-        opened={!!resolveFor}
-        onClose={closeResolve}
-        onSubmit={handleResolveSubmit}
-        ticket={resolveFor}
+      <ReviewTicketModal
+        opened={!!reviewFor}
+        onClose={closeReview}
+        onSubmit={handleReviewSubmit}
+        ticket={reviewFor}
       />
 
       <Modal
@@ -545,7 +544,6 @@ export function TicketsListPage() {
             maxDropdownHeight={300}
             withCheckIcon={false}
           />
-
           <Group justify="space-between">
             <Button variant="subtle" onClick={() => setAssignFor(null)}>
               Batal

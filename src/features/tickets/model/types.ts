@@ -10,7 +10,8 @@ export type TicketStatus =
   | "DalamProses"
   | "MenungguSparepart"
   | "Selesai"
-  | "Dibatalkan";
+  | "Dibatalkan"
+  | "Diarsipkan";
 
 export type TicketCustomer = {
   name: string;
@@ -46,6 +47,9 @@ export type Ticket = {
   tanggalMasuk: string;
   diperbaruiPada: string;
   tanggalSelesai?: string;
+
+  diagnosisTeknisi?: string;
+  solusiTeknisi?: string;
 
   customerId: {
     id: string;
@@ -88,6 +92,7 @@ export const TICKET_STATUSES = [
   "MenungguSparepart",
   "Selesai",
   "Dibatalkan",
+  "Diarsipkan",
 ] as const;
 
 export type PartUsage = {

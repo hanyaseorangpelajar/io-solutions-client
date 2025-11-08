@@ -34,6 +34,7 @@ export type CustomCostInput = z.infer<typeof CustomCostSchema>;
 export const TicketCompleteSchema = z.object({
   diagnosis: z.string().min(5, "Diagnosis wajib diisi, minimal 5 karakter."),
   solusi: z.string().min(10, "Solusi wajib diisi, minimal 10 karakter."),
+  tags: z.array(z.string()).optional().default([]),
 });
 export type TicketCompleteInput = z.infer<typeof TicketCompleteSchema>;
 
@@ -61,6 +62,7 @@ export type TicketFormInput = z.infer<typeof TicketFormSchema>;
  */
 export const UpdateStatusSchema = z.object({
   status: z.enum(TICKET_STATUSES, {
+    // <-- Enum ini sekarang sudah update
     required_error: "Status baru wajib dipilih",
   }),
   catatan: z.string().min(1, "Catatan wajib diisi untuk histori"),

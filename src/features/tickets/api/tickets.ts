@@ -105,10 +105,28 @@ export async function addReplacementItem(
   return response.data;
 }
 
-export type CompleteTicketInput = {
+export type TeknisiCompleteInput = {
   diagnosis: string;
   solusi: string;
 };
+
+export async function completeTicketByTeknisi(
+  id: string,
+  payload: TeknisiCompleteInput
+): Promise<Ticket> {
+  const response = await apiClient.post<Ticket>(
+    `/tickets/${encodeURIComponent(id)}/complete-teknisi`,
+    payload
+  );
+  return response.data;
+}
+
+export type CompleteTicketInput = {
+  diagnosis: string;
+  solusi: string;
+  tags?: string[];
+};
+
 export async function completeTicketAndCreateKB(
   id: string,
   payload: CompleteTicketInput

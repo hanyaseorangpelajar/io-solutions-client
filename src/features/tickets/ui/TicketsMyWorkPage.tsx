@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState, useEffect } from "react";
 import { useAuth, type User } from "@/features/auth";
 import {
@@ -9,35 +10,40 @@ import {
   LoadingOverlay,
   Text,
   Button,
+  Menu,
+  ActionIcon,
 } from "@mantine/core";
-import { IconCircleCheck, IconEye, IconPlus } from "@tabler/icons-react";
+import {
+  IconCircleCheck,
+  IconEye,
+  IconPlus,
+  IconDots,
+} from "@tabler/icons-react";
 import { SimpleTable, type Column } from "@/shared/ui/table/SimpleTable";
 import TextField from "@/shared/ui/inputs/TextField";
 import TicketPriorityBadge from "./TicketPriorityBadge";
 import TicketStatusBadge from "./TicketStatusBadge";
-import ResolveTicketModal from "./ResolveTicketModal";
 import TicketFormModal from "./TicketFormModal";
 import type { Ticket } from "../model/types";
-import type { TicketCompleteInput } from "../model/schema";
 import { formatDateTime } from "../utils/format";
-import { ActionsDropdown } from "@/shared/ui/menus";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   listTickets,
-  completeTicketAndCreateKB,
   createTicket,
+  completeTicketByTeknisi,
+  type TeknisiCompleteInput,
 } from "../api/tickets";
 import { notifications } from "@mantine/notifications";
 import { getStaffList } from "@/features/staff/api/staff";
 import type { Staff } from "@/features/staff/model/types";
+import TeknisiCompleteModal from "./TeknisiCompleteModal";
 
 export default function TicketsMyWorkPage() {
   const queryClient = useQueryClient();
   const [q, setQ] = useState("");
-  const [resolveFor, setResolveFor] = useState<null | Ticket>(null);
-
   const [formOpen, setFormOpen] = useState(false);
   const [users, setUsers] = useState<Staff[]>([]);
+  const [completingTicket, setCompletingTicket] = useState<Ticket | null>(null);
 
   const { user } = useAuth();
   const currentTechId = (user as User & { id: string })?.id;
@@ -55,25 +61,24 @@ export default function TicketsMyWorkPage() {
     },
     select: (data) =>
       data.filter(
-        (t) => t.status === "Diagnosis" || t.status === "DalamProses"
+        (t) =>
+          t.status === "Diagnosis" ||
+          t.status === "DalamProses" ||
+          t.status === "MenungguSparepart"
       ),
     enabled: !!currentTechId,
   });
 
+  const { data: staffData, isLoading: isLoadingStaff } = useQuery<Staff[]>({
+    queryKey: ["staff"],
+    queryFn: getStaffList,
+  });
+
   useEffect(() => {
-    getStaffList()
-      .then((staffData) => {
-        setUsers(staffData ?? []);
-      })
-      .catch((e) => {
-        console.error("Gagal mengambil daftar staff:", e.message);
-        notifications.show({
-          color: "red",
-          title: "Gagal memuat data staff",
-          message: e.message,
-        });
-      });
-  }, []);
+    if (staffData) {
+      setUsers(staffData);
+    }
+  }, [staffData]);
 
   const createMutation = useMutation({
     mutationFn: createTicket,
@@ -97,22 +102,20 @@ export default function TicketsMyWorkPage() {
     },
   });
 
-  const completeMutation = useMutation({
-    mutationFn: (vars: { id: string; payload: TicketCompleteInput }) =>
-      completeTicketAndCreateKB(vars.id, vars.payload),
-    onSuccess: (result) => {
-      const updatedTicket = result.ticket;
+  const teknisiCompleteMutation = useMutation({
+    mutationFn: (vars: { id: string; payload: TeknisiCompleteInput }) =>
+      completeTicketByTeknisi(vars.id, vars.payload),
+    onSuccess: (updatedTicket) => {
       notifications.show({
-        title: "Ticket Selesai",
-        message: `Tiket #${updatedTicket.nomorTiket} telah diselesaikan.`,
+        title: "Tiket Selesai",
+        message: `Tiket #${updatedTicket.nomorTiket} telah ditandai selesai.`,
+        color: "green",
       });
-      setResolveFor(null);
+      setCompletingTicket(null);
       queryClient.invalidateQueries({
         queryKey: ["tickets", "list", { assignee: currentTechId }],
       });
-      queryClient.invalidateQueries({
-        queryKey: ["tickets", "list"],
-      });
+      queryClient.invalidateQueries({ queryKey: ["tickets", "list"] });
     },
     onError: (e: any) => {
       notifications.show({
@@ -160,21 +163,33 @@ export default function TicketsMyWorkPage() {
       align: "right",
       width: 160,
       cell: (r) => (
-        <ActionsDropdown
-          items={[
-            {
-              label: "Lihat detail",
-              icon: <IconEye size={16} />,
-              href: `/views/tickets/${encodeURIComponent(r.id)}`,
-            },
-            {
-              label: "Tandai selesai",
-              icon: <IconCircleCheck size={16} />,
-              onClick: () => setResolveFor(r),
-              disabled: completeMutation.isPending,
-            },
-          ]}
-        />
+        <Menu withinPortal position="bottom-end" shadow="sm">
+          <Menu.Target>
+            <ActionIcon variant="subtle" color="gray">
+              <IconDots size={16} />
+            </ActionIcon>
+          </Menu.Target>
+          <Menu.Dropdown>
+            <Menu.Item
+              leftSection={<IconEye size={14} />}
+              component={Link}
+              href={`/views/tickets/${encodeURIComponent(r.id)}`}
+            >
+              Lihat detail
+            </Menu.Item>
+
+            <Menu.Item
+              leftSection={<IconCircleCheck size={16} />}
+              color="green"
+              onClick={() => setCompletingTicket(r)}
+              disabled={
+                teknisiCompleteMutation.isPending || r.status === "Selesai"
+              }
+            >
+              Tandai Selesai
+            </Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
       ),
     },
   ];
@@ -204,7 +219,9 @@ export default function TicketsMyWorkPage() {
       <div style={{ position: "relative" }}>
         <LoadingOverlay
           visible={
-            isLoading || completeMutation.isPending || createMutation.isPending
+            isLoading ||
+            createMutation.isPending ||
+            teknisiCompleteMutation.isPending
           }
         />
         <SimpleTable<Ticket>
@@ -218,16 +235,6 @@ export default function TicketsMyWorkPage() {
         />
       </div>
 
-      <ResolveTicketModal
-        opened={!!resolveFor}
-        onClose={() => setResolveFor(null)}
-        ticket={resolveFor}
-        onSubmit={async (payload) => {
-          if (!resolveFor) return;
-          await completeMutation.mutateAsync({ id: resolveFor.id, payload });
-        }}
-      />
-
       <TicketFormModal
         opened={formOpen}
         onClose={() => setFormOpen(false)}
@@ -237,6 +244,19 @@ export default function TicketsMyWorkPage() {
         }}
         defaultAssigneeId={currentTechId}
         userRole={user?.role}
+      />
+
+      <TeknisiCompleteModal
+        opened={!!completingTicket}
+        onClose={() => setCompletingTicket(null)}
+        ticket={completingTicket}
+        onSubmit={async (payload) => {
+          if (!completingTicket) return;
+          await teknisiCompleteMutation.mutateAsync({
+            id: completingTicket.id,
+            payload,
+          });
+        }}
       />
     </Stack>
   );

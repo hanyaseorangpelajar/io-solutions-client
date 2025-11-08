@@ -9,6 +9,7 @@ export default function TicketStatusBadge({ status }: { status?: string }) {
     MenungguSparepart: { color: "orange", label: "Menunggu Sparepart" },
     Selesai: { color: "green", label: "Selesai" },
     Dibatalkan: { color: "red", label: "Dibatalkan" },
+    Diarsipkan: { color: "gray", label: "Diarsipkan" },
 
     open: { color: "blue", label: "Open" },
     in_progress: { color: "yellow", label: "In progress" },
