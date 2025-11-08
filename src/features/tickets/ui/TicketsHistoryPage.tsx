@@ -16,56 +16,50 @@ import { SimpleTable, type Column } from "@/shared/ui/table/SimpleTable";
 import { formatDateTime } from "../utils/format";
 
 import { useQuery } from "@tanstack/react-query";
-import { getGlobalAuditLog, type AuditLogEvent } from "../api/tickets";
+import {
+  getGlobalTicketHistory,
+  type TicketHistoryEvent,
+} from "../api/tickets";
+import TicketStatusBadge from "./TicketStatusBadge";
 import { notifications } from "@mantine/notifications";
+import { useAuth } from "@/features/auth";
 
-type Row = AuditLogEvent;
-
-function auditActionLabel(action: Row["action"]): {
-  label: string;
-  color: string;
-} {
-  switch (action) {
-    case "approved":
-      return { label: "Approved", color: "green" };
-    case "rejected":
-      return { label: "Rejected", color: "red" };
-    case "draft":
-      return { label: "Draft", color: "gray" };
-    default:
-      return { label: action, color: "dark" };
-  }
-}
-
+type Row = TicketHistoryEvent;
 type RangeValue = [Date | null, Date | null];
 
-export function TicketsHistoryPage() {
+export default function TicketsHistoryPage() {
   const [q, setQ] = useState("");
   const [range, setRange] = useState<RangeValue>([null, null]);
+  const { user, isLoading: isLoadingUser } = useAuth();
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["audits", "list", { q, range }],
+    queryKey: ["tickets", "history", "list", { q, range, userId: user?.id }],
     queryFn: () => {
       const [from, to] = range;
-      return getGlobalAuditLog({
+
+      const params: Record<string, any> = {
         q: q || undefined,
         from: from ? from.toISOString() : undefined,
         to: to ? to.toISOString() : undefined,
-      });
+      };
+
+      return getGlobalTicketHistory(params);
     },
+    enabled: !isLoadingUser,
   });
 
   useEffect(() => {
     if (error) {
       notifications.show({
         color: "red",
-        title: "Gagal memuat riwayat audit",
+        title: "Gagal memuat riwayat tiket",
         message: (error as Error).message,
       });
     }
   }, [error]);
 
   const rows: Row[] = data?.data ?? [];
+
   const columns: Column<Row>[] = [
     {
       key: "at",
@@ -75,7 +69,7 @@ export function TicketsHistoryPage() {
     },
     {
       key: "ticket",
-      header: "Ticket",
+      header: "Tiket",
       width: 180,
       cell: (r) => (
         <Link href={`/views/tickets/${encodeURIComponent(r.ticketId)}`}>
@@ -83,24 +77,22 @@ export function TicketsHistoryPage() {
         </Link>
       ),
     },
-    { key: "who", header: "Reviewer", width: 140, cell: (r) => r.who },
     {
-      key: "action",
-      header: "Status Audit",
+      key: "teknisi",
+      header: "Teknisi",
       width: 160,
-      cell: (r) => {
-        const { label, color } = auditActionLabel(r.action);
-        return (
-          <Badge color={color} variant="light">
-            {label}
-          </Badge>
-        );
-      },
+      cell: (r) => r.teknisiName ?? "-",
+    },
+    {
+      key: "status",
+      header: "Status Baru",
+      width: 160,
+      cell: (r) => <TicketStatusBadge status={r.newStatus} />,
     },
     {
       key: "description",
-      header: "Catatan (Notes)",
-      cell: (r) => r.description,
+      header: "Catatan",
+      cell: (r) => r.note ?? "-",
       width: "40%",
     },
   ];
@@ -108,13 +100,13 @@ export function TicketsHistoryPage() {
   return (
     <Stack gap="md">
       <Group justify="space-between" align="center">
-        <Title order={3}>Audit Log</Title>
+        <Title order={3}>Riwayat Status Tiket</Title>
       </Group>
 
       <Group align="end" wrap="wrap" gap="sm">
         <TextField
           label="Cari"
-          placeholder="Kode tiket / catatan"
+          placeholder="Kode tiket, status, catatan..."
           value={q}
           onChange={(e) => setQ(e.currentTarget.value)}
           style={{ minWidth: 260 }}
@@ -130,7 +122,7 @@ export function TicketsHistoryPage() {
       </Group>
 
       <div style={{ position: "relative" }}>
-        <LoadingOverlay visible={isLoading} />
+        <LoadingOverlay visible={isLoading || isLoadingUser} />
         <SimpleTable<Row>
           dense="sm"
           zebra
@@ -138,7 +130,7 @@ export function TicketsHistoryPage() {
           maxHeight={520}
           columns={columns}
           data={rows}
-          emptyText="Belum ada riwayat audit"
+          emptyText="Belum ada riwayat status tiket"
         />
       </div>
     </Stack>

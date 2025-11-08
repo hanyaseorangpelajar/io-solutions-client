@@ -138,29 +138,23 @@ export async function completeTicketAndCreateKB(
   return response.data;
 }
 
-export type AuditLogEvent = {
-  id: string;
+export type TicketHistoryEvent = {
+  _id: string;
   at: string;
-  who: string;
-  ticketId: string;
+  note: string;
+  newStatus: TicketStatus;
   ticketCode: string;
-  action: "draft" | "approved" | "rejected";
-  description: string;
+  ticketId: string;
+  teknisiName: string | null;
+  customer: string | null;
 };
 
-export async function getTicketHistory(id: string): Promise<AuditLogEvent[]> {
-  const response = await apiClient.get<AuditLogEvent[]>(
-    `/tickets/${encodeURIComponent(id)}/history`
-  );
-  return response.data;
-}
-
-export async function getGlobalAuditLog(
+export async function getGlobalTicketHistory(
   params: Record<string, any>
-): Promise<Paginated<AuditLogEvent>> {
-  const response = await apiClient.get<ServerPaginatedResponse<AuditLogEvent>>(
-    `/audits${qs(params)}`
-  );
+): Promise<Paginated<TicketHistoryEvent>> {
+  const response = await apiClient.get<
+    ServerPaginatedResponse<TicketHistoryEvent>
+  >(`/tickets/history${qs(params)}`);
 
   const serverData = response.data;
   return {

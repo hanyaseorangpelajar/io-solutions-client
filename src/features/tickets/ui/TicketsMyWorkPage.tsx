@@ -13,6 +13,7 @@ import {
   Menu,
   ActionIcon,
 } from "@mantine/core";
+import { useModals } from "@mantine/modals";
 import {
   IconCircleCheck,
   IconEye,
@@ -40,6 +41,7 @@ import TeknisiCompleteModal from "./TeknisiCompleteModal";
 
 export default function TicketsMyWorkPage() {
   const queryClient = useQueryClient();
+  const modals = useModals();
   const [q, setQ] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [users, setUsers] = useState<Staff[]>([]);
@@ -69,16 +71,20 @@ export default function TicketsMyWorkPage() {
     enabled: !!currentTechId,
   });
 
-  const { data: staffData, isLoading: isLoadingStaff } = useQuery<Staff[]>({
-    queryKey: ["staff"],
-    queryFn: getStaffList,
-  });
-
   useEffect(() => {
-    if (staffData) {
-      setUsers(staffData);
-    }
-  }, [staffData]);
+    getStaffList()
+      .then((staffData) => {
+        setUsers(staffData ?? []);
+      })
+      .catch((e) => {
+        console.error("Gagal mengambil daftar staff:", e.message);
+        notifications.show({
+          color: "red",
+          title: "Gagal memuat data staff",
+          message: e.message,
+        });
+      });
+  }, []);
 
   const createMutation = useMutation({
     mutationFn: createTicket,
@@ -125,6 +131,28 @@ export default function TicketsMyWorkPage() {
       });
     },
   });
+
+  const openCompleteConfirmModal = (ticket: Ticket) => {
+    modals.openConfirmModal({
+      title: "Konfirmasi Selesaikan Tiket",
+      centered: true,
+      children: (
+        <Text size="sm">
+          Anda akan menandai tiket ini sebagai 'Selesai' dan mengirimkannya
+          untuk di-review Admin.
+          <br />
+          <br />
+          <strong>
+            Anda tidak dapat mengubah status tiket ini lagi setelahnya.
+          </strong>{" "}
+          Lanjutkan?
+        </Text>
+      ),
+      labels: { confirm: "Ya, Tandai Selesai", cancel: "Batal" },
+      confirmProps: { color: "green" },
+      onConfirm: () => setCompletingTicket(ticket),
+    });
+  };
 
   const columns: Column<Ticket>[] = [
     { key: "code", header: "Kode", width: 160, cell: (r) => r.nomorTiket },
@@ -181,7 +209,7 @@ export default function TicketsMyWorkPage() {
             <Menu.Item
               leftSection={<IconCircleCheck size={16} />}
               color="green"
-              onClick={() => setCompletingTicket(r)}
+              onClick={() => openCompleteConfirmModal(r)}
               disabled={
                 teknisiCompleteMutation.isPending || r.status === "Selesai"
               }
