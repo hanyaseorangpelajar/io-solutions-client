@@ -10,6 +10,7 @@ import {
   Badge,
   ScrollArea,
   rem,
+  Image,
 } from "@mantine/core";
 import { IconCalendar, IconDeviceDesktop, IconHash } from "@tabler/icons-react";
 import type { RepositoryCardData } from "./RepositoryCard";
@@ -37,6 +38,16 @@ export default function RepositoryDetailModal({
       scrollAreaComponent={ScrollArea.Autosize}
     >
       <Stack gap="md" pb="md">
+        {data.imageUrl && (
+          <Image
+            src={data.imageUrl}
+            alt="Dokumentasi"
+            radius="md"
+            mah={400}
+            fit="contain"
+          />
+        )}
+
         <Title order={4}>{data.subject}</Title>
         <Group gap="xs" wrap="wrap">
           {data.deviceType ? (

@@ -29,6 +29,7 @@ import {
 import type { User } from "@/features/auth";
 
 export type RepositoryCardData = {
+  imageUrl?: string;
   code: string;
   ticketId: string | null;
   subject: string;
@@ -46,7 +47,7 @@ type Props = {
   sourceTeknisiId?: string;
   onEdit: () => void;
   onDelete: () => void;
-  onViewDetails: () => void; // <-- 1. Tambahkan prop onViewDetails
+  onViewDetails: () => void;
 };
 
 export default function RepositoryCard({
@@ -55,7 +56,7 @@ export default function RepositoryCard({
   sourceTeknisiId,
   onEdit,
   onDelete,
-  onViewDetails, // <-- 2. Ambil prop-nya
+  onViewDetails,
 }: Props) {
   const {
     code,
@@ -147,15 +148,12 @@ export default function RepositoryCard({
           height: "100%",
         }}
       >
-        {/* 3. Buat konten kartu bisa diklik & ubah kursor */}
         <Box style={{ flexGrow: 1, cursor: "pointer" }} onClick={onViewDetails}>
           {CardContent}
         </Box>
 
-        {/* Grup Aksi di Bawah (Tombol + Menu) */}
         {(ticketId || canManage) && (
           <Group justify="space-between" mt="md" align="center">
-            {/* Tombol "Lihat Tiket" di kiri bawah */}
             <Button
               component={Link}
               href={`/views/tickets/${encodeURIComponent(ticketId!)}`}
@@ -165,13 +163,11 @@ export default function RepositoryCard({
               leftSection={<IconEye size={14} />}
               disabled={!ticketId}
               style={{ visibility: ticketId ? "visible" : "hidden" }}
-              // 4. Hentikan event klik agar tidak membuka modal
               onClick={(e) => e.stopPropagation()}
             >
               Lihat Tiket
             </Button>
 
-            {/* Menu Aksi (Edit/Hapus) di kanan bawah */}
             {canManage ? (
               <Menu shadow="md" width={160} withinPortal position="bottom-end">
                 <Menu.Target>
@@ -179,7 +175,6 @@ export default function RepositoryCard({
                     variant="subtle"
                     color="gray"
                     aria-label="Aksi KB"
-                    // 5. Hentikan event klik agar tidak membuka modal
                     onClick={(e) => e.stopPropagation()}
                   >
                     <IconDots style={{ width: rem(18), height: rem(18) }} />
@@ -191,7 +186,7 @@ export default function RepositoryCard({
                       <IconPencil style={{ width: rem(14), height: rem(14) }} />
                     }
                     onClick={(e) => {
-                      e.stopPropagation(); // Hentikan event
+                      e.stopPropagation();
                       onEdit();
                     }}
                   >
@@ -203,7 +198,7 @@ export default function RepositoryCard({
                       <IconTrash style={{ width: rem(14), height: rem(14) }} />
                     }
                     onClick={(e) => {
-                      e.stopPropagation(); // Hentikan event
+                      e.stopPropagation();
                       onDelete();
                     }}
                   >
@@ -212,7 +207,7 @@ export default function RepositoryCard({
                 </Menu.Dropdown>
               </Menu>
             ) : (
-              <Box /> // Spacer
+              <Box />
             )}
           </Group>
         )}

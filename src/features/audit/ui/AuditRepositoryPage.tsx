@@ -95,6 +95,7 @@ export default function AuditRepositoryPage() {
         tags: allTags,
         rootCause: kb.diagnosis,
         solution: kb.solusi,
+        imageUrl: kb.imageUrl ?? undefined,
       });
     }
     return cardDataMap;

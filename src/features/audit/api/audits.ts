@@ -8,6 +8,7 @@ export type KBEntryBackend = {
   modelPerangkat: string;
   diagnosis: string;
   solusi: string;
+  imageUrl: string | null;
   sourceTicketId: {
     _id: string;
     nomorTiket: string;
