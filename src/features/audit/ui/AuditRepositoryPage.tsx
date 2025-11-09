@@ -15,6 +15,7 @@ import {
   Stack,
   Text,
   Title,
+  Pagination,
 } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
@@ -144,6 +145,15 @@ export default function AuditRepositoryPage() {
     });
   }, [allEntries, mappedCardData, device, tag, qDebounced]);
 
+  const totalPages = Math.ceil(filteredEntries.length / PAGE_SIZE);
+  const startIndex = (page - 1) * PAGE_SIZE;
+  const endIndex = startIndex + PAGE_SIZE;
+  const visibleEntries = filteredEntries.slice(startIndex, endIndex);
+
+  useEffect(() => {
+    setPage(1);
+  }, [qDebounced, device, tag]);
+
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: KBEntryUpdateInput }) =>
       updateKBEntry(id, data),
@@ -199,9 +209,6 @@ export default function AuditRepositoryPage() {
       onConfirm: () => deleteMutation.mutate(entry.id),
     });
   };
-
-  const visibleEntries = filteredEntries.slice(0, page * PAGE_SIZE);
-  const canLoadMore = visibleEntries.length < filteredEntries.length;
 
   const clearFilters = () => {
     setQ("");
@@ -274,12 +281,14 @@ export default function AuditRepositoryPage() {
         </Text>
       )}
 
-      {canLoadMore && (
+      {totalPages > 1 && (
         <Group justify="center" mt="md">
-          <Button variant="light" onClick={() => setPage((p) => p + 1)}>
-            Muat lebih banyak ({filteredEntries.length - visibleEntries.length}{" "}
-            tersisa)
-          </Button>
+          <Pagination
+            total={totalPages}
+            value={page}
+            onChange={setPage}
+            boundaries={1}
+          />
         </Group>
       )}
 

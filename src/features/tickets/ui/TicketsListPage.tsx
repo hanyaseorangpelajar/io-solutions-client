@@ -14,6 +14,7 @@ import {
   Menu,
   ActionIcon,
   Modal,
+  Pagination,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { notifications } from "@mantine/notifications";
@@ -26,7 +27,7 @@ import {
   IconArrowsExchange,
   IconDots,
 } from "@tabler/icons-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { TicketCompleteInput } from "../model/schema";
 import type { Ticket, TicketPriority, TicketStatus } from "../model/types";
 import { formatDateTime } from "../utils/format";
@@ -40,11 +41,12 @@ import {
   completeTicketAndCreateKB,
   assignTicket,
   updateTicketStatus,
+  type Paginated,
 } from "../api/tickets";
 import { useAuth } from "@/features/auth";
 import { getStaffList } from "@/features/staff/api/staff";
 import type { Staff } from "@/features/staff";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 
 type RangeValue = [Date | null, Date | null];
 
@@ -73,6 +75,10 @@ export function TicketsListPage() {
   const { user } = useAuth();
   const userRole = user?.role;
   const currentUserId = user?.id;
+
+  const [page, setPage] = useState(1);
+  const PAGE_LIMIT = 10;
+
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<TicketStatus | "all">("all");
   const [priority, setPriority] = useState<TicketPriority | "all">("all");
@@ -81,9 +87,7 @@ export function TicketsListPage() {
   );
   const [range, setRange] = useState<RangeValue>([null, null]);
 
-  const [rows, setRows] = useState<Ticket[]>([]);
   const [users, setUsers] = useState<Staff[]>([]);
-  const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [reviewFor, setReviewFor] = useState<null | Ticket>(null);
   const [assignFor, setAssignFor] = useState<Ticket | null>(null);
@@ -97,14 +101,41 @@ export function TicketsListPage() {
     setPriority("all");
     setAssignee("all");
     setRange([null, null]);
+    setPage(1);
   };
 
-  const fetchRows = useCallback(async () => {
-    setLoading(true);
-    try {
+  useEffect(() => {
+    setPage(1);
+  }, [q, status, priority, assignee, range]);
+
+  useEffect(() => {
+    async function fetchUsers() {
+      try {
+        const usersData = await getStaffList();
+        setUsers(usersData ?? []);
+        queryClient.setQueryData(["staff", "list"], usersData ?? []);
+      } catch (e: any) {
+        notifications.show({
+          color: "red",
+          title: "Gagal memuat data staff",
+          message: e.message,
+        });
+      }
+    }
+    fetchUsers();
+  }, [queryClient]);
+
+  const { data: ticketData, isLoading } = useQuery<Paginated<Ticket>>({
+    queryKey: [
+      "tickets",
+      "list",
+      { q, status, priority, assignee, range, page, PAGE_LIMIT },
+    ],
+    queryFn: async () => {
       const [from, to] = range;
       const fromISO = from ? new Date(from).toISOString() : undefined;
       const toISO = to ? new Date(to).toISOString() : undefined;
+
       const res = await listTickets({
         q: q || undefined,
         status: status === "all" ? undefined : status,
@@ -114,44 +145,17 @@ export function TicketsListPage() {
         to: toISO,
         sortBy: "diperbaruiPada",
         order: "desc",
-        page: 1,
-        limit: 100,
+        page: page,
+        limit: PAGE_LIMIT,
       });
-      const data = res.data ?? [];
-      setRows(data);
-      queryClient.setQueryData(["tickets", "list"], data);
-    } catch (e: any) {
-      notifications.show({
-        color: "red",
-        title: "Gagal memuat tiket",
-        message: e.message,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [q, status, priority, assignee, range, queryClient]);
+      return res;
+    },
+    placeholderData: (prev) => prev,
+  });
 
-  useEffect(() => {
-    async function fetchInitialData() {
-      setLoading(true);
-      try {
-        const userRes = await getStaffList();
-        const usersData = userRes ?? [];
-        setUsers(usersData);
-        queryClient.setQueryData(["staff", "list"], usersData);
-        await fetchRows();
-      } catch (e: any) {
-        notifications.show({
-          color: "red",
-          title: "Gagal memuat data",
-          message: e.message,
-        });
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchInitialData();
-  }, [fetchRows, queryClient]);
+  const rows = ticketData?.data ?? [];
+  const totalResults = ticketData?.meta?.total ?? 0;
+  const totalPages = Math.ceil(totalResults / PAGE_LIMIT) || 1;
 
   const assigneeOptions = useMemo(() => {
     return [
@@ -177,7 +181,7 @@ export function TicketsListPage() {
         message: newTicket.nomorTiket,
       });
       setFormOpen(false);
-      fetchRows();
+      queryClient.invalidateQueries({ queryKey: ["tickets", "list"] });
     },
     onError: (e: any) => {
       notifications.show({
@@ -197,7 +201,7 @@ export function TicketsListPage() {
         message: "Tiket telah di-review dan KB Entry dibuat.",
       });
       closeReview();
-      fetchRows();
+      queryClient.invalidateQueries({ queryKey: ["tickets", "list"] });
     },
     onError: (e: any) => {
       notifications.show({
@@ -216,12 +220,7 @@ export function TicketsListPage() {
         title: "Teknisi diubah",
         message: `Tiket #${updatedTicket.nomorTiket} ditugaskan.`,
       });
-      setRows((prevRows) =>
-        prevRows.map((t) => (t.id === updatedTicket.id ? updatedTicket : t))
-      );
-      queryClient.setQueryData(["tickets", "list"], (old: Ticket[] = []) =>
-        old.map((t) => (t.id === updatedTicket.id ? updatedTicket : t))
-      );
+      queryClient.invalidateQueries({ queryKey: ["tickets", "list"] });
     },
     onError: (e: any) => {
       notifications.show({
@@ -242,12 +241,7 @@ export function TicketsListPage() {
           updatedTicket.nomorTiket
         } menjadi ${statusLabelMap.get(updatedTicket.status)}.`,
       });
-      setRows((prevRows) =>
-        prevRows.map((t) => (t.id === updatedTicket.id ? updatedTicket : t))
-      );
-      queryClient.setQueryData(["tickets", "list"], (old: Ticket[] = []) =>
-        old.map((t) => (t.id === updatedTicket.id ? updatedTicket : t))
-      );
+      queryClient.invalidateQueries({ queryKey: ["tickets", "list"] });
     },
     onError: (e: any) => {
       notifications.show({
@@ -329,25 +323,15 @@ export function TicketsListPage() {
                   Lihat detail
                 </Menu.Item>
 
-                <Menu
-                  withinPortal
-                  position="left-start"
-                  withArrow
-                  shadow="sm"
-                  trigger="hover"
+                <Menu.Item
+                  leftSection={<IconUser size={14} />}
+                  onClick={() => {
+                    setAssignFor(r);
+                    setSelectedAssigneeId(r.teknisiId?.id ?? null);
+                  }}
                 >
-                  <Menu.Target>
-                    <Menu.Item
-                      leftSection={<IconUser size={14} />}
-                      onClick={() => {
-                        setAssignFor(r);
-                        setSelectedAssigneeId(r.teknisiId?.id ?? null);
-                      }}
-                    >
-                      {hasAssignee ? "Ubah Penugasan" : "Tugaskan Teknisi"}
-                    </Menu.Item>
-                  </Menu.Target>
-                </Menu>
+                  {hasAssignee ? "Ubah Penugasan" : "Tugaskan Teknisi"}
+                </Menu.Item>
 
                 {isTechnician && isAssignedToMe && (
                   <Menu
@@ -489,7 +473,7 @@ export function TicketsListPage() {
       </Group>
 
       <div style={{ position: "relative" }}>
-        <LoadingOverlay visible={loading || isMutating} />
+        <LoadingOverlay visible={isLoading || isMutating} />
         <SimpleTable<Ticket>
           dense="sm"
           zebra
@@ -500,6 +484,18 @@ export function TicketsListPage() {
           emptyText="Tidak ada tiket"
         />
       </div>
+
+      <Group justify="space-between" align="center" mt="md">
+        <Text size="sm" c="dimmed">
+          Menampilkan {rows.length} dari {totalResults} tiket
+        </Text>
+        <Pagination
+          total={totalPages}
+          value={page}
+          onChange={setPage}
+          disabled={totalPages <= 1}
+        />
+      </Group>
 
       <TicketFormModal
         opened={formOpen}

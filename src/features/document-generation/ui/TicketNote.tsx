@@ -1,11 +1,8 @@
 "use client";
 
-// Hapus 'listParts' dan 'Part'
-// import { listParts, type Part } from "@/features/inventory/api/parts";
 import type { Staff } from "@/features/staff/model/types";
 import { getStaffList } from "@/features/staff/api/staff";
 import { useMemo } from "react";
-// Ganti 'PartUsage' dengan 'ReplacementItem' dari tipe tiket
 import type { Ticket, ReplacementItem } from "@/features/tickets/model/types";
 import { getTicket } from "@/features/tickets/api/tickets";
 import { formatDateTime } from "@/features/tickets/utils/format";
@@ -19,28 +16,23 @@ import {
   Table,
   Text,
   Title,
+  Box,
+  rem,
 } from "@mantine/core";
-// Hapus IconInfoCircle jika tidak dipakai (atau biarkan)
-// import { IconInfoCircle } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
-// Hapus useState jika tidak dipakai
-// import { useEffect, useState } from "react";
 
 type Props = {
   ticketId: string;
 };
 
-// Hapus formatCurrency
-/*
-const formatCurrency = (amount: number | null | undefined): string => {
-  if (amount == null) return "-";
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(amount);
+const safeFormatDateTime = (dateString?: string) => {
+  if (!dateString) return "-";
+  try {
+    return formatDateTime(dateString);
+  } catch (e) {
+    return dateString;
+  }
 };
-*/
 
 export default function TicketNote({ ticketId }: Props) {
   const {
@@ -53,16 +45,6 @@ export default function TicketNote({ ticketId }: Props) {
     enabled: !!ticketId,
   });
 
-  // Hapus query 'listParts'
-  /*
-  const { data: parts = [], isLoading: isLoadingParts } = useQuery<Part[]>({
-    queryKey: ["parts", "list", "forNote"],
-    queryFn: listParts,
-    enabled: !!ticketId,
-    staleTime: 5 * 60 * 1000,
-  });
-  */
-
   const { data: users = [], isLoading: isLoadingUsers } = useQuery<Staff[]>({
     queryKey: ["staff", "list", "forNote"],
     queryFn: getStaffList,
@@ -70,15 +52,11 @@ export default function TicketNote({ ticketId }: Props) {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Hapus 'partPriceMap'
-  // const partPriceMap = useMemo(...);
-
   const userNameMap = useMemo(
     () => new Map(users.map((u) => [u.id, u.nama])),
     [users]
   );
 
-  // Hapus isLoadingParts
   const isLoading = isLoadingTicket || isLoadingUsers;
   const error = ticketError;
 
@@ -101,23 +79,12 @@ export default function TicketNote({ ticketId }: Props) {
     );
   }
 
-  const {
-    nomorTiket, // Ganti code
-    tanggalMasuk, // Ganti createdAt
-    customerId, // Ganti requester
-    teknisiId, // Ganti assignee
-    keluhanAwal, // Ganti description
-    // Hapus resolution
-  } = ticket;
-  const resolvedAt = ticket.tanggalSelesai; // Ganti resolution?.resolvedAt
+  const { nomorTiket, tanggalMasuk, customerId, teknisiId, keluhanAwal } =
+    ticket;
+  const resolvedAt = ticket.tanggalSelesai;
   const assigneeName =
     (teknisiId ? userNameMap.get(teknisiId.id) : null) ?? "Tidak Ditugaskan";
 
-  // Hapus semua logika biaya
-  // let totalPartsCost = 0;
-  // let totalExtraCost = 0;
-
-  // Sesuaikan mapping 'partRows'
   const partRows =
     ticket.replacementItems?.map((p: ReplacementItem) => {
       return {
@@ -126,10 +93,6 @@ export default function TicketNote({ ticketId }: Props) {
         keterangan: p.keterangan ?? "-",
       };
     }) ?? [];
-
-  // Hapus 'extraCostRows' dan 'totalCost'
-  // const extraCostRows = ...
-  // const totalCost = ...
 
   return (
     <Paper shadow="sm" radius="md" p="xl" withBorder>
@@ -142,12 +105,12 @@ export default function TicketNote({ ticketId }: Props) {
             <Text size="sm">
               No: <strong>{nomorTiket}</strong>
             </Text>
-            <Text size="sm">Tanggal: {formatDateTime(tanggalMasuk)}</Text>
+            <Text size="sm">Tanggal: {safeFormatDateTime(tanggalMasuk)}</Text>
           </Group>
           {resolvedAt && (
             <Group justify="end">
               <Text size="sm" c="dimmed">
-                Selesai: {formatDateTime(resolvedAt)}
+                Selesai: {safeFormatDateTime(resolvedAt)}
               </Text>
             </Group>
           )}
@@ -179,19 +142,13 @@ export default function TicketNote({ ticketId }: Props) {
           </Text>
         </Stack>
 
-        {/* Hapus 'resolution' dan ganti dengan 'partRows.length' */}
         {partRows.length > 0 && (
           <>
             <Divider my="sm" />
             <Stack gap="md">
-              {/* Ganti Judul */}
               <Title order={5}>Item Pengganti</Title>
               {partRows.length > 0 && (
                 <Stack gap="xs">
-                  {/* <Text size="sm" fw={500}>
-                    Suku Cadang Digunakan:
-                  </Text> */}
-                  {/* Modifikasi Tabel */}
                   <Table striped withRowBorders={false}>
                     <Table.Thead>
                       <Table.Tr>
@@ -208,17 +165,34 @@ export default function TicketNote({ ticketId }: Props) {
                           <Table.Td>{row.keterangan}</Table.Td>
                         </Table.Tr>
                       ))}
-                      {/* Hapus Baris Total Biaya */}
                     </Table.Tbody>
                   </Table>
                 </Stack>
               )}
-
-              {/* Hapus 'extraCostRows' */}
-              {/* Hapus 'Total Biaya' */}
             </Stack>
           </>
         )}
+
+        <Stack
+          gap="xs"
+          mt="xl"
+          pt="xl"
+          style={{ borderTop: "1px dashed #ced4da" }}
+        >
+          <Text size="sm" ta="center">
+            Tanda Terima Pelanggan:
+          </Text>
+          <Box
+            style={{
+              height: rem(70),
+              width: rem(200),
+              alignSelf: "center",
+            }}
+          />
+          <Text ta="center" fw={500}>
+            ( {customerId?.nama ?? "Nama Pelanggan"} )
+          </Text>
+        </Stack>
       </Stack>
     </Paper>
   );

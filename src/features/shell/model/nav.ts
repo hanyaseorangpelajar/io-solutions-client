@@ -6,6 +6,8 @@ export type NavItem = {
   group?: boolean;
   children?: NavItem[];
   roles?: UserRole[];
+  id?: string; // <-- 'id' tetap ada untuk 'logout'
+  // 'icon' prop telah dihapus dari tipe ini
 };
 
 export function isGroup(
@@ -36,15 +38,6 @@ export const MASTER_NAV: NavItem[] = [
         href: "/views/tickets/list",
         roles: ["Admin"],
       },
-      // --- PERUBAHAN DI SINI: Hapus tautan "Review Tiket" ---
-      /*
-      {
-        label: "Review Tiket",
-        href: "/views/tickets/review",
-        roles: ["Admin"],
-      },
-      */
-      // --- AKHIR PERUBAHAN ---
       {
         label: "Pekerjaan Saya",
         href: "/views/tickets/works",
@@ -67,6 +60,11 @@ export const MASTER_NAV: NavItem[] = [
         href: "/views/audit/repository",
         roles: ["Admin", "Teknisi"],
       },
+      {
+        label: "Daftar Pelanggan",
+        href: "/views/customers/list",
+        roles: ["Admin", "Teknisi"],
+      },
     ],
   },
   {
@@ -78,6 +76,14 @@ export const MASTER_NAV: NavItem[] = [
         label: "Profile",
         href: "/views/settings/account",
         roles: ["Teknisi", "Admin"],
+        // 'icon' dihapus dari sini
+      },
+      // Item Logout ditambahkan di sini
+      {
+        label: "Logout",
+        id: "logout", // <-- ID Spesial
+        roles: ["Teknisi", "Admin", "SysAdmin"],
+        // 'icon' dihapus dari sini
       },
     ],
   },

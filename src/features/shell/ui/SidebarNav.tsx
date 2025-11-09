@@ -9,17 +9,20 @@ import {
   Stack,
   ActionIcon,
   Group,
+  rem,
+  Text,
 } from "@mantine/core";
-import { IconChevronDown } from "@tabler/icons-react";
+import { useModals } from "@mantine/modals";
+import { IconChevronDown, IconUser, IconLogout } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
 import type { NavItem } from "../model/nav";
+import { useAuth } from "@/features/auth/AuthContext";
 
 type SidebarNavProps = {
-  items?: NavItem[]; // boleh undefined: defensif
+  items?: NavItem[];
   onNavigate?: () => void;
 };
 
-// Kumpulkan semua href dari pohon nav (aman bila nodes bukan array)
 function collectHrefs(
   nodes: NavItem[] | undefined | null,
   acc: string[] = []
@@ -31,8 +34,6 @@ function collectHrefs(
   }
   return acc;
 }
-
-// Temukan href terpanjang yang cocok dengan pathname saat ini
 function findActiveHref(
   items: NavItem[] | undefined | null,
   pathname: string
@@ -41,12 +42,14 @@ function findActiveHref(
   const candidates = hrefs.filter(
     (h) => pathname === h || pathname.startsWith(h + "/")
   );
-  candidates.sort((a, b) => b.length - a.length); // longest first
+  candidates.sort((a, b) => b.length - a.length);
   return candidates[0] ?? null;
 }
 
 export default function SidebarNav({ items, onNavigate }: SidebarNavProps) {
   const list = Array.isArray(items) ? items : [];
+  const { logout } = useAuth();
+  const modals = useModals();
 
   const pathname = usePathname();
   const activeHref = useMemo(
@@ -54,7 +57,6 @@ export default function SidebarNav({ items, onNavigate }: SidebarNavProps) {
     [list, pathname]
   );
 
-  // inisialisasi state open per-group (default: open)
   const groupKeys = useMemo(
     () => list.filter((i) => i.group && i.children?.length).map((g) => g.label),
     [list]
@@ -64,10 +66,42 @@ export default function SidebarNav({ items, onNavigate }: SidebarNavProps) {
   );
   const toggle = (k: string) => setOpen((p) => ({ ...p, [k]: !p[k] }));
 
+  const openLogoutModal = () => {
+    modals.openConfirmModal({
+      title: "Konfirmasi Logout",
+      centered: true,
+      children: (
+        <Text size="sm">Apakah Anda yakin ingin keluar dari sesi ini?</Text>
+      ),
+      labels: { confirm: "Logout", cancel: "Batal" },
+      confirmProps: { color: "red" },
+      onConfirm: logout,
+    });
+  };
+
   const renderLink = (item: NavItem) => {
     const active = !!item.href && item.href === activeHref;
     const hasChildren =
       Array.isArray(item.children) && item.children.length > 0;
+
+    let icon: React.ReactNode = undefined;
+    if (item.href === "/views/settings/account") {
+      icon = <IconUser size={16} />;
+    }
+
+    if (item.id === "logout") {
+      return (
+        <NavLink
+          key={item.label}
+          label={item.label}
+          color="red"
+          onClick={openLogoutModal}
+          leftSection={<IconLogout size={16} />}
+          childrenOffset={12}
+          variant="light"
+        />
+      );
+    }
 
     return (
       <NavLink
@@ -77,6 +111,7 @@ export default function SidebarNav({ items, onNavigate }: SidebarNavProps) {
         component={item.href ? (Link as any) : undefined}
         href={item.href as any}
         onClick={onNavigate}
+        leftSection={icon}
         childrenOffset={12}
         variant="light"
       >
@@ -91,15 +126,14 @@ export default function SidebarNav({ items, onNavigate }: SidebarNavProps) {
 
     return (
       <Box key={`group-${k}`}>
-        <Group px="md" py={6} justify="space-between">
-          {/* Hanya header group, tanpa teks "Navigasi" global */}
+        <Group px="md" py={rem(6)} justify="space-between">
           <span
             style={{
-              fontSize: 12,
+              fontSize: rem(12),
               fontWeight: 600,
               color: "var(--mantine-color-dimmed)",
               textTransform: "uppercase",
-              letterSpacing: 0.5,
+              letterSpacing: rem(0.5),
             }}
           >
             {group.label}

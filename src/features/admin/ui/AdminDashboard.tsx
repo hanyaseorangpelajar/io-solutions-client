@@ -19,6 +19,8 @@ import type { Ticket } from "@/features/tickets";
 import { priorityColor, statusColor } from "@/shared/utils/formatters";
 import { useMemo } from "react";
 import { formatDateTime } from "@/features/tickets/utils/format";
+// --- 1. Impor useAuth ---
+import { useAuth } from "@/features/auth";
 
 function isOpenStatus(s: unknown) {
   const v = String(s ?? "").toLowerCase();
@@ -31,6 +33,10 @@ function isTechnician(role: unknown) {
 }
 
 export default function AdminDashboardPage() {
+  // --- 2. Ambil data user ---
+  const { user } = useAuth();
+  const userName = user?.nama ?? "Admin";
+
   const { data: ticketsData, isLoading: isLoadingTickets } = useQuery({
     queryKey: ["tickets", "list", "dashboard"],
     queryFn: () => apiClient.get("/tickets", { params: { limit: 500 } }),
@@ -111,7 +117,15 @@ export default function AdminDashboardPage() {
     <Stack gap="lg" style={{ position: "relative" }}>
       <LoadingOverlay visible={isLoading} />
 
-      <Group justify="space-between" align="center" />
+      {/* --- 3. Sisipkan teks sambutan di sini --- */}
+      <Group justify="space-between" align="center">
+        <Stack gap={2}>
+          <Title order={3}>Dashboard Admin</Title>
+          <Text c="dimmed" size="sm">
+            Hai {userName}, berikut kinerja saat ini.
+          </Text>
+        </Stack>
+      </Group>
 
       <SimpleGrid cols={{ base: 1, sm: 3 }}>
         <Paper withBorder radius="md" p="md">
