@@ -31,6 +31,7 @@ import {
 
 import RepositoryCard, { type RepositoryCardData } from "./RepositoryCard";
 import KBEntryEditModal from "./KBEntryEditModal";
+import RepositoryDetailModal from "./RepositoryDetailModal";
 
 function inferDeviceFromTags(tags: string[]): string | undefined {
   if (!Array.isArray(tags)) return undefined;
@@ -54,6 +55,9 @@ export default function AuditRepositoryPage() {
   const PAGE_SIZE = 9;
   const [page, setPage] = useState(1);
   const [editingEntry, setEditingEntry] = useState<KBEntryBackend | null>(null);
+
+  const [viewingEntryData, setViewingEntryData] =
+    useState<RepositoryCardData | null>(null);
 
   const {
     data: kbData,
@@ -83,10 +87,7 @@ export default function AuditRepositoryPage() {
       const allTags = (kb.tags ?? []).map((t) => t.nama);
       cardDataMap.set(kb.id, {
         code: kb.sourceTicketId.nomorTiket,
-        // --- PERBAIKAN DI SINI (Line 86) ---
-        // Gunakan _id, sesuai dengan tipe data yang dikirim API
         ticketId: kb.sourceTicketId._id,
-        // --- AKHIR PERBAIKAN ---
         subject: kb.gejala,
         deviceType: inferDeviceFromTags(allTags),
         resolvedAt: formatDateTime(kb.dibuatPada),
@@ -259,6 +260,7 @@ export default function AuditRepositoryPage() {
               data={cardData}
               currentUser={user}
               sourceTeknisiId={kb.sourceTicketId?.teknisiId}
+              onViewDetails={() => setViewingEntryData(cardData)}
               onEdit={() => setEditingEntry(kb)}
               onDelete={() => openDeleteModal(kb)}
             />
@@ -291,6 +293,12 @@ export default function AuditRepositoryPage() {
             await updateMutation.mutateAsync({ id: editingEntry.id, data });
           }
         }}
+      />
+
+      <RepositoryDetailModal
+        opened={!!viewingEntryData}
+        onClose={() => setViewingEntryData(null)}
+        data={viewingEntryData}
       />
     </Stack>
   );
