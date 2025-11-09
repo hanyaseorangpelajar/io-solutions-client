@@ -83,7 +83,10 @@ export default function AuditRepositoryPage() {
       const allTags = (kb.tags ?? []).map((t) => t.nama);
       cardDataMap.set(kb.id, {
         code: kb.sourceTicketId.nomorTiket,
+        // --- PERBAIKAN DI SINI (Line 86) ---
+        // Gunakan _id, sesuai dengan tipe data yang dikirim API
         ticketId: kb.sourceTicketId._id,
+        // --- AKHIR PERBAIKAN ---
         subject: kb.gejala,
         deviceType: inferDeviceFromTags(allTags),
         resolvedAt: formatDateTime(kb.dibuatPada),
