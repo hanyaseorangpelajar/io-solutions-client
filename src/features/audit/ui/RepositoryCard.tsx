@@ -3,7 +3,6 @@
 import Link from "next/link";
 import {
   Badge,
-  Button,
   Card,
   Divider,
   Group,
@@ -22,6 +21,7 @@ import {
   IconDots,
   IconPencil,
   IconTrash,
+  IconEye,
 } from "@tabler/icons-react";
 import type { User } from "@/features/auth";
 
@@ -88,6 +88,7 @@ export default function RepositoryCard({
           <Title order={5} lineClamp={2}>
             {subject}
           </Title>
+
           <Text size="sm" c="dimmed">
             {code}
           </Text>
@@ -134,21 +135,8 @@ export default function RepositoryCard({
           </Text>
         </Stack>
 
-        <Group justify="space-between" mt="xs">
-          {ticketId ? (
-            <Button
-              component={Link}
-              href={`/views/tickets/${encodeURIComponent(ticketId)}`}
-              variant="light"
-              size="xs"
-            >
-              Lihat Ticket
-            </Button>
-          ) : (
-            <span />
-          )}
-
-          {canManage && (
+        <Group justify="flex-end" mt="xs">
+          {(ticketId || canManage) && (
             <Menu shadow="md" width={160} withinPortal position="bottom-end">
               <Menu.Target>
                 <ActionIcon variant="subtle" color="gray" aria-label="Aksi KB">
@@ -156,23 +144,44 @@ export default function RepositoryCard({
                 </ActionIcon>
               </Menu.Target>
               <Menu.Dropdown>
-                <Menu.Item
-                  leftSection={
-                    <IconPencil style={{ width: rem(14), height: rem(14) }} />
-                  }
-                  onClick={onEdit}
-                >
-                  Edit
-                </Menu.Item>
-                <Menu.Item
-                  color="red"
-                  leftSection={
-                    <IconTrash style={{ width: rem(14), height: rem(14) }} />
-                  }
-                  onClick={onDelete}
-                >
-                  Hapus
-                </Menu.Item>
+                {ticketId && (
+                  <Menu.Item
+                    leftSection={
+                      <IconEye style={{ width: rem(14), height: rem(14) }} />
+                    }
+                    component={Link}
+                    href={`/views/tickets/${encodeURIComponent(ticketId)}`}
+                  >
+                    Detail Tiket
+                  </Menu.Item>
+                )}
+
+                {canManage && (
+                  <>
+                    {ticketId && <Menu.Divider />}{" "}
+                    <Menu.Item
+                      leftSection={
+                        <IconPencil
+                          style={{ width: rem(14), height: rem(14) }}
+                        />
+                      }
+                      onClick={onEdit}
+                    >
+                      Edit
+                    </Menu.Item>
+                    <Menu.Item
+                      color="red"
+                      leftSection={
+                        <IconTrash
+                          style={{ width: rem(14), height: rem(14) }}
+                        />
+                      }
+                      onClick={onDelete}
+                    >
+                      Hapus
+                    </Menu.Item>
+                  </>
+                )}
               </Menu.Dropdown>
             </Menu>
           )}

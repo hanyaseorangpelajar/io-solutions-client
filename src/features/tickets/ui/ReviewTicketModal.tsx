@@ -61,7 +61,6 @@ export default function ReviewTicketModal({
   }, [opened, reset, ticket]);
 
   if (!ticket) return null;
-
   return (
     <Modal
       opened={opened}

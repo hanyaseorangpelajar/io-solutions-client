@@ -1,18 +1,20 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Modal,
   Stack,
   TextInput,
+  TagsInput,
+  ComboboxItem,
   Textarea,
   Button,
   Group,
   LoadingOverlay,
 } from "@mantine/core";
-import { useForm, zodResolver } from "@mantine/form";
 import { z } from "zod";
 import type { KBEntryBackend, KBEntryUpdateInput } from "../api/audits";
+import { useForm, zodResolver } from "@mantine/form";
 
 const kbSchema = z.object({
   gejala: z.string().min(5, "Gejala wajib diisi (min 5 karakter)"),
@@ -21,6 +23,7 @@ const kbSchema = z.object({
     .min(3, "Model perangkat wajib diisi (min 3 karakter)"),
   diagnosis: z.string().min(5, "Diagnosis wajib diisi (min 5 karakter)"),
   solusi: z.string().min(10, "Solusi wajib diisi (min 10 karakter)"),
+  tags: z.array(z.string()).optional().default([]),
 });
 
 type Props = {
@@ -45,8 +48,11 @@ export default function KBEntryEditModal({
       modelPerangkat: "",
       diagnosis: "",
       solusi: "",
+      tags: [] as string[],
     },
   });
+
+  const [tagData, setTagData] = useState<ComboboxItem[]>([]);
 
   useEffect(() => {
     if (entry) {
@@ -55,7 +61,13 @@ export default function KBEntryEditModal({
         modelPerangkat: entry.modelPerangkat,
         diagnosis: entry.diagnosis,
         solusi: entry.solusi,
+        tags: entry.tags ? entry.tags.map((t) => t.nama) : [],
       });
+      setTagData(
+        entry.tags
+          ? entry.tags.map((t) => ({ value: t.nama, label: t.nama }))
+          : []
+      );
     } else {
       form.reset();
     }
@@ -99,6 +111,14 @@ export default function KBEntryEditModal({
             minRows={4}
             withAsterisk
             {...form.getInputProps("solusi")}
+          />
+
+          <TagsInput
+            label="Tags (Label)"
+            placeholder="Ketik tag lalu tekan Enter..."
+            data={tagData}
+            clearable
+            {...form.getInputProps("tags")}
           />
 
           <Group justify="end" mt="md">

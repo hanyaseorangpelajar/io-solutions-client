@@ -30,7 +30,6 @@ import {
 } from "../api/audits";
 
 import RepositoryCard, { type RepositoryCardData } from "./RepositoryCard";
-
 import KBEntryEditModal from "./KBEntryEditModal";
 
 function inferDeviceFromTags(tags: string[]): string | undefined {
@@ -54,7 +53,6 @@ export default function AuditRepositoryPage() {
 
   const PAGE_SIZE = 9;
   const [page, setPage] = useState(1);
-
   const [editingEntry, setEditingEntry] = useState<KBEntryBackend | null>(null);
 
   const {
@@ -84,8 +82,8 @@ export default function AuditRepositoryPage() {
     for (const kb of allEntries) {
       const allTags = (kb.tags ?? []).map((t) => t.nama);
       cardDataMap.set(kb.id, {
-        code: kb.sourceTicketId?.nomorTiket ?? "N/A",
-        ticketId: kb.sourceTicketId?._id ?? null,
+        code: kb.sourceTicketId.nomorTiket,
+        ticketId: kb.sourceTicketId._id,
         subject: kb.gejala,
         deviceType: inferDeviceFromTags(allTags),
         resolvedAt: formatDateTime(kb.dibuatPada),
