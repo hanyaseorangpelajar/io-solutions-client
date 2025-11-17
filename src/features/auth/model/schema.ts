@@ -11,7 +11,7 @@ export const IdentifierSchema = z
       }
       return v.length >= 3;
     },
-    { message: "Gunakan email valid atau username (≥ 3 karakter)" }
+    { message: "Gunakan username (≥ 3 karakter)" }
   );
 
 export const SignInSchema = z.object({

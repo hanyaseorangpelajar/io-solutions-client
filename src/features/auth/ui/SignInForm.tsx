@@ -7,6 +7,9 @@ import AuthLayout from "./AuthLayout";
 import FormHeader from "./FormHeader";
 import { TextField, PasswordField } from "@/shared/ui";
 import { useAuth } from "../AuthContext";
+import Image from "next/image";
+import logo from "../../../../public/logo.jpeg";
+import { Box, Paper } from "@mantine/core";
 
 export function SignInForm() {
   const { login, user, isLoading: isAuthLoading } = useAuth();
@@ -43,11 +46,26 @@ export function SignInForm() {
   }, [user, isAuthLoading, router]);
 
   return (
-    <AuthLayout panelWidth={420}>
+    <AuthLayout
+      panelWidth={420}
+      brandSlot={
+        <Paper radius="md" p="md" shadow="xl" withBorder>
+          <Box maw={1000}>
+            <Image
+              src={logo}
+              alt="Golden Service"
+              style={{ width: "100%", height: "auto", display: "block" }}
+              priority
+              sizes="(max-width: 768px) 100vw, 300px"
+            />
+          </Box>
+        </Paper>
+      }
+    >
       <Stack gap="md">
         <FormHeader
           title="Masuk"
-          subtitle="Gunakan username atau email dan kata sandi"
+          subtitle="Gunakan username dan kata sandi anda"
         />
 
         {error && (
@@ -65,8 +83,8 @@ export function SignInForm() {
         <form onSubmit={handleSubmit} noValidate>
           <Stack gap="sm">
             <TextField
-              label="Username atau Email"
-              placeholder="username atau you@domain.com"
+              label="Username"
+              placeholder="username anda"
               autoComplete="username"
               value={email}
               onChange={(e) => setEmail(e.currentTarget.value)}

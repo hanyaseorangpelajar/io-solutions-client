@@ -166,7 +166,7 @@ export default function AdminDashboardPage() {
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
           <Stack gap={4}>
             <Text c="dimmed" size="sm">
-              Total Entri (SOP)
+              Total Entri
             </Text>
             <Title order={2}>{kbStats.total}</Title>
             <Text size="xs" c="dimmed">

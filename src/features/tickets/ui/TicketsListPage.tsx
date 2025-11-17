@@ -262,7 +262,7 @@ export function TicketsListPage() {
       },
       {
         key: "requester",
-        header: "Pemohon",
+        header: "Pelanggan",
         cell: (r) => r.customerId?.nama ?? "-",
       },
       {
@@ -432,7 +432,7 @@ export function TicketsListPage() {
       <Group align="end" wrap="wrap" gap="sm">
         <TextField
           label="Cari"
-          placeholder="Kode / Subjek / Pemohon"
+          placeholder="Kode / Subjek / Pelanggan"
           value={q}
           onChange={(e) => setQ(e.currentTarget.value)}
           style={{ minWidth: 260 }}

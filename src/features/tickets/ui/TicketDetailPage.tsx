@@ -294,7 +294,7 @@ export default function TicketDetailPage() {
         <SimpleGrid cols={{ base: 1, sm: 2 }}>
           <Stack gap={4}>
             <Text size="sm" c="dimmed">
-              Pemohon
+              Pelanggan
             </Text>
             <Text fw={600}>{customerId?.nama ?? "N/A"}</Text>
           </Stack>

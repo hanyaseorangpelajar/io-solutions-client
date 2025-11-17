@@ -121,7 +121,7 @@ export default function TicketNote({ ticketId }: Props) {
         <Group grow>
           <Stack gap={4}>
             <Text size="xs" c="dimmed">
-              Pemohon:
+              Pelanggan:
             </Text>
             <Text fw={500}>{customerId?.nama ?? "N/A"}</Text>
           </Stack>

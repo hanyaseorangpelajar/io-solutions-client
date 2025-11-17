@@ -8,28 +8,24 @@
 /* ================================
    MONOCHROME THEME (BLACK/WHITE)
    ================================ */
-@layer base {
-  /* Tokens: hanya black/white */
+/* @layer base {
   :root {
     color-scheme: light;
-    --bg: #ffffff; /* background */
-    --fg: #000000; /* foreground (text, border, outline) */
+    --bg: #ffffff;
+    --fg: #000000;
   }
-  /* Mode gelap via class .dark */
   .dark {
     color-scheme: dark;
     --bg: #000000;
     --fg: #ffffff;
   }
 
-  /* Dokumen */
   html,
   body {
     background-color: var(--bg);
     color: var(--fg);
   }
 
-  /* Teks & heading */
   h1,
   h2,
   h3,
@@ -44,18 +40,15 @@
     color: var(--fg);
   }
 
-  /* Link: tetap mewarisi warna, beri underline untuk affordance */
   a {
     color: var(--fg);
     text-decoration: underline;
   }
 
-  /* Garis & pembatas */
   hr {
     border-color: var(--fg);
   }
 
-  /* Border/outline default ke hitam/putih */
   *,
   ::before,
   ::after {
@@ -63,7 +56,6 @@
     outline-color: var(--fg);
   }
 
-  /* Selection */
   ::selection {
     background: #000000;
     color: #ffffff;
@@ -73,9 +65,8 @@
     color: #ffffff;
   }
 
-  /* Scrollbar (Firefox & WebKit) */
   * {
-    scrollbar-color: #000000 #ffffff; /* thumb, track */
+    scrollbar-color: #000000 #ffffff;
   }
   ::-webkit-scrollbar {
     width: 12px;
@@ -91,7 +82,6 @@
     background: #ffffff;
   }
 
-  /* Form controls */
   input,
   textarea,
   select,
@@ -101,14 +91,12 @@
     border: 1px solid var(--fg);
   }
 
-  /* Placeholder tetap solid (tanpa abu-abu) */
   input::placeholder,
   textarea::placeholder {
     color: var(--fg);
-    opacity: 1; /* jangan transparan agar tetap pure black/white */
+    opacity: 1;
   }
 
-  /* Caret & accent (checkbox/radio/switch) pure monochrome */
   input,
   textarea,
   select {
@@ -116,9 +104,8 @@
     accent-color: var(--fg);
   }
 
-  /* Fokus yang jelas dan kontras */
   :focus-visible {
     outline: 2px solid var(--fg);
     outline-offset: 2px;
   }
-}
+} */

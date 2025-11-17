@@ -32,7 +32,7 @@ export default function RepositoryDetailModal({
     <Modal
       opened={opened}
       onClose={onClose}
-      title={`Detail SOP: ${data.code}`}
+      title={`Detail solusi: ${data.code}`}
       size="lg"
       centered
       scrollAreaComponent={ScrollArea.Autosize}

@@ -223,7 +223,7 @@ export default function AuditRepositoryPage() {
       <LoadingOverlay visible={isLoading || deleteMutation.isPending} />
 
       <Group justify="space-between" align="center">
-        <Title order={3}>Repository (SOP Library)</Title>
+        <Title order={3}>Pustaka Solusi</Title>
         <Text size="sm" c="dimmed">
           {filteredEntries.length} entri ditemukan
         </Text>
@@ -231,7 +231,7 @@ export default function AuditRepositoryPage() {
 
       <Group gap="sm" align="end" wrap="wrap">
         <TextField
-          label="Cari SOP"
+          label="Cari"
           placeholder="Gejala, Diagnosis, Solusi..."
           value={q}
           onChange={(e) => setQ(e.currentTarget.value)}
@@ -278,7 +278,7 @@ export default function AuditRepositoryPage() {
 
       {filteredEntries.length === 0 && !isLoading && (
         <Text c="dimmed" ta="center" py="xl">
-          Tidak ada entri SOP yang cocok ditemukan.
+          Tidak ada entri solusi yang cocok ditemukan.
         </Text>
       )}
 

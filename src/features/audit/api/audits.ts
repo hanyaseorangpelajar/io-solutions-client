@@ -43,10 +43,6 @@ function qs(params: Record<string, any>): string {
   return q ? `?${q}` : "";
 }
 
-/**
- * Mengambil daftar SOP (Knowledge Base).
- * Memanggil GET /api/v1/kb-entry
- */
 export async function listKBSolutions(
   params: Record<string, any>
 ): Promise<Paginated<KBEntryBackend>> {

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   ActionIcon,
   Box,
@@ -12,6 +13,7 @@ import {
 } from "@mantine/core";
 import { useComputedColorScheme, useMantineColorScheme } from "@mantine/core";
 import { IconMoon, IconSun } from "@tabler/icons-react";
+import logo from "../../../../public/logo.jpeg";
 
 type HeaderBarProps = {
   opened: boolean;
@@ -43,7 +45,7 @@ function ThemeToggle() {
 
 function BrandBar({
   title = "I/O SOLUTIONS",
-  tagline = "Oleh Golden Service Tembalang",
+  tagline = "Dari | Untuk | Oleh : Golden Service",
 }: {
   title?: string;
   tagline?: string;
@@ -51,30 +53,17 @@ function BrandBar({
   const theme = useMantineTheme();
   return (
     <Group gap={12} wrap="nowrap">
-      <Box
-        aria-label="Brand Logo"
+      <Image
+        src={logo}
+        alt="Golden Service Logo"
         style={{
-          display: "grid",
-          placeItems: "center",
-          width: rem(28),
-          height: rem(28),
-          border: `1px solid ${theme.colors.gray[4]}`,
+          height: rem(36),
+          width: "auto",
+          display: "block",
           borderRadius: rem(6),
-          textDecoration: "none",
-          cursor: "default",
         }}
-      >
-        <Text
-          component="span"
-          ff={theme.fontFamilyMonospace}
-          fw={800}
-          fz={10}
-          lh={1}
-          style={{ letterSpacing: rem(0.5) }}
-        >
-          I<span style={{ padding: "0 1px" }}>/</span>O
-        </Text>
-      </Box>
+        priority
+      />
 
       <Box style={{ lineHeight: 1.1, overflow: "hidden" }}>
         <Text

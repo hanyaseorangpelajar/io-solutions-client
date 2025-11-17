@@ -164,7 +164,7 @@ export default function TicketsMyWorkPage() {
     },
     {
       key: "requester",
-      header: "Pemohon",
+      header: "Pelanggan",
       cell: (r) => r.customerId?.nama ?? "-",
     },
     {
@@ -236,7 +236,7 @@ export default function TicketsMyWorkPage() {
           </Button>
           <TextField
             label="Cari"
-            placeholder="Kode / Keluhan / Pemohon"
+            placeholder="Kode / Keluhan / Pelanggan"
             value={q}
             onChange={(e) => setQ(e.currentTarget.value)}
             style={{ minWidth: 260 }}

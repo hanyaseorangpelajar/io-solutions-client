@@ -12,7 +12,18 @@ type AuthLayoutProps = PropsWithChildren<{
 
 function DefaultBrand() {
   return (
-    <Stack gap={8} align="center">
+    <Stack
+      gap={8}
+      align="center"
+      justify="center"
+      p="xl"
+      style={{
+        background:
+          "linear-gradient(135deg, var(--mantine-color-dark-8), var(--mantine-color-dark-6))",
+        width: "100%",
+        height: "100%",
+      }}
+    >
       <Title order={2} c="gray.1">
         I/O SOLUTIONS
       </Title>
@@ -20,7 +31,6 @@ function DefaultBrand() {
     </Stack>
   );
 }
-
 export default function AuthLayout({
   children,
   panelWidth = 420,
@@ -31,16 +41,11 @@ export default function AuthLayout({
       <Stack
         justify="center"
         align="center"
-        p="xl"
-        style={{
-          background:
-            "linear-gradient(135deg, var(--mantine-color-dark-8), var(--mantine-color-dark-6))",
-        }}
         visibleFrom="md"
+        p="xl" // <-- KEMBALIKAN PADDING DI SINI
       >
         {brandSlot ?? <DefaultBrand />}
       </Stack>
-
       <Stack justify="center" align="center" p="md">
         <Paper
           withBorder
