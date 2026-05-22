@@ -121,14 +121,14 @@ export default function TechnicianDashboardPage() {
         </Stack>
         <Group gap="xs" wrap="wrap">
           <Button component={Link} href="/views/tickets/works" variant="light">
-            Lihat My Work
+            Pekerjaan Saya
           </Button>
           <Button
             component={Link}
             href="/views/tickets/history"
             variant="light"
           >
-            Riwayat Audit
+            Riwayat Tiket
           </Button>
         </Group>
       </Group>

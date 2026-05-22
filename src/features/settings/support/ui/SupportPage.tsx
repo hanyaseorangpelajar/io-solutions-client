@@ -46,7 +46,7 @@ export default function SupportPage() {
             Kontak
           </Title>
           <Stack gap={6} mt="xs">
-            <Text>Email: support@io-solutions.local</Text>
+            <Text>Email: support@golden-solutions.local</Text>
             <Text>Telepon: 021-1234-5678</Text>
             <Text>Jam: 09.00 – 17.00 WIB</Text>
           </Stack>
