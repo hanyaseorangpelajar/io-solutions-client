@@ -83,7 +83,7 @@ export function TicketsListPage() {
   const [status, setStatus] = useState<TicketStatus | "all">("all");
   const [priority, setPriority] = useState<TicketPriority | "all">("all");
   const [assignee, setAssignee] = useState<string | "all" | "unassigned">(
-    "all"
+    "all",
   );
   const [range, setRange] = useState<RangeValue>([null, null]);
 
@@ -92,7 +92,7 @@ export function TicketsListPage() {
   const [reviewFor, setReviewFor] = useState<null | Ticket>(null);
   const [assignFor, setAssignFor] = useState<Ticket | null>(null);
   const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(
-    null
+    null,
   );
 
   const clearFilters = () => {
@@ -134,7 +134,19 @@ export function TicketsListPage() {
     queryFn: async () => {
       const [from, to] = range;
       const fromISO = from ? new Date(from).toISOString() : undefined;
-      const toISO = to ? new Date(to).toISOString() : undefined;
+
+      let toISO: string | undefined = undefined;
+      if (to) {
+        /**
+         *
+         * Set ke akhir hari (23:59:59.999) agar data yang dibuat pada hari yang
+         * sama tidak terpotong atau terabaikan akibat offset default jam 00:00:00.
+         *
+         */
+        const toDate = new Date(to);
+        toDate.setHours(23, 59, 59, 999);
+        toISO = toDate.toISOString();
+      }
 
       const res = await listTickets({
         q: q || undefined,
@@ -142,7 +154,7 @@ export function TicketsListPage() {
         priority: priority === "all" ? undefined : priority,
         assignee: assignee,
         from: fromISO,
-        to: toISO,
+        to: toISO, // Menggunakan toISO yang sudah dimutasi jamnya
         sortBy: "diperbaruiPada",
         order: "desc",
         page: page,
@@ -170,7 +182,7 @@ export function TicketsListPage() {
 
   const userNameMap = useMemo(
     () => new Map(users.map((u) => [u.id, u.nama])),
-    [users]
+    [users],
   );
 
   const createMutation = useMutation({
@@ -352,7 +364,7 @@ export function TicketsListPage() {
                     </Menu.Target>
                     <Menu.Dropdown>
                       {STATUS_OPTIONS.filter(
-                        (s) => s.value !== "all" && s.value !== "Diarsipkan"
+                        (s) => s.value !== "all" && s.value !== "Diarsipkan",
                       ).map((opt) => (
                         <Menu.Item
                           key={opt.value}
@@ -397,7 +409,7 @@ export function TicketsListPage() {
       reviewMutation,
       userRole,
       currentUserId,
-    ]
+    ],
   );
 
   const closeReview = () => setReviewFor(null);

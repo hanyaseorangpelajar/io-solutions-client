@@ -88,7 +88,6 @@ export default function AuditRepositoryPage() {
       const allTags = (kb.tags ?? []).map((t) => t.nama);
       cardDataMap.set(kb.id, {
         code: kb.sourceTicketId.nomorTiket,
-        ticketId: kb.sourceTicketId._id,
         subject: kb.gejala,
         deviceType: inferDeviceFromTags(allTags),
         resolvedAt: formatDateTime(kb.dibuatPada),
@@ -96,6 +95,11 @@ export default function AuditRepositoryPage() {
         rootCause: kb.diagnosis,
         solution: kb.solusi,
         imageUrl: kb.imageUrl ?? undefined,
+        deviceModel: kb.modelPerangkat,
+        ticketId:
+          typeof kb.sourceTicketId === "object"
+            ? kb.sourceTicketId?._id
+            : kb.sourceTicketId,
       });
     }
     return cardDataMap;
@@ -105,7 +109,7 @@ export default function AuditRepositoryPage() {
     const devices = new Set(
       Array.from(mappedCardData.values())
         .map((c) => c.deviceType)
-        .filter((d): d is string => !!d)
+        .filter((d): d is string => !!d),
     );
     return [
       { value: "all", label: "Semua Perangkat" },
@@ -117,7 +121,7 @@ export default function AuditRepositoryPage() {
 
   const tagOptions = useMemo(() => {
     const tags = new Set(
-      Array.from(mappedCardData.values()).flatMap((c) => c.tags ?? [])
+      Array.from(mappedCardData.values()).flatMap((c) => c.tags ?? []),
     );
     return [
       { value: "all", label: "Semua Tag" },

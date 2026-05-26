@@ -39,6 +39,7 @@ export type RepositoryCardData = {
   rootCause: string;
   solution: string;
   cover?: string;
+  deviceModel?: string;
 };
 
 type Props = {

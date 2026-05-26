@@ -31,7 +31,7 @@ export function SignInForm() {
       setError(
         apiErrorMessage ||
           err.message ||
-          "Gagal masuk. Periksa username/email & kata sandi."
+          "Gagal masuk. Periksa username/email & kata sandi.",
       );
     } finally {
       setIsSubmitting(false);

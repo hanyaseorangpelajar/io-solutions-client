@@ -14,6 +14,7 @@ import {
 } from "@mantine/core";
 import { IconCalendar, IconDeviceDesktop, IconHash } from "@tabler/icons-react";
 import type { RepositoryCardData } from "./RepositoryCard";
+import Link from "next/link";
 
 type Props = {
   opened: boolean;
@@ -32,7 +33,21 @@ export default function RepositoryDetailModal({
     <Modal
       opened={opened}
       onClose={onClose}
-      title={`Detail solusi: ${data.code}`}
+      title={
+        <Text fw={500} size="md">
+          Detail solusi:{" "}
+          <Link
+            href={`/views/tickets/${encodeURIComponent((data as any).ticketId)}`}
+            style={{
+              fontWeight: 700,
+              color: "var(--mantine-color-blue-6)",
+              textDecoration: "underline",
+            }}
+          >
+            {data.code}
+          </Link>
+        </Text>
+      }
       size="lg"
       centered
       scrollAreaComponent={ScrollArea.Autosize}
@@ -86,6 +101,16 @@ export default function RepositoryDetailModal({
           </Text>
           <Text size="sm" lh={1.5} style={{ whiteSpace: "pre-wrap" }}>
             {data.solution}
+          </Text>
+        </Stack>
+
+        <Stack gap={6}>
+          <Text size="sm" c="dimmed" fw={600}>
+            Model Perangkat
+          </Text>
+          <Text size="sm" lh={1.5} style={{ whiteSpace: "pre-wrap" }}>
+            {/* Cek deviceModel (mapping custom) atau modelPerangkat (raw dari backend) */}
+            {(data as any).deviceModel || (data as any).modelPerangkat || "-"}
           </Text>
         </Stack>
       </Stack>

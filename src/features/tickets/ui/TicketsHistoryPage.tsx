@@ -51,10 +51,21 @@ export default function TicketsHistoryPage() {
     queryFn: () => {
       const [from, to] = range;
 
+      // Normalisasi 'from' secara aman
+      const fromISO = from ? new Date(from).toISOString() : undefined;
+
+      // Normalisasi 'to' secara aman dan set ke akhir hari
+      let toISO: string | undefined = undefined;
+      if (to) {
+        const toDate = new Date(to);
+        toDate.setHours(23, 59, 59, 999);
+        toISO = toDate.toISOString();
+      }
+
       const params: Record<string, any> = {
         q: q || undefined,
-        from: from ? from.toISOString() : undefined,
-        to: to ? to.toISOString() : undefined,
+        from: fromISO,
+        to: toISO,
         page: page,
         limit: PAGE_LIMIT,
       };
