@@ -98,7 +98,8 @@ export default function AuditRepositoryPage() {
         deviceModel: kb.modelPerangkat,
         ticketId:
           typeof kb.sourceTicketId === "object"
-            ? kb.sourceTicketId?._id
+            ? ((kb.sourceTicketId as any)?.id ??
+              (kb.sourceTicketId as any)?._id)
             : kb.sourceTicketId,
       });
     }
