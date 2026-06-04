@@ -41,7 +41,6 @@ import { notifications as Notifications } from "@mantine/notifications";
 // --- AKHIR PERBAIKAN 1 ---
 
 const STATIC_ROLES: Role[] = [
-  { id: "SysAdmin", name: "SysAdmin", permissions: [] },
   { id: "Admin", name: "Admin", permissions: [] },
   { id: "Teknisi", name: "Teknisi", permissions: [] },
 ];
@@ -88,7 +87,7 @@ export default function StaffListPage() {
         color: "blue",
       });
       queryClient.setQueryData<Staff[]>(["staff"], (old = []) =>
-        old.map((s) => (s.id === updatedStaff.id ? updatedStaff : s))
+        old.map((s) => (s.id === updatedStaff.id ? updatedStaff : s)),
       );
       setModalOpen(false);
     },
@@ -110,7 +109,7 @@ export default function StaffListPage() {
         color: "green",
       });
       queryClient.setQueryData<Staff[]>(["staff"], (old = []) =>
-        old.filter((s) => s.id !== staffId)
+        old.filter((s) => s.id !== staffId),
       );
     },
     onError: (error) => {
@@ -140,7 +139,7 @@ export default function StaffListPage() {
 
   const roleMap = useMemo(
     () => Object.fromEntries(roles.map((r) => [r.id, r.name])),
-    [roles]
+    [roles],
   );
 
   useEffect(() => {
@@ -162,8 +161,8 @@ export default function StaffListPage() {
             statusFilter === "all"
               ? true
               : statusFilter === "active"
-              ? s.statusAktif
-              : !s.statusAktif;
+                ? s.statusAktif
+                : !s.statusAktif;
 
           return okQ && okRole && okActive;
         })
