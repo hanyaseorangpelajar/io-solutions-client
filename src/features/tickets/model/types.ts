@@ -1,102 +1,70 @@
-type UserRef = {
-  _id: string;
-  fullName: string;
-};
+export const TICKET_PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const;
+export type TicketPriority = (typeof TICKET_PRIORITIES)[number];
 
-export type TicketPriority = "low" | "medium" | "high" | "urgent";
+export const TICKET_STATUSES = [
+  "DIAGNOSIS",
+  "IN_PROGRESS",
+  "WAITING_PART",
+  "RESOLVED",
+  "CANCELLED",
+  "ARCHIVED",
+] as const;
+export type TicketStatus = (typeof TICKET_STATUSES)[number];
 
-export type TicketStatus =
-  | "Diagnosis"
-  | "DalamProses"
-  | "MenungguSparepart"
-  | "Selesai"
-  | "Dibatalkan"
-  | "Diarsipkan";
+export interface StatusHistory {
+  timestamp: string;
+  newStatus: TicketStatus;
+  note: string;
+}
 
-export type TicketCustomer = {
+export interface ReplacementItem {
+  componentName: string;
+  quantity: number;
+  note: string | null;
+}
+
+export interface TicketCustomer {
+  customerId: string;
   name: string;
-  phone?: string;
-};
+  phone: string | null;
+}
 
-export type TicketDeviceInfo = {
-  type?: string;
-  brand?: string;
-  model?: string;
-  serialNumber?: string;
-};
+export interface TicketDevice {
+  deviceId: string;
+  type: string | null;
+  brand: string | null;
+  model: string | null;
+  serialNumber: string | null;
+}
 
-export type StatusHistory = {
-  waktu: string;
-  statusBaru: TicketStatus;
-  catatan: string;
-};
+export interface TicketTechnician {
+  technicianId: string;
+  name: string | null;
+}
 
-export type ReplacementItem = {
-  namaKomponen: string;
-  qty: number;
-  keterangan?: string;
-};
+export interface ServiceTicketDto {
+  ticketId: string;
+  ticketNumber: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  initialComplaint: string;
+  createdAt: string;
+  updatedAt: string;
+  resolvedAt: string | null;
 
-export type Ticket = {
-  id: string;
-  _id: string;
+  technicianDiagnosis: string | null;
+  technicianSolution: string | null;
 
-  nomorTiket: string;
-  status: string;
-  keluhanAwal: string;
-  tanggalMasuk: string;
-  diperbaruiPada: string;
-  tanggalSelesai?: string;
-
-  diagnosisTeknisi?: string;
-  solusiTeknisi?: string;
-
-  customerId: {
-    id: string;
-    _id: string;
-    nama: string;
-    noHp?: string;
-  };
-  deviceId: {
-    id: string;
-    _id: string;
-    brand?: string;
-    model?: string;
-    serialNumber?: string;
-    tipe?: string;
-  };
-  teknisiId?: {
-    id: string;
-    _id: string;
-    nama: string;
-  } | null;
-
-  code?: string;
-  priority?: TicketPriority;
-  customer?: TicketCustomer;
-  deviceInfo?: TicketDeviceInfo;
-  initialComplaint?: string;
-  assignedTo?: string | UserRef | null;
-  createdAt?: string;
-  updatedAt?: string;
+  customer: TicketCustomer | string;
+  device: TicketDevice | string;
+  technician: TicketTechnician | string | null;
 
   statusHistory: StatusHistory[];
   replacementItems: ReplacementItem[];
-};
+}
 
-export const TICKET_PRIORITIES = ["low", "medium", "high", "urgent"] as const;
-
-export const TICKET_STATUSES = [
-  "Diagnosis",
-  "DalamProses",
-  "MenungguSparepart",
-  "Selesai",
-  "Dibatalkan",
-  "Diarsipkan",
-] as const;
-
-export type PartUsage = {
+export interface PartUsage {
   partId: string;
   name: string;
   qty: number;
-};
+}

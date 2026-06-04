@@ -22,18 +22,18 @@ import {
 } from "@mantine/core";
 import {
   IconX,
-  IconNotes,
   IconFileText,
   IconHistory,
-  IconTool,
   IconPlus,
 } from "@tabler/icons-react";
 import { useParams, useRouter } from "next/navigation";
 import type {
-  Ticket,
+  ServiceTicketDto,
   ReplacementItem,
   StatusHistory,
   TicketStatus,
+  TicketCustomer,
+  TicketTechnician,
 } from "../model/types";
 import TicketPriorityBadge from "./TicketPriorityBadge";
 import TicketStatusBadge from "./TicketStatusBadge";
@@ -43,15 +43,11 @@ import {
   updateTicketStatus,
   addReplacementItem,
 } from "../api/tickets";
-import type { UpdateStatusInput, AddItemInput } from "../model/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { notifications } from "@mantine/notifications";
 
 import UpdateStatusModal from "./UpdateStatusModal";
 import AddItemModal from "./AddItemModal";
-
-// Hapus impor inventory
-// import { listParts, type Part } from "@/features/inventory/api/parts";
 import { getStaffList } from "@/features/staff/api/staff";
 import type { Staff } from "@/features/staff/model/types";
 
@@ -61,9 +57,7 @@ export default function TicketDetailPage() {
   const queryClient = useQueryClient();
   const id = String(params?.id ?? "");
 
-  const [ticket, setTicket] = useState<Ticket | null>(null);
-  // Hapus state inventory
-  // const [inventoryParts, setInventoryParts] = useState<Part[]>([]);
+  const [ticket, setTicket] = useState<ServiceTicketDto | null>(null);
   const [users, setUsers] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -97,7 +91,6 @@ export default function TicketDetailPage() {
     (async () => {
       setLoading(true);
       try {
-        // Hapus 'listParts' dari Promise.all
         const [ticketData, usersData] = await Promise.all([
           getTicket(id),
           getStaffList(),
@@ -105,7 +98,6 @@ export default function TicketDetailPage() {
 
         if (active) {
           setTicket(ticketData);
-          // setInventoryParts(partsData); // Hapus
           setUsers(usersData);
         }
       } catch (e: any) {
@@ -126,14 +118,9 @@ export default function TicketDetailPage() {
     };
   }, [id, queryClient]);
 
-  const userNameMap = useMemo(
-    () => new Map(users.map((u) => [u.id, u.nama])),
-    [users]
-  );
-
   const statusMutation = useMutation({
-    mutationFn: (data: UpdateStatusInput) =>
-      updateTicketStatus(id, data.status, data.catatan),
+    mutationFn: (data: { status: TicketStatus; note?: string }) =>
+      updateTicketStatus(id, data.status, data.note),
     onSuccess: () => {
       notifications.show({
         color: "green",
@@ -153,7 +140,11 @@ export default function TicketDetailPage() {
   });
 
   const itemMutation = useMutation({
-    mutationFn: (data: AddItemInput) => addReplacementItem(id, data),
+    mutationFn: (data: {
+      componentName: string;
+      quantity: number;
+      note?: string;
+    }) => addReplacementItem(id, data),
     onSuccess: () => {
       notifications.show({
         color: "green",
@@ -175,29 +166,29 @@ export default function TicketDetailPage() {
     if (!ticket) return [];
     const history = (ticket.statusHistory || []).map((h: StatusHistory) => ({
       type: "status" as const,
-      timestamp: h.waktu,
-      status: h.statusBaru,
-      note: h.catatan,
+      timestamp: h.timestamp,
+      status: h.newStatus,
+      note: h.note,
     }));
     return history.sort(
       (a, b) =>
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
     );
   }, [ticket]);
 
   const hasResolution = useMemo(
-    () => ticket?.status === "Selesai" || ticket?.status === "Dibatalkan",
-    [ticket?.status]
+    () => ticket?.status === "RESOLVED" || ticket?.status === "CANCELLED",
+    [ticket?.status],
   );
 
   const partLines = useMemo(
     () =>
       ticket?.replacementItems?.map((p: ReplacementItem) => ({
-        name: p.namaKomponen,
-        qty: p.qty,
-        keterangan: p.keterangan,
+        name: p.componentName,
+        qty: p.quantity,
+        note: p.note,
       })) ?? [],
-    [ticket?.replacementItems]
+    [ticket?.replacementItems],
   );
 
   if (loading) {
@@ -220,17 +211,21 @@ export default function TicketDetailPage() {
   }
 
   const {
-    nomorTiket,
-    keluhanAwal,
-    customerId,
-    teknisiId,
+    ticketNumber,
+    initialComplaint,
+    customer,
+    technician,
     priority,
     status,
-    tanggalMasuk,
-    diperbaruiPada,
+    createdAt,
+    updatedAt,
+    resolvedAt,
   } = ticket;
 
-  const isFinalStatus = status === "Selesai" || status === "Dibatalkan";
+  const isFinalStatus =
+    status === "RESOLVED" || status === "CANCELLED" || status === "ARCHIVED";
+  const customerData = customer as TicketCustomer;
+  const technicianData = technician as TicketTechnician;
 
   return (
     <Stack gap="md">
@@ -238,12 +233,12 @@ export default function TicketDetailPage() {
         <Stack gap={4}>
           <Group gap="xs" wrap="wrap">
             <Title order={3} style={{ lineHeight: 1.15 }}>
-              {nomorTiket}
+              {ticketNumber}
             </Title>
             <TicketStatusBadge status={status} />
             <TicketPriorityBadge priority={priority} />
           </Group>
-          <Text c="dimmed">{keluhanAwal}</Text>
+          <Text c="dimmed">{initialComplaint}</Text>
         </Stack>
 
         <Tooltip label="Tutup detail">
@@ -296,26 +291,26 @@ export default function TicketDetailPage() {
             <Text size="sm" c="dimmed">
               Pelanggan
             </Text>
-            <Text fw={600}>{customerId?.nama ?? "N/A"}</Text>
+            <Text fw={600}>{customerData?.name ?? "N/A"}</Text>
           </Stack>
           <Stack gap={4}>
             <Text size="sm" c="dimmed">
               Assignee
             </Text>
-            <Text fw={600}>{teknisiId?.nama ?? "-"}</Text>
+            <Text fw={600}>{technicianData?.name ?? "-"}</Text>
           </Stack>
 
           <Stack gap={4}>
             <Text size="sm" c="dimmed">
               Dibuat
             </Text>
-            <Text fw={600}>{formatDateTime(tanggalMasuk)}</Text>
+            <Text fw={600}>{formatDateTime(createdAt)}</Text>
           </Stack>
           <Stack gap={4}>
             <Text size="sm" c="dimmed">
               Diperbarui
             </Text>
-            <Text fw={600}>{formatDateTime(diperbaruiPada)}</Text>
+            <Text fw={600}>{formatDateTime(updatedAt)}</Text>
           </Stack>
         </SimpleGrid>
 
@@ -323,7 +318,7 @@ export default function TicketDetailPage() {
         <Stack gap={6}>
           <Text fw={600}>Deskripsi Keluhan Awal</Text>
           <Text c="dimmed" style={{ whiteSpace: "pre-wrap" }}>
-            {keluhanAwal}
+            {initialComplaint}
           </Text>
         </Stack>
       </Paper>
@@ -341,7 +336,7 @@ export default function TicketDetailPage() {
             {timelineEvents.map((event, index) => (
               <Timeline.Item
                 key={index}
-                title={event.status}
+                title={<TicketStatusBadge status={event.status} />}
                 bullet={
                   <ThemeIcon size={18} variant="light" radius="xl" color="gray">
                     <IconHistory size={12} />
@@ -370,12 +365,12 @@ export default function TicketDetailPage() {
         <Paper withBorder radius="md" p="md">
           <Group justify="space-between" mb="xs">
             <Text fw={700}>Ringkasan Penyelesaian</Text>
-            {ticket.tanggalSelesai && (
+            {resolvedAt && (
               <Badge
                 variant="light"
-                color={ticket.status === "Selesai" ? "green" : "red"}
+                color={status === "RESOLVED" ? "green" : "red"}
               >
-                {ticket.status} {formatDateTime(String(ticket.tanggalSelesai))}
+                {status} {formatDateTime(String(resolvedAt))}
               </Badge>
             )}
           </Group>
@@ -398,7 +393,7 @@ export default function TicketDetailPage() {
                     <Table.Tr key={i}>
                       <Table.Td>{p.name}</Table.Td>
                       <Table.Td>{p.qty}</Table.Td>
-                      <Table.Td>{p.keterangan ?? "-"}</Table.Td>
+                      <Table.Td>{p.note ?? "-"}</Table.Td>
                     </Table.Tr>
                   ))}
                 </Table.Tbody>

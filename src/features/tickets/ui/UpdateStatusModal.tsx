@@ -5,24 +5,22 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button, Group, Modal, Stack, Textarea, Select } from "@mantine/core";
 import { useForm, Controller } from "react-hook-form";
 import { UpdateStatusSchema, type UpdateStatusInput } from "../model/schema";
-// Kita tetap perlu TICKET_STATUSES untuk tipe data
-import { TICKET_STATUSES, type TicketStatus } from "../model/types";
+import { type TicketStatus } from "../model/types";
 
-// --- PERBAIKAN ADA DI SINI ---
-
-// 1. Definisikan status progres yang boleh diubah
 const ALLOWED_PROGRESS_STATUSES: TicketStatus[] = [
-  "Diagnosis",
-  "DalamProses",
-  "MenungguSparepart",
+  "DIAGNOSIS",
+  "IN_PROGRESS",
+  "WAITING_PART",
 ];
 
-// 2. Buat opsi HANYA SEKALI dari status yang diizinkan
-const statusOptions = ALLOWED_PROGRESS_STATUSES.map((s) => ({
-  value: s,
-  label: s,
-}));
-// --- AKHIR PERBAIKAN ---
+const statusOptions = ALLOWED_PROGRESS_STATUSES.map((s) => {
+  const labels: Record<string, string> = {
+    DIAGNOSIS: "Diagnosis",
+    IN_PROGRESS: "Dalam Proses",
+    WAITING_PART: "Menunggu Sparepart",
+  };
+  return { value: s, label: labels[s] || s };
+});
 
 export default function UpdateStatusModal({
   opened,
@@ -46,13 +44,13 @@ export default function UpdateStatusModal({
     mode: "onChange",
     defaultValues: {
       status: currentStatus,
-      catatan: "",
+      note: "",
     },
   });
 
   useEffect(() => {
     if (opened) {
-      reset({ status: currentStatus, catatan: "" });
+      reset({ status: currentStatus, note: "" });
     }
   }, [opened, reset, currentStatus]);
 
@@ -80,7 +78,7 @@ export default function UpdateStatusModal({
               <Select
                 {...field}
                 label="Status Baru"
-                data={statusOptions} // <-- Gunakan opsi yang sudah difilter
+                data={statusOptions}
                 error={errors.status?.message}
                 withAsterisk
               />
@@ -90,10 +88,10 @@ export default function UpdateStatusModal({
           <Textarea
             label="Catatan Perubahan"
             placeholder="Contoh: Menunggu sparepart datang..."
-            error={errors.catatan?.message}
+            error={errors.note?.message}
             withAsterisk
             minRows={3}
-            {...register("catatan")}
+            {...register("note")}
           />
 
           <Group justify="end" mt="md">

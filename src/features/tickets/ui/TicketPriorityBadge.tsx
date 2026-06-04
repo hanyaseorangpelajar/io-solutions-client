@@ -9,15 +9,14 @@ export default function TicketPriorityBadge({
   priority?: TicketPriority | string;
 }) {
   const map: Record<string, { color: string; label: string }> = {
-    low: { color: "gray", label: "Low" },
-    medium: { color: "blue", label: "Medium" },
-    high: { color: "orange", label: "High" },
-    urgent: { color: "red", label: "Urgent" },
+    LOW: { color: "gray", label: "Low" },
+    MEDIUM: { color: "blue", label: "Medium" },
+    HIGH: { color: "orange", label: "High" },
+    URGENT: { color: "red", label: "Urgent" },
   };
 
-  const key = priority || "low";
-
-  const v = map[key] ?? map.low;
+  const key = priority || "LOW";
+  const v = map[key] ?? map.LOW;
 
   return (
     <Badge color={v.color} variant="light" radius="sm">

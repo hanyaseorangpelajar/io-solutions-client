@@ -28,8 +28,14 @@ import {
   IconDots,
 } from "@tabler/icons-react";
 import { useEffect, useMemo, useState } from "react";
-import type { TicketCompleteInput } from "../model/schema";
-import type { Ticket, TicketPriority, TicketStatus } from "../model/types";
+import type { CompleteTicketInput } from "../api/tickets";
+import type {
+  ServiceTicketDto,
+  TicketPriority,
+  TicketStatus,
+  TicketCustomer,
+  TicketTechnician,
+} from "../model/types";
 import { formatDateTime } from "../utils/format";
 import ReviewTicketModal from "./ReviewTicketModal";
 import TicketFormModal from "./TicketFormModal";
@@ -52,20 +58,20 @@ type RangeValue = [Date | null, Date | null];
 
 const STATUS_OPTIONS = [
   { value: "all", label: "Semua" },
-  { value: "Diagnosis", label: "Diagnosis" },
-  { value: "DalamProses", label: "Dalam Proses" },
-  { value: "MenungguSparepart", label: "Menunggu Sparepart" },
-  { value: "Selesai", label: "Selesai (Menunggu Review)" },
-  { value: "Diarsipkan", label: "Diarsipkan" },
-  { value: "Dibatalkan", label: "Dibatalkan" },
+  { value: "DIAGNOSIS", label: "Diagnosis" },
+  { value: "IN_PROGRESS", label: "Dalam Proses" },
+  { value: "WAITING_PART", label: "Menunggu Sparepart" },
+  { value: "RESOLVED", label: "Selesai (Menunggu Review)" },
+  { value: "ARCHIVED", label: "Diarsipkan" },
+  { value: "CANCELLED", label: "Dibatalkan" },
 ];
 
 const PRIORITY_OPTIONS = [
   { value: "all", label: "Semua" },
-  { value: "low", label: "Low" },
-  { value: "medium", label: "Medium" },
-  { value: "high", label: "High" },
-  { value: "urgent", label: "Urgent" },
+  { value: "LOW", label: "Low" },
+  { value: "MEDIUM", label: "Medium" },
+  { value: "HIGH", label: "High" },
+  { value: "URGENT", label: "Urgent" },
 ];
 
 const statusLabelMap = new Map(STATUS_OPTIONS.map((s) => [s.value, s.label]));
@@ -89,8 +95,8 @@ export function TicketsListPage() {
 
   const [users, setUsers] = useState<Staff[]>([]);
   const [formOpen, setFormOpen] = useState(false);
-  const [reviewFor, setReviewFor] = useState<null | Ticket>(null);
-  const [assignFor, setAssignFor] = useState<Ticket | null>(null);
+  const [reviewFor, setReviewFor] = useState<null | ServiceTicketDto>(null);
+  const [assignFor, setAssignFor] = useState<ServiceTicketDto | null>(null);
   const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(
     null,
   );
@@ -113,7 +119,6 @@ export function TicketsListPage() {
       try {
         const usersData = await getStaffList();
         setUsers(usersData ?? []);
-        queryClient.setQueryData(["staff", "list"], usersData ?? []);
       } catch (e: any) {
         notifications.show({
           color: "red",
@@ -123,47 +128,41 @@ export function TicketsListPage() {
       }
     }
     fetchUsers();
-  }, [queryClient]);
+  }, []);
 
-  const { data: ticketData, isLoading } = useQuery<Paginated<Ticket>>({
-    queryKey: [
-      "tickets",
-      "list",
-      { q, status, priority, assignee, range, page, PAGE_LIMIT },
-    ],
-    queryFn: async () => {
-      const [from, to] = range;
-      const fromISO = from ? new Date(from).toISOString() : undefined;
+  const { data: ticketData, isLoading } = useQuery<Paginated<ServiceTicketDto>>(
+    {
+      queryKey: [
+        "tickets",
+        "list",
+        { q, status, priority, assignee, range, page, PAGE_LIMIT },
+      ],
+      queryFn: async () => {
+        const [from, to] = range;
+        const fromISO = from ? new Date(from).toISOString() : undefined;
+        let toISO: string | undefined = undefined;
+        if (to) {
+          const toDate = new Date(to);
+          toDate.setHours(23, 59, 59, 999);
+          toISO = toDate.toISOString();
+        }
 
-      let toISO: string | undefined = undefined;
-      if (to) {
-        /**
-         *
-         * Set ke akhir hari (23:59:59.999) agar data yang dibuat pada hari yang
-         * sama tidak terpotong atau terabaikan akibat offset default jam 00:00:00.
-         *
-         */
-        const toDate = new Date(to);
-        toDate.setHours(23, 59, 59, 999);
-        toISO = toDate.toISOString();
-      }
-
-      const res = await listTickets({
-        q: q || undefined,
-        status: status === "all" ? undefined : status,
-        priority: priority === "all" ? undefined : priority,
-        assignee: assignee,
-        from: fromISO,
-        to: toISO, // Menggunakan toISO yang sudah dimutasi jamnya
-        sortBy: "diperbaruiPada",
-        order: "desc",
-        page: page,
-        limit: PAGE_LIMIT,
-      });
-      return res;
+        return await listTickets({
+          q: q || undefined,
+          status: status === "all" ? undefined : status,
+          priority: priority === "all" ? undefined : priority,
+          assignee,
+          from: fromISO,
+          to: toISO,
+          sortBy: "updatedAt",
+          order: "desc",
+          page,
+          limit: PAGE_LIMIT,
+        });
+      },
+      placeholderData: (prev) => prev,
     },
-    placeholderData: (prev) => prev,
-  });
+  );
 
   const rows = ticketData?.data ?? [];
   const totalResults = ticketData?.meta?.total ?? 0;
@@ -180,17 +179,12 @@ export function TicketsListPage() {
     ];
   }, [users]);
 
-  const userNameMap = useMemo(
-    () => new Map(users.map((u) => [u.id, u.nama])),
-    [users],
-  );
-
   const createMutation = useMutation({
     mutationFn: createTicket,
     onSuccess: (newTicket) => {
       notifications.show({
         title: "Tiket dibuat",
-        message: newTicket.nomorTiket,
+        message: newTicket.ticketNumber,
       });
       setFormOpen(false);
       queryClient.invalidateQueries({ queryKey: ["tickets", "list"] });
@@ -205,22 +199,15 @@ export function TicketsListPage() {
   });
 
   const reviewMutation = useMutation({
-    mutationFn: (vars: { id: string; payload: TicketCompleteInput }) =>
+    mutationFn: (vars: { id: string; payload: CompleteTicketInput }) =>
       completeTicketAndCreateKB(vars.id, vars.payload),
     onSuccess: () => {
       notifications.show({
         title: "Tiket Diarsipkan",
-        message: "Tiket telah di-review dan KB Entry dibuat.",
+        message: "Tiket telah di-review.",
       });
-      closeReview();
+      setReviewFor(null);
       queryClient.invalidateQueries({ queryKey: ["tickets", "list"] });
-    },
-    onError: (e: any) => {
-      notifications.show({
-        color: "red",
-        title: "Gagal Review Tiket",
-        message: e.message,
-      });
     },
   });
 
@@ -230,16 +217,9 @@ export function TicketsListPage() {
     onSuccess: (updatedTicket) => {
       notifications.show({
         title: "Teknisi diubah",
-        message: `Tiket #${updatedTicket.nomorTiket} ditugaskan.`,
+        message: `Tiket #${updatedTicket.ticketNumber} ditugaskan.`,
       });
       queryClient.invalidateQueries({ queryKey: ["tickets", "list"] });
-    },
-    onError: (e: any) => {
-      notifications.show({
-        color: "red",
-        title: "Gagal assign",
-        message: e.message,
-      });
     },
   });
 
@@ -249,38 +229,29 @@ export function TicketsListPage() {
     onSuccess: (updatedTicket) => {
       notifications.show({
         title: "Status diubah",
-        message: `Tiket #${
-          updatedTicket.nomorTiket
-        } menjadi ${statusLabelMap.get(updatedTicket.status)}.`,
+        message: `Tiket #${updatedTicket.ticketNumber} menjadi ${statusLabelMap.get(updatedTicket.status)}.`,
       });
       queryClient.invalidateQueries({ queryKey: ["tickets", "list"] });
     },
-    onError: (e: any) => {
-      notifications.show({
-        color: "red",
-        title: "Gagal ubah status",
-        message: e.message,
-      });
-    },
   });
 
-  const columns: Column<Ticket>[] = useMemo(
+  const columns: Column<ServiceTicketDto>[] = useMemo(
     () => [
       {
         key: "code",
         header: "Kode",
-        cell: (r) => r.nomorTiket,
+        cell: (r) => r.ticketNumber,
         width: 140,
       },
       {
         key: "requester",
         header: "Pelanggan",
-        cell: (r) => r.customerId?.nama ?? "-",
+        cell: (r) => (r.customer as TicketCustomer)?.name ?? "-",
       },
       {
         key: "assignee",
         header: "Teknisi",
-        cell: (r) => r.teknisiId?.nama ?? "-",
+        cell: (r) => (r.technician as TicketTechnician)?.name ?? "-",
         align: "center",
       },
       {
@@ -298,7 +269,7 @@ export function TicketsListPage() {
       {
         key: "createdAt",
         header: "Dibuat",
-        cell: (r) => formatDateTime(r.tanggalMasuk),
+        cell: (r) => formatDateTime(r.createdAt),
         width: 180,
       },
       {
@@ -307,17 +278,18 @@ export function TicketsListPage() {
         width: 56,
         align: "right",
         cell: (r) => {
-          const hasAssignee = !!r.teknisiId;
-          const isAssignedToMe = currentUserId === r.teknisiId?.id;
+          const techObj = r.technician as TicketTechnician;
+          const hasAssignee = !!techObj?.technicianId;
+          const isAssignedToMe = currentUserId === techObj?.technicianId;
           const isAdmin = userRole === "Admin" || userRole === "SysAdmin";
-
           const isTechnician = userRole === "Teknisi";
+
           const isReviewable =
-            isAdmin && (r.status === "Selesai" || r.status === "Dibatalkan");
+            isAdmin && (r.status === "RESOLVED" || r.status === "CANCELLED");
           const isFinal =
-            r.status === "Diarsipkan" ||
+            r.status === "ARCHIVED" ||
             (isTechnician &&
-              (r.status === "Selesai" || r.status === "Dibatalkan"));
+              (r.status === "RESOLVED" || r.status === "CANCELLED"));
 
           return (
             <Menu withinPortal position="bottom-end" shadow="sm">
@@ -330,21 +302,19 @@ export function TicketsListPage() {
                 <Menu.Item
                   leftSection={<IconEye size={14} />}
                   component={Link}
-                  href={`/views/tickets/${encodeURIComponent(r.id)}`}
+                  href={`/views/tickets/${encodeURIComponent(r.ticketId)}`}
                 >
                   Lihat detail
                 </Menu.Item>
-
                 <Menu.Item
                   leftSection={<IconUser size={14} />}
                   onClick={() => {
                     setAssignFor(r);
-                    setSelectedAssigneeId(r.teknisiId?.id ?? null);
+                    setSelectedAssigneeId(techObj?.technicianId ?? null);
                   }}
                 >
                   {hasAssignee ? "Ubah Penugasan" : "Tugaskan Teknisi"}
                 </Menu.Item>
-
                 {isTechnician && isAssignedToMe && (
                   <Menu
                     withinPortal
@@ -364,13 +334,16 @@ export function TicketsListPage() {
                     </Menu.Target>
                     <Menu.Dropdown>
                       {STATUS_OPTIONS.filter(
-                        (s) => s.value !== "all" && s.value !== "Diarsipkan",
+                        (s) =>
+                          s.value !== "all" &&
+                          s.value !== "ARCHIVED" &&
+                          s.value !== "RESOLVED",
                       ).map((opt) => (
                         <Menu.Item
                           key={opt.value}
                           onClick={() =>
                             statusMutation.mutate({
-                              ticketId: r.id,
+                              ticketId: r.ticketId,
                               status: opt.value as TicketStatus,
                             })
                           }
@@ -384,9 +357,7 @@ export function TicketsListPage() {
                     </Menu.Dropdown>
                   </Menu>
                 )}
-
                 <Menu.Divider />
-
                 <Menu.Item
                   leftSection={<IconArchive size={14} />}
                   onClick={() => setReviewFor(r)}
@@ -402,7 +373,6 @@ export function TicketsListPage() {
       },
     ],
     [
-      userNameMap,
       users,
       assignMutation,
       statusMutation,
@@ -412,23 +382,9 @@ export function TicketsListPage() {
     ],
   );
 
-  const closeReview = () => setReviewFor(null);
-
-  const handleReviewSubmit = async (payload: TicketCompleteInput) => {
-    if (!reviewFor) return;
-    try {
-      await reviewMutation.mutateAsync({ id: reviewFor.id, payload });
-    } catch (e) {}
-  };
-
-  const isMutating =
-    createMutation.isPending ||
-    reviewMutation.isPending ||
-    assignMutation.isPending ||
-    statusMutation.isPending;
-
   return (
     <Stack gap="md">
+      {/* ... (Header dan Group Filter tetap sama, properti komponen akan di handle Mapped object) */}
       <Group justify="space-between" align="center">
         <Title order={3}>Tickets</Title>
         <Group gap="xs" wrap="nowrap">
@@ -485,8 +441,8 @@ export function TicketsListPage() {
       </Group>
 
       <div style={{ position: "relative" }}>
-        <LoadingOverlay visible={isLoading || isMutating} />
-        <SimpleTable<Ticket>
+        <LoadingOverlay visible={isLoading} />
+        <SimpleTable<ServiceTicketDto>
           dense="sm"
           zebra
           stickyHeader
@@ -514,16 +470,22 @@ export function TicketsListPage() {
         onClose={() => setFormOpen(false)}
         users={users}
         onSubmit={async (v) => {
-          await createMutation.mutateAsync(v);
+          await createMutation.mutateAsync(v as any);
         }}
         userRole={userRole}
       />
 
       <ReviewTicketModal
         opened={!!reviewFor}
-        onClose={closeReview}
-        onSubmit={handleReviewSubmit}
-        ticket={reviewFor}
+        onClose={() => setReviewFor(null)}
+        onSubmit={async (p) => {
+          if (reviewFor)
+            await reviewMutation.mutateAsync({
+              id: reviewFor.ticketId,
+              payload: p,
+            });
+        }}
+        ticket={reviewFor as any}
       />
 
       <Modal
@@ -531,7 +493,7 @@ export function TicketsListPage() {
         onClose={() => setAssignFor(null)}
         title={
           assignFor
-            ? `Tentukan teknisi untuk #${assignFor.nomorTiket}`
+            ? `Tentukan teknisi untuk #${assignFor.ticketNumber}`
             : "Tentukan teknisi"
         }
         withinPortal
@@ -561,7 +523,7 @@ export function TicketsListPage() {
               onClick={() => {
                 if (!assignFor) return;
                 assignMutation.mutate({
-                  ticketId: assignFor.id,
+                  ticketId: assignFor.ticketId,
                   userId: selectedAssigneeId ?? null,
                 });
                 setAssignFor(null);

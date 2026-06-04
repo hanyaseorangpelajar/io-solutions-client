@@ -5,13 +5,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button, Group, Modal, Stack, Textarea, Alert } from "@mantine/core";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import type { Ticket } from "../model/types";
-import type { TeknisiCompleteInput } from "../api/tickets";
+import type { ServiceTicketDto } from "../model/types";
+import type { TechnicianCompleteInput } from "../api/tickets";
 import { IconInfoCircle } from "@tabler/icons-react";
 
 const teknisiSchema = z.object({
   diagnosis: z.string().min(5, "Diagnosis wajib diisi, minimal 5 karakter."),
-  solusi: z.string().min(10, "Solusi wajib diisi, minimal 10 karakter."),
+  solution: z.string().min(10, "Solusi wajib diisi, minimal 10 karakter."),
 });
 
 export default function TeknisiCompleteModal({
@@ -22,28 +22,28 @@ export default function TeknisiCompleteModal({
 }: {
   opened: boolean;
   onClose: () => void;
-  onSubmit: (data: TeknisiCompleteInput) => Promise<void> | void;
-  ticket: Ticket | null;
+  onSubmit: (data: TechnicianCompleteInput) => Promise<void> | void;
+  ticket: ServiceTicketDto | null;
 }) {
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting, isValid },
-  } = useForm<TeknisiCompleteInput>({
+  } = useForm<TechnicianCompleteInput>({
     resolver: zodResolver(teknisiSchema),
     mode: "onChange",
     defaultValues: {
       diagnosis: "",
-      solusi: "",
+      solution: "",
     },
   });
 
   useEffect(() => {
     if (opened && ticket) {
       reset({
-        diagnosis: ticket.diagnosisTeknisi || "",
-        solusi: ticket.solusiTeknisi || "",
+        diagnosis: ticket.technicianDiagnosis || "",
+        solution: ticket.technicianSolution || "",
       });
     }
   }, [opened, reset, ticket]);
@@ -54,7 +54,7 @@ export default function TeknisiCompleteModal({
     <Modal
       opened={opened}
       onClose={onClose}
-      title={`Tutup Tiket: #${ticket.nomorTiket}`}
+      title={`Tutup Tiket: #${ticket.ticketNumber}`}
       radius="lg"
       size="lg"
       centered
@@ -89,10 +89,10 @@ export default function TeknisiCompleteModal({
           <Textarea
             label="Solusi yang Diberikan"
             placeholder="Jelaskan langkah-langkah solusi yang telah dilakukan..."
-            error={errors.solusi?.message}
+            error={errors.solution?.message}
             withAsterisk
             minRows={4}
-            {...register("solusi")}
+            {...register("solution")}
           />
 
           <Group justify="end" mt="md">

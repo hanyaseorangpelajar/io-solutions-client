@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth, type User } from "@/features/auth";
 import {
   Group,
@@ -25,14 +25,14 @@ import TextField from "@/shared/ui/inputs/TextField";
 import TicketPriorityBadge from "./TicketPriorityBadge";
 import TicketStatusBadge from "./TicketStatusBadge";
 import TicketFormModal from "./TicketFormModal";
-import type { Ticket } from "../model/types";
+import type { ServiceTicketDto, TicketCustomer } from "../model/types";
 import { formatDateTime } from "../utils/format";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   listTickets,
   createTicket,
   completeTicketByTeknisi,
-  type TeknisiCompleteInput,
+  type TechnicianCompleteInput,
 } from "../api/tickets";
 import { notifications } from "@mantine/notifications";
 import { getStaffList } from "@/features/staff/api/staff";
@@ -45,7 +45,8 @@ export default function TicketsMyWorkPage() {
   const [q, setQ] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [users, setUsers] = useState<Staff[]>([]);
-  const [completingTicket, setCompletingTicket] = useState<Ticket | null>(null);
+  const [completingTicket, setCompletingTicket] =
+    useState<ServiceTicketDto | null>(null);
 
   const { user } = useAuth();
   const currentTechId = (user as User & { id: string })?.id;
@@ -64,9 +65,9 @@ export default function TicketsMyWorkPage() {
     select: (data) =>
       data.filter(
         (t) =>
-          t.status === "Diagnosis" ||
-          t.status === "DalamProses" ||
-          t.status === "MenungguSparepart"
+          t.status === "DIAGNOSIS" ||
+          t.status === "IN_PROGRESS" ||
+          t.status === "WAITING_PART",
       ),
     enabled: !!currentTechId,
   });
@@ -91,7 +92,7 @@ export default function TicketsMyWorkPage() {
     onSuccess: (newTicket) => {
       notifications.show({
         title: "Tiket dibuat",
-        message: `Tiket #${newTicket.nomorTiket} telah dibuat.`,
+        message: `Tiket #${newTicket.ticketNumber} telah dibuat.`,
         color: "green",
       });
       setFormOpen(false);
@@ -109,12 +110,12 @@ export default function TicketsMyWorkPage() {
   });
 
   const teknisiCompleteMutation = useMutation({
-    mutationFn: (vars: { id: string; payload: TeknisiCompleteInput }) =>
+    mutationFn: (vars: { id: string; payload: TechnicianCompleteInput }) =>
       completeTicketByTeknisi(vars.id, vars.payload),
     onSuccess: (updatedTicket) => {
       notifications.show({
         title: "Tiket Selesai",
-        message: `Tiket #${updatedTicket.nomorTiket} telah ditandai selesai.`,
+        message: `Tiket #${updatedTicket.ticketNumber} telah ditandai selesai.`,
         color: "green",
       });
       setCompletingTicket(null);
@@ -132,7 +133,7 @@ export default function TicketsMyWorkPage() {
     },
   });
 
-  const openCompleteConfirmModal = (ticket: Ticket) => {
+  const openCompleteConfirmModal = (ticket: ServiceTicketDto) => {
     modals.openConfirmModal({
       title: "Konfirmasi Selesaikan Tiket",
       centered: true,
@@ -154,18 +155,18 @@ export default function TicketsMyWorkPage() {
     });
   };
 
-  const columns: Column<Ticket>[] = [
-    { key: "code", header: "Kode", width: 160, cell: (r) => r.nomorTiket },
+  const columns: Column<ServiceTicketDto>[] = [
+    { key: "code", header: "Kode", width: 160, cell: (r) => r.ticketNumber },
     {
       key: "subject",
       header: "Keluhan",
       width: "30%",
-      cell: (r) => r.keluhanAwal,
+      cell: (r) => r.initialComplaint,
     },
     {
       key: "requester",
       header: "Pelanggan",
-      cell: (r) => r.customerId?.nama ?? "-",
+      cell: (r) => (r.customer as TicketCustomer)?.name ?? "-",
     },
     {
       key: "priority",
@@ -183,7 +184,7 @@ export default function TicketsMyWorkPage() {
       key: "updatedAt",
       header: "Diperbarui",
       width: 180,
-      cell: (r) => formatDateTime(r.diperbaruiPada),
+      cell: (r) => formatDateTime(r.updatedAt),
     },
     {
       key: "actions",
@@ -201,7 +202,7 @@ export default function TicketsMyWorkPage() {
             <Menu.Item
               leftSection={<IconEye size={14} />}
               component={Link}
-              href={`/views/tickets/${encodeURIComponent(r.id)}`}
+              href={`/views/tickets/${encodeURIComponent(r.ticketId)}`}
             >
               Lihat detail
             </Menu.Item>
@@ -211,7 +212,7 @@ export default function TicketsMyWorkPage() {
               color="green"
               onClick={() => openCompleteConfirmModal(r)}
               disabled={
-                teknisiCompleteMutation.isPending || r.status === "Selesai"
+                teknisiCompleteMutation.isPending || r.status === "RESOLVED"
               }
             >
               Tandai Selesai
@@ -252,7 +253,7 @@ export default function TicketsMyWorkPage() {
             teknisiCompleteMutation.isPending
           }
         />
-        <SimpleTable<Ticket>
+        <SimpleTable<ServiceTicketDto>
           dense="sm"
           zebra
           stickyHeader
@@ -268,7 +269,7 @@ export default function TicketsMyWorkPage() {
         onClose={() => setFormOpen(false)}
         users={users}
         onSubmit={async (v) => {
-          await createMutation.mutateAsync(v);
+          await createMutation.mutateAsync(v as any);
         }}
         defaultAssigneeId={currentTechId}
         userRole={user?.role}
@@ -281,7 +282,7 @@ export default function TicketsMyWorkPage() {
         onSubmit={async (payload) => {
           if (!completingTicket) return;
           await teknisiCompleteMutation.mutateAsync({
-            id: completingTicket.id,
+            id: completingTicket.ticketId,
             payload,
           });
         }}

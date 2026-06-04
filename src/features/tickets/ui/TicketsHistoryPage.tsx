@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Group,
@@ -8,7 +8,6 @@ import {
   Title,
   LoadingOverlay,
   Text,
-  Badge,
   Pagination,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
@@ -50,12 +49,9 @@ export default function TicketsHistoryPage() {
     ],
     queryFn: () => {
       const [from, to] = range;
-
-      // Normalisasi 'from' secara aman
       const fromISO = from ? new Date(from).toISOString() : undefined;
-
-      // Normalisasi 'to' secara aman dan set ke akhir hari
       let toISO: string | undefined = undefined;
+
       if (to) {
         const toDate = new Date(to);
         toDate.setHours(23, 59, 59, 999);
@@ -95,7 +91,7 @@ export default function TicketsHistoryPage() {
       key: "at",
       header: "Waktu",
       width: 190,
-      cell: (r) => formatDateTime(r.at),
+      cell: (r) => formatDateTime(r.timestamp),
     },
     {
       key: "ticket",
@@ -103,7 +99,7 @@ export default function TicketsHistoryPage() {
       width: 180,
       cell: (r) => (
         <Link href={`/views/tickets/${encodeURIComponent(r.ticketId)}`}>
-          {r.ticketCode}
+          {r.ticketNumber}
         </Link>
       ),
     },
@@ -111,7 +107,7 @@ export default function TicketsHistoryPage() {
       key: "teknisi",
       header: "Teknisi",
       width: 160,
-      cell: (r) => r.teknisiName ?? "-",
+      cell: (r) => r.technicianName ?? "-",
     },
     {
       key: "status",

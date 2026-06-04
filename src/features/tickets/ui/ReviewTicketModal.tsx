@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Button,
-  Text,
   Group,
   Modal,
   Stack,
@@ -17,7 +16,7 @@ import {
   TicketCompleteSchema,
   type TicketCompleteInput,
 } from "../model/schema";
-import type { Ticket } from "../model/types";
+import type { ServiceTicketDto } from "../model/types";
 
 export default function ReviewTicketModal({
   opened,
@@ -28,13 +27,12 @@ export default function ReviewTicketModal({
   opened: boolean;
   onClose: () => void;
   onSubmit: (data: TicketCompleteInput) => Promise<void> | void;
-  ticket: Ticket | null;
+  ticket: ServiceTicketDto | null;
 }) {
   const {
     register,
     handleSubmit,
     reset,
-    setValue,
     control,
     formState: { errors, isSubmitting, isValid },
   } = useForm<TicketCompleteInput>({
@@ -42,7 +40,7 @@ export default function ReviewTicketModal({
     mode: "onChange",
     defaultValues: {
       diagnosis: "",
-      solusi: "",
+      solution: "",
       tags: [],
     },
   });
@@ -52,8 +50,8 @@ export default function ReviewTicketModal({
   useEffect(() => {
     if (opened && ticket) {
       reset({
-        diagnosis: ticket.diagnosisTeknisi || "",
-        solusi: ticket.solusiTeknisi || "",
+        diagnosis: ticket.technicianDiagnosis || "",
+        solution: ticket.technicianSolution || "",
         tags: [],
       });
       setTagData([]);
@@ -65,7 +63,7 @@ export default function ReviewTicketModal({
     <Modal
       opened={opened}
       onClose={onClose}
-      title={`Review & Arsipkan Tiket: #${ticket.nomorTiket}`}
+      title={`Review & Arsipkan Tiket: #${ticket.ticketNumber}`}
       radius="lg"
       size="xl"
       centered
@@ -90,10 +88,10 @@ export default function ReviewTicketModal({
           <Textarea
             label="Solusi yang Diberikan"
             placeholder="Jelaskan langkah-langkah solusi yang telah dilakukan..."
-            error={errors.solusi?.message}
+            error={errors.solution?.message}
             withAsterisk
             minRows={4}
-            {...register("solusi")}
+            {...register("solution")}
           />
 
           <Controller

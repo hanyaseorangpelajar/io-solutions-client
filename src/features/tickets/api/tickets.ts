@@ -1,5 +1,5 @@
 import apiClient from "@/lib/apiClient";
-import type { Ticket, TicketStatus } from "../model/types";
+import type { ServiceTicketDto, TicketStatus } from "../model/types";
 import type {
   TicketFormInput,
   TicketResolutionInput,
@@ -29,20 +29,20 @@ function qs(params: Record<string, any>): string {
 
 export async function listTickets(
   params: Record<string, any>,
-): Promise<Paginated<Ticket>> {
+): Promise<Paginated<ServiceTicketDto>> {
   const p: any = { ...params };
 
   if (p.assignee) {
-    p.teknisiId = p.assignee;
+    p.technicianId = p.assignee;
   }
   delete p.assignee;
 
-  if (p.status === "open") p.status = "Diagnosis";
-  if (p.status === "in_progress") p.status = "DalamProses";
+  if (p.status === "open") p.status = "DIAGNOSIS";
+  if (p.status === "in_progress") p.status = "IN_PROGRESS";
 
-  const response = await apiClient.get<ServerPaginatedResponse<Ticket>>(
-    `/tickets${qs(p)}`,
-  );
+  const response = await apiClient.get<
+    ServerPaginatedResponse<ServiceTicketDto>
+  >(`/tickets${qs(p)}`);
 
   const serverData = response.data;
 
@@ -57,25 +57,27 @@ export async function listTickets(
   };
 }
 
-export async function getTicket(id: string): Promise<Ticket> {
-  const response = await apiClient.get<Ticket>(
+export async function getTicket(id: string): Promise<ServiceTicketDto> {
+  const response = await apiClient.get<ServiceTicketDto>(
     `/tickets/${encodeURIComponent(id)}`,
   );
   return response.data;
 }
 
-export async function createTicket(input: TicketFormInput): Promise<Ticket> {
-  const response = await apiClient.post<Ticket>("/tickets", input);
+export async function createTicket(
+  input: TicketFormInput,
+): Promise<ServiceTicketDto> {
+  const response = await apiClient.post<ServiceTicketDto>("/tickets", input);
   return response.data;
 }
 
 export async function assignTicket(
   id: string,
   userId: string | null,
-): Promise<Ticket> {
-  const response = await apiClient.patch<Ticket>(
+): Promise<ServiceTicketDto> {
+  const response = await apiClient.patch<ServiceTicketDto>(
     `/tickets/${encodeURIComponent(id)}/assign`,
-    { teknisiId: userId || null },
+    { technicianId: userId || null },
   );
   return response.data;
 }
@@ -83,41 +85,42 @@ export async function assignTicket(
 export async function updateTicketStatus(
   id: string,
   status: TicketStatus,
-  catatan?: string,
-): Promise<Ticket> {
-  const response = await apiClient.patch<Ticket>(
+  note?: string,
+): Promise<ServiceTicketDto> {
+  const response = await apiClient.patch<ServiceTicketDto>(
     `/tickets/${encodeURIComponent(id)}/status`,
-    { status, catatan },
+    { status, note },
   );
   return response.data;
 }
 
 export type AddItemInput = {
-  namaKomponen: string;
-  qty: number;
-  keterangan?: string;
+  componentName: string;
+  quantity: number;
+  note?: string;
 };
+
 export async function addReplacementItem(
   id: string,
   payload: AddItemInput,
-): Promise<Ticket> {
-  const response = await apiClient.post<Ticket>(
+): Promise<ServiceTicketDto> {
+  const response = await apiClient.post<ServiceTicketDto>(
     `/tickets/${encodeURIComponent(id)}/items`,
     payload,
   );
   return response.data;
 }
 
-export type TeknisiCompleteInput = {
+export type TechnicianCompleteInput = {
   diagnosis: string;
-  solusi: string;
+  solution: string;
 };
 
 export async function completeTicketByTeknisi(
   id: string,
-  payload: TeknisiCompleteInput,
-): Promise<Ticket> {
-  const response = await apiClient.post<Ticket>(
+  payload: TechnicianCompleteInput,
+): Promise<ServiceTicketDto> {
+  const response = await apiClient.post<ServiceTicketDto>(
     `/tickets/${encodeURIComponent(id)}/complete-teknisi`,
     payload,
   );
@@ -126,30 +129,30 @@ export async function completeTicketByTeknisi(
 
 export type CompleteTicketInput = {
   diagnosis: string;
-  solusi: string;
+  solution: string;
   tags?: string[];
 };
 
 export async function completeTicketAndCreateKB(
   id: string,
   payload: CompleteTicketInput,
-): Promise<{ ticket: Ticket; kbEntry: any }> {
-  const response = await apiClient.post<{ ticket: Ticket; kbEntry: any }>(
-    `/tickets/${encodeURIComponent(id)}/complete`,
-    payload,
-  );
+): Promise<{ ticket: ServiceTicketDto; kbEntry: any }> {
+  const response = await apiClient.post<{
+    ticket: ServiceTicketDto;
+    kbEntry: any;
+  }>(`/tickets/${encodeURIComponent(id)}/complete`, payload);
   return response.data;
 }
 
 export type TicketHistoryEvent = {
   _id: string;
-  at: string;
+  timestamp: string;
   note: string;
   newStatus: TicketStatus;
-  ticketCode: string;
+  ticketNumber: string;
   ticketId: string;
-  teknisiName: string | null;
-  customer: string | null;
+  technicianName: string | null;
+  customerName: string | null;
 };
 
 export async function getGlobalTicketHistory(

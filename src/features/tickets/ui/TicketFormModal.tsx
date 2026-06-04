@@ -47,17 +47,17 @@ export default function TicketFormModal({
   useEffect(() => {
     if (opened) {
       reset({
-        keluhanAwal: "",
+        initialComplaint: "",
         customer: {
-          nama: "",
-          noHp: "",
+          name: "",
+          phone: "",
         },
         device: {
           model: "",
           brand: "",
           serialNumber: "",
         },
-        priority: "medium",
+        priority: "MEDIUM",
         assignee: defaultAssigneeId ?? "",
       });
     }
@@ -95,27 +95,27 @@ export default function TicketFormModal({
           <Textarea
             label="Keluhan Awal"
             placeholder="Jelaskan keluhan pelanggan atau masalah perangkat"
-            error={errors.keluhanAwal?.message}
+            error={errors.initialComplaint?.message}
             autoFocus
             withAsterisk
             minRows={3}
-            {...register("keluhanAwal")}
+            {...register("initialComplaint")}
           />
 
           <SimpleGrid cols={{ base: 1, sm: 2 }}>
             <TextField
               label="Nama Pelanggan"
               placeholder="Nama pelanggan"
-              error={errors.customer?.nama?.message}
+              error={errors.customer?.name?.message}
               withAsterisk
-              {...register("customer.nama")}
+              {...register("customer.name")}
             />
             <TextField
               label="No. HP Pelanggan"
               placeholder="0812..."
-              error={errors.customer?.noHp?.message}
+              error={errors.customer?.phone?.message}
               withAsterisk
-              {...register("customer.noHp")}
+              {...register("customer.phone")}
             />
           </SimpleGrid>
 
@@ -150,10 +150,10 @@ export default function TicketFormModal({
                   {...field}
                   label="Prioritas"
                   data={[
-                    { value: "low", label: "Low" },
-                    { value: "medium", label: "Medium" },
-                    { value: "high", label: "High" },
-                    { value: "urgent", label: "Urgent" },
+                    { value: "LOW", label: "Low" },
+                    { value: "MEDIUM", label: "Medium" },
+                    { value: "HIGH", label: "High" },
+                    { value: "URGENT", label: "Urgent" },
                   ]}
                   error={errors.priority?.message}
                 />

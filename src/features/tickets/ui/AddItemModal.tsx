@@ -33,15 +33,15 @@ export default function AddItemModal({
     resolver: zodResolver(AddItemSchema),
     mode: "onChange",
     defaultValues: {
-      namaKomponen: "",
-      qty: 1,
-      keterangan: "",
+      componentName: "",
+      quantity: 1,
+      note: "",
     },
   });
 
   useEffect(() => {
     if (opened) {
-      reset();
+      reset({ componentName: "", quantity: 1, note: "" });
     }
   }, [opened, reset]);
 
@@ -65,13 +65,13 @@ export default function AddItemModal({
           <TextInput
             label="Nama Komponen"
             placeholder="Mis: RAM DDR4 8GB"
-            error={errors.namaKomponen?.message}
+            error={errors.componentName?.message}
             withAsterisk
-            {...register("namaKomponen")}
+            {...register("componentName")}
           />
 
           <Controller
-            name="qty"
+            name="quantity"
             control={control}
             render={({ field }) => (
               <NumberInput
@@ -80,7 +80,7 @@ export default function AddItemModal({
                 min={1}
                 step={1}
                 allowDecimal={false}
-                error={errors.qty?.message}
+                error={errors.quantity?.message}
                 withAsterisk
               />
             )}
@@ -90,7 +90,7 @@ export default function AddItemModal({
             label="Keterangan (Opsional)"
             placeholder="Mis: Original, Copotan, dll."
             minRows={2}
-            {...register("keterangan")}
+            {...register("note")}
           />
 
           <Group justify="end" mt="md">
