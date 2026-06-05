@@ -1,3 +1,12 @@
+/**
+ *
+ * DOKUMENTASI KOMPONEN
+ * Menggunakan `ServiceTicketDto`, `StaffDto`, dan `KBEntryDto`.
+ * Filter `isOpenStatus` disesuaikan dengan ENUM `DIAGNOSIS`, `IN_PROGRESS`, `WAITING_PART`.
+ * Pengecekan role menggunakan `TEKNISI`[cite: 43].
+ *
+ */
+
 "use client";
 
 import Link from "next/link";
@@ -15,27 +24,26 @@ import {
 } from "@mantine/core";
 import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/apiClient";
-import type { Ticket } from "@/features/tickets";
-import { priorityColor, statusColor } from "@/shared/utils/formatters";
+import type { ServiceTicketDto } from "@/features/tickets/model/types";
+import type { KBEntryDto } from "@/features/audit/model/types";
+import type { StaffDto } from "@/features/staff/model/types";
+import { statusColor } from "@/shared/utils/formatters";
 import { useMemo } from "react";
 import { formatDateTime } from "@/features/tickets/utils/format";
-// --- 1. Impor useAuth ---
 import { useAuth } from "@/features/auth";
 
 function isOpenStatus(s: unknown) {
-  const v = String(s ?? "").toLowerCase();
-  return v === "diagnosis" || v === "dalamproses" || v === "menunggisparepart";
+  const v = String(s ?? "").toUpperCase();
+  return v === "DIAGNOSIS" || v === "IN_PROGRESS" || v === "WAITING_PART";
 }
 
 function isTechnician(role: unknown) {
-  const v = String(role ?? "").toLowerCase();
-  return v.includes("teknisi") || v.includes("technician");
+  return String(role ?? "").toUpperCase() === "TEKNISI";
 }
 
 export default function AdminDashboardPage() {
-  // --- 2. Ambil data user ---
   const { user } = useAuth();
-  const userName = user?.nama ?? "Admin";
+  const userName = user?.name ?? "Admin";
 
   const { data: ticketsData, isLoading: isLoadingTickets } = useQuery({
     queryKey: ["tickets", "list", "dashboard"],
@@ -43,21 +51,14 @@ export default function AdminDashboardPage() {
     select: (res: any) => res?.data?.results ?? res?.data?.data ?? [],
   });
 
-  const tickets: Ticket[] = ticketsData ?? [];
+  const tickets: ServiceTicketDto[] = ticketsData ?? [];
   const totalTickets = tickets.length;
   const openTickets = tickets.filter((t) => isOpenStatus(t.status)).length;
 
   const recentTickets = [...tickets]
-    .map((t: any) => ({
-      id: t.id ?? t._id ?? t.nomorTiket,
-      code: t.nomorTiket,
-      subject: t.keluhanAwal ?? "-",
-      status: t.status,
-      createdAt: t.createdAt ?? t.created_at ?? t.tanggalMasuk,
-    }))
     .sort(
       (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     )
     .slice(0, 5);
 
@@ -74,7 +75,7 @@ export default function AdminDashboardPage() {
   });
 
   const kbStats = useMemo(() => {
-    const entries: any[] = kbData?.results ?? [];
+    const entries: KBEntryDto[] = kbData?.results ?? [];
     const totalEntries = kbData?.totalResults ?? entries.length;
 
     if (entries.length === 0) {
@@ -85,9 +86,9 @@ export default function AdminDashboardPage() {
     for (const e of entries) {
       if (Array.isArray(e.tags)) {
         for (const tag of e.tags) {
-          if (tag && tag.nama) {
-            const count = tagCounts.get(tag.nama) ?? 0;
-            tagCounts.set(tag.nama, count + 1);
+          if (tag && tag.name) {
+            const count = tagCounts.get(tag.name) ?? 0;
+            tagCounts.set(tag.name, count + 1);
           }
         }
       }
@@ -105,11 +106,8 @@ export default function AdminDashboardPage() {
     return { total: totalEntries, mostFrequentTag };
   }, [kbData]);
 
-  const users: Array<{ id?: string; role?: string } & Record<string, unknown>> =
-    (usersData as any[]) ?? [];
-  const technicianCount = users.filter((u) =>
-    isTechnician((u as any).role)
-  ).length;
+  const users: StaffDto[] = usersData ?? [];
+  const technicianCount = users.filter((u) => isTechnician(u.role)).length;
 
   const isLoading = isLoadingTickets || isLoadingUsers || isLoadingKB;
 
@@ -117,7 +115,6 @@ export default function AdminDashboardPage() {
     <Stack gap="lg" style={{ position: "relative" }}>
       <LoadingOverlay visible={isLoading} />
 
-      {/* --- 3. Sisipkan teks sambutan di sini --- */}
       <Group justify="space-between" align="center">
         <Stack gap={2}>
           <Title order={3}>Dashboard Admin</Title>
@@ -201,20 +198,23 @@ export default function AdminDashboardPage() {
           <Table.Thead>
             <Table.Tr>
               <Table.Th>Kode</Table.Th>
-              <Table.Th>Judul</Table.Th>
+              <Table.Th>Keluhan</Table.Th>
               <Table.Th>Status</Table.Th>
               <Table.Th>Dibuat</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
             {recentTickets.map((t) => (
-              <Table.Tr key={t.id}>
+              <Table.Tr key={t.ticketId}>
                 <Table.Td>
-                  <Anchor component={Link} href={`/views/tickets/${t.id}`}>
-                    {t.code}
+                  <Anchor
+                    component={Link}
+                    href={`/views/tickets/${t.ticketId}`}
+                  >
+                    {t.ticketNumber}
                   </Anchor>
                 </Table.Td>
-                <Table.Td>{t.subject}</Table.Td>
+                <Table.Td>{t.initialComplaint}</Table.Td>
                 <Table.Td>
                   <Badge color={statusColor(String(t.status))}>
                     {String(t.status)}
@@ -226,7 +226,7 @@ export default function AdminDashboardPage() {
 
             {recentTickets.length === 0 && !isLoading && (
               <Table.Tr>
-                <Table.Td colSpan={5}>
+                <Table.Td colSpan={4}>
                   <Text c="dimmed" ta="center">
                     Tidak ada tiket terbaru.
                   </Text>

@@ -14,7 +14,6 @@ import {
   Button,
   Divider,
   LoadingOverlay,
-  Text,
   Badge,
   Pagination,
   Box,
@@ -25,7 +24,7 @@ import { SimpleTable, type Column } from "@/shared/ui/table/SimpleTable";
 import { formatDateTime } from "@/features/tickets/utils/format";
 
 type ProfileFormData = {
-  nama: string;
+  name: string;
   username: string;
 };
 
@@ -59,7 +58,7 @@ export default function AccountPage() {
   const { user, refetchUser, isLoading } = useAuth();
 
   const [profile, setProfile] = useState<ProfileFormData>({
-    nama: "",
+    name: "",
     username: "",
   });
 
@@ -73,7 +72,7 @@ export default function AccountPage() {
   useEffect(() => {
     if (user) {
       setProfile({
-        nama: user.nama || "",
+        name: user.name || "",
         username: user.username || "",
       });
     }
@@ -81,7 +80,7 @@ export default function AccountPage() {
 
   const { mutate: updateProfile, isPending: isUpdatingProfile } = useMutation({
     mutationFn: async (data: ProfileFormData) => {
-      const response = await apiClient.patch("/users/me", data);
+      const response = await apiClient.patch("/users/me", { name: data.name });
       return response.data;
     },
     onSuccess: () => {
@@ -137,7 +136,7 @@ export default function AccountPage() {
           color: "red",
         });
       },
-    }
+    },
   );
 
   const { data: historyData, isLoading: isLoadingHistory } = useQuery<
@@ -192,21 +191,11 @@ export default function AccountPage() {
     },
   ];
 
-  const handleProfileSave = () => {
-    updateProfile(profile);
-  };
+  const handleProfileSave = () => updateProfile(profile);
+  const handlePasswordSave = () => changePassword();
 
-  const handlePasswordSave = () => {
-    changePassword();
-  };
-
-  if (isLoading) {
-    return <LoadingOverlay visible />;
-  }
-
-  if (!user) {
-    return null;
-  }
+  if (isLoading) return <LoadingOverlay visible />;
+  if (!user) return null;
 
   const historyRows = historyData?.results ?? [];
   const historyTotalPages = historyData?.totalPages ?? 1;
@@ -229,13 +218,10 @@ export default function AccountPage() {
               <TextInput
                 label="Nama Lengkap"
                 withAsterisk
-                value={profile.nama}
+                value={profile.name}
                 onChange={(e) => {
                   const newValue = e.currentTarget.value;
-                  setProfile((p: ProfileFormData) => ({
-                    ...p,
-                    nama: newValue,
-                  }));
+                  setProfile((p) => ({ ...p, name: newValue }));
                 }}
               />
               <TextInput
@@ -255,7 +241,7 @@ export default function AccountPage() {
               />
               <TextInput
                 label="Terakhir Diperbarui"
-                value={formatTanggal(user.diperbaruiPada)}
+                value={formatTanggal(user.updatedAt)}
                 readOnly
                 disabled
               />
@@ -276,28 +262,19 @@ export default function AccountPage() {
               <PasswordInput
                 label="Password saat ini"
                 value={currentPassword}
-                onChange={(e) => {
-                  const newValue = e.currentTarget.value;
-                  setCurrentPassword(newValue);
-                }}
+                onChange={(e) => setCurrentPassword(e.currentTarget.value)}
                 withAsterisk
               />
               <PasswordInput
                 label="Password baru"
                 value={newPassword}
-                onChange={(e) => {
-                  const newValue = e.currentTarget.value;
-                  setNewPassword(newValue);
-                }}
+                onChange={(e) => setNewPassword(e.currentTarget.value)}
                 withAsterisk
               />
               <PasswordInput
                 label="Konfirmasi password baru"
                 value={confirmPassword}
-                onChange={(e) => {
-                  const newValue = e.currentTarget.value;
-                  setConfirmPassword(newValue);
-                }}
+                onChange={(e) => setConfirmPassword(e.currentTarget.value)}
                 withAsterisk
               />
 

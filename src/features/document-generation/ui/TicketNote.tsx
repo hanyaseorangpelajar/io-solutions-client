@@ -1,9 +1,12 @@
 "use client";
 
-import type { Staff } from "@/features/staff/model/types";
-import { getStaffList } from "@/features/staff/api/staff";
 import { useMemo } from "react";
-import type { Ticket, ReplacementItem } from "@/features/tickets/model/types";
+import type {
+  ServiceTicketDto,
+  ReplacementItem,
+  TicketCustomer,
+  TicketTechnician,
+} from "@/features/tickets/model/types";
 import { getTicket } from "@/features/tickets/api/tickets";
 import { formatDateTime } from "@/features/tickets/utils/format";
 import {
@@ -37,28 +40,13 @@ const safeFormatDateTime = (dateString?: string) => {
 export default function TicketNote({ ticketId }: Props) {
   const {
     data: ticket,
-    isLoading: isLoadingTicket,
-    error: ticketError,
-  } = useQuery<Ticket>({
+    isLoading,
+    error,
+  } = useQuery<ServiceTicketDto>({
     queryKey: ["tickets", ticketId, "detailForNote"],
     queryFn: () => getTicket(ticketId),
     enabled: !!ticketId,
   });
-
-  const { data: users = [], isLoading: isLoadingUsers } = useQuery<Staff[]>({
-    queryKey: ["staff", "list", "forNote"],
-    queryFn: getStaffList,
-    enabled: !!ticketId,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const userNameMap = useMemo(
-    () => new Map(users.map((u) => [u.id, u.nama])),
-    [users]
-  );
-
-  const isLoading = isLoadingTicket || isLoadingUsers;
-  const error = ticketError;
 
   if (isLoading) {
     return (
@@ -79,20 +67,30 @@ export default function TicketNote({ ticketId }: Props) {
     );
   }
 
-  const { nomorTiket, tanggalMasuk, customerId, teknisiId, keluhanAwal } =
-    ticket;
-  const resolvedAt = ticket.tanggalSelesai;
+  const {
+    ticketNumber,
+    createdAt,
+    customer,
+    technician,
+    initialComplaint,
+    resolvedAt,
+  } = ticket;
+
+  const customerObj = customer as TicketCustomer;
+  const technicianObj = technician as TicketTechnician;
+
+  const customerName = typeof customer === "object" ? customerObj?.name : "N/A";
   const assigneeName =
-    (teknisiId ? userNameMap.get(teknisiId.id) : null) ?? "Tidak Ditugaskan";
+    typeof technician === "object"
+      ? (technicianObj?.name ?? "Tidak Ditugaskan")
+      : "Tidak Ditugaskan";
 
   const partRows =
-    ticket.replacementItems?.map((p: ReplacementItem) => {
-      return {
-        name: p.namaKomponen,
-        qty: p.qty,
-        keterangan: p.keterangan ?? "-",
-      };
-    }) ?? [];
+    ticket.replacementItems?.map((p: ReplacementItem) => ({
+      name: p.componentName,
+      qty: p.quantity,
+      note: p.note ?? "-",
+    })) ?? [];
 
   return (
     <Paper shadow="sm" radius="md" p="xl" withBorder>
@@ -103,9 +101,9 @@ export default function TicketNote({ ticketId }: Props) {
           </Title>
           <Group justify="space-between">
             <Text size="sm">
-              No: <strong>{nomorTiket}</strong>
+              No: <strong>{ticketNumber}</strong>
             </Text>
-            <Text size="sm">Tanggal: {safeFormatDateTime(tanggalMasuk)}</Text>
+            <Text size="sm">Tanggal: {safeFormatDateTime(createdAt)}</Text>
           </Group>
           {resolvedAt && (
             <Group justify="end">
@@ -123,7 +121,7 @@ export default function TicketNote({ ticketId }: Props) {
             <Text size="xs" c="dimmed">
               Pelanggan:
             </Text>
-            <Text fw={500}>{customerId?.nama ?? "N/A"}</Text>
+            <Text fw={500}>{customerName}</Text>
           </Stack>
           <Stack gap={4}>
             <Text size="xs" c="dimmed">
@@ -138,7 +136,7 @@ export default function TicketNote({ ticketId }: Props) {
             Deskripsi Masalah:
           </Text>
           <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>
-            {keluhanAwal || "-"}
+            {initialComplaint || "-"}
           </Text>
         </Stack>
 
@@ -147,28 +145,26 @@ export default function TicketNote({ ticketId }: Props) {
             <Divider my="sm" />
             <Stack gap="md">
               <Title order={5}>Item Pengganti</Title>
-              {partRows.length > 0 && (
-                <Stack gap="xs">
-                  <Table striped withRowBorders={false}>
-                    <Table.Thead>
-                      <Table.Tr>
-                        <Table.Th>Nama Part</Table.Th>
-                        <Table.Th ta="right">Qty</Table.Th>
-                        <Table.Th>Keterangan</Table.Th>
+              <Stack gap="xs">
+                <Table striped withRowBorders={false}>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>Nama Part</Table.Th>
+                      <Table.Th ta="right">Qty</Table.Th>
+                      <Table.Th>Keterangan</Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {partRows.map((row, i) => (
+                      <Table.Tr key={`part-${i}`}>
+                        <Table.Td>{row.name}</Table.Td>
+                        <Table.Td ta="right">{row.qty}</Table.Td>
+                        <Table.Td>{row.note}</Table.Td>
                       </Table.Tr>
-                    </Table.Thead>
-                    <Table.Tbody>
-                      {partRows.map((row, i) => (
-                        <Table.Tr key={`part-${i}`}>
-                          <Table.Td>{row.name}</Table.Td>
-                          <Table.Td ta="right">{row.qty}</Table.Td>
-                          <Table.Td>{row.keterangan}</Table.Td>
-                        </Table.Tr>
-                      ))}
-                    </Table.Tbody>
-                  </Table>
-                </Stack>
-              )}
+                    ))}
+                  </Table.Tbody>
+                </Table>
+              </Stack>
             </Stack>
           </>
         )}
@@ -190,7 +186,7 @@ export default function TicketNote({ ticketId }: Props) {
             }}
           />
           <Text ta="center" fw={500}>
-            ( {customerId?.nama ?? "Nama Pelanggan"} )
+            ( {customerName} )
           </Text>
         </Stack>
       </Stack>

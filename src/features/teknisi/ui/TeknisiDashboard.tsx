@@ -4,7 +4,6 @@ import { useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   Anchor,
-  Badge,
   Button,
   Group,
   Paper,
@@ -18,9 +17,11 @@ import {
 
 import { useQuery } from "@tanstack/react-query";
 import { listTickets } from "@/features/tickets/api/tickets";
-import type { Ticket } from "@/features/tickets";
-// --- 1. Pastikan 'User' diimpor ---
-import { useAuth, type User } from "@/features/auth";
+import type {
+  ServiceTicketDto,
+  TicketTechnician,
+} from "@/features/tickets/model/types";
+import { useAuth } from "@/features/auth";
 import { notifications } from "@mantine/notifications";
 
 import { formatDateTime } from "@/features/tickets/utils/format";
@@ -29,23 +30,19 @@ import TicketStatusBadge from "@/features/tickets/ui/TicketStatusBadge";
 
 export default function TechnicianDashboardPage() {
   const { user } = useAuth();
-  const userId = (user as User & { id: string })?.id;
-
-  // --- 2. PERBAIKAN: Gunakan 'user.nama' (dari tipe User) bukan 'user.name' ---
-  const userName = user?.nama ?? "Teknisi";
+  const userId = user?.userId;
+  const userName = user?.name ?? "Teknisi";
 
   const {
     data: queryResult,
     isLoading,
     error,
-  } = useQuery<Ticket[]>({
+  } = useQuery<ServiceTicketDto[]>({
     queryKey: ["tickets", "list", { assignee: userId }],
     queryFn: async () => {
       if (!userId) return [];
-      // --- PERBAIKAN 3: Ganti filter 'assignee' menjadi 'teknisiId' ---
-      // agar sesuai dengan API endpoint /tickets
       const res = await listTickets({
-        teknisiId: userId,
+        technicianId: userId,
         limit: 500,
       });
       return res.data ?? [];
@@ -63,23 +60,24 @@ export default function TechnicianDashboardPage() {
     }
   }, [error]);
 
-  const allMyTickets: Ticket[] = queryResult ?? [];
+  const allMyTickets: ServiceTicketDto[] = queryResult ?? [];
 
-  // --- 4. PERBAIKAN: Sesuaikan filter status dengan data API baru ---
   const myOpen = useMemo(
-    () => allMyTickets.filter((t: Ticket) => t.status === "Diagnosis"),
-    [allMyTickets]
+    () => allMyTickets.filter((t) => t.status === "DIAGNOSIS"),
+    [allMyTickets],
   );
   const myInProgress = useMemo(
-    () => allMyTickets.filter((t: Ticket) => t.status === "DalamProses"),
-    [allMyTickets]
+    () => allMyTickets.filter((t) => t.status === "IN_PROGRESS"),
+    [allMyTickets],
   );
   const myResolved = useMemo(
     () =>
       allMyTickets.filter(
-        (t: Ticket) => t.status === "Selesai" && t.teknisiId?.id === userId
+        (t) =>
+          t.status === "RESOLVED" &&
+          (t.technician as TicketTechnician)?.technicianId === userId,
       ),
-    [allMyTickets, userId]
+    [allMyTickets, userId],
   );
   const totalAssigned = allMyTickets.length;
 
@@ -87,24 +85,23 @@ export default function TechnicianDashboardPage() {
     () =>
       [...myOpen, ...myInProgress]
         .sort(
-          (a: Ticket, b: Ticket) =>
-            new Date(b.tanggalMasuk).getTime() -
-            new Date(a.tanggalMasuk).getTime()
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         )
         .slice(0, 8),
-    [myOpen, myInProgress]
+    [myOpen, myInProgress],
   );
 
   const recentResolved = useMemo(
     () =>
       myResolved
         .sort(
-          (a: Ticket, b: Ticket) =>
-            new Date(b.tanggalSelesai ?? 0).getTime() -
-            new Date(a.tanggalSelesai ?? 0).getTime()
+          (a, b) =>
+            new Date(b.resolvedAt ?? 0).getTime() -
+            new Date(a.resolvedAt ?? 0).getTime(),
         )
         .slice(0, 8),
-    [myResolved]
+    [myResolved],
   );
 
   return (
@@ -112,7 +109,6 @@ export default function TechnicianDashboardPage() {
       <LoadingOverlay visible={isLoading} />
 
       <Group justify="space-between" align="center">
-        {/* --- 5. Teks sambutan sudah sesuai permintaan Anda --- */}
         <Stack gap={2}>
           <Title order={3}>Dashboard Teknisi</Title>
           <Text c="dimmed" size="sm">
@@ -188,20 +184,23 @@ export default function TechnicianDashboardPage() {
           </Table.Thead>
           <Table.Tbody>
             {recentAssigned.map((t) => (
-              <Table.Tr key={t.id}>
+              <Table.Tr key={t.ticketId}>
                 <Table.Td>
-                  <Anchor component={Link} href={`/views/tickets/${t.id}`}>
-                    {t.nomorTiket}
+                  <Anchor
+                    component={Link}
+                    href={`/views/tickets/${t.ticketId}`}
+                  >
+                    {t.ticketNumber}
                   </Anchor>
                 </Table.Td>
-                <Table.Td>{t.keluhanAwal}</Table.Td>
+                <Table.Td>{t.initialComplaint}</Table.Td>
                 <Table.Td>
                   <TicketPriorityBadge priority={t.priority} />
                 </Table.Td>
                 <Table.Td>
                   <TicketStatusBadge status={t.status} />
                 </Table.Td>
-                <Table.Td>{formatDateTime(t.tanggalMasuk)}</Table.Td>
+                <Table.Td>{formatDateTime(t.createdAt)}</Table.Td>
               </Table.Tr>
             ))}
             {recentAssigned.length === 0 && (
@@ -222,7 +221,7 @@ export default function TechnicianDashboardPage() {
           <Text fw={600}>Riwayat Penyelesaian Saya</Text>
           <Anchor
             component={Link}
-            href="/views/tickets/list?status=Selesai"
+            href="/views/tickets/list?status=RESOLVED"
             size="sm"
           >
             Lihat semua
@@ -245,18 +244,21 @@ export default function TechnicianDashboardPage() {
           </Table.Thead>
           <Table.Tbody>
             {recentResolved.map((t) => (
-              <Table.Tr key={t.id}>
+              <Table.Tr key={t.ticketId}>
                 <Table.Td>
-                  <Anchor component={Link} href={`/views/tickets/${t.id}`}>
-                    {t.nomorTiket}
+                  <Anchor
+                    component={Link}
+                    href={`/views/tickets/${t.ticketId}`}
+                  >
+                    {t.ticketNumber}
                   </Anchor>
                 </Table.Td>
-                <Table.Td>{t.keluhanAwal}</Table.Td>
+                <Table.Td>{t.initialComplaint}</Table.Td>
                 <Table.Td>
                   <TicketPriorityBadge priority={t.priority} />
                 </Table.Td>
                 <Table.Td>
-                  {formatDateTime(t.tanggalSelesai ?? t.diperbaruiPada)}
+                  {formatDateTime(t.resolvedAt ?? t.updatedAt)}
                 </Table.Td>
               </Table.Tr>
             ))}
