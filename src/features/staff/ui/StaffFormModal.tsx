@@ -10,12 +10,13 @@ import {
   Switch,
   PasswordInput,
 } from "@mantine/core";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { StaffFormInput } from "../model/schema";
 import { StaffFormSchema } from "../model/schema";
-import type { Role } from "@/features/rbac/model/types";
+
+type Role = { id: string; name: string };
 
 export default function StaffFormModal({
   opened,
@@ -29,7 +30,7 @@ export default function StaffFormModal({
   opened: boolean;
   onClose: () => void;
   onSubmit: (v: StaffFormInput) => Promise<void>;
-  initial?: Partial<StaffFormInput & { name?: string }>;
+  initial?: Partial<StaffFormInput>;
   roles: Role[];
   title?: string;
   isSubmitting?: boolean;
@@ -37,73 +38,49 @@ export default function StaffFormModal({
   const {
     register,
     handleSubmit,
-    setValue,
-    watch,
+    control,
     reset,
     formState: { errors },
   } = useForm<StaffFormInput>({
     resolver: zodResolver(StaffFormSchema),
     mode: "onChange",
   });
-  const isNewUser = !initial?.id;
+
+  const isNewUser = !initial?.userId;
 
   useEffect(() => {
     if (opened) {
-      const defaultValues: StaffFormInput = {
-        fullName: "",
-        username: "",
-        email: "",
-        password: "",
-        confirmPassword: "",
-        role: "Teknisi",
-        active: true,
-      };
-
       reset({
-        ...defaultValues,
-        ...initial,
+        userId: initial?.userId,
+        name: initial?.name || "",
+        username: initial?.username || "",
+        role: initial?.role || "TEKNISI",
+        isActive: initial?.isActive ?? true,
       });
     }
-  }, [initial, opened, reset]);
-
-  const role = watch("role");
-  const active = watch("active");
+  }, [opened, initial, reset]);
 
   const handleClose = () => {
+    reset();
     onClose();
   };
 
   return (
-    <Modal
-      opened={opened}
-      onClose={handleClose}
-      title={title}
-      centered
-      radius="lg"
-      size="lg"
-    >
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
-        <Stack gap="md">
+    <Modal opened={opened} onClose={handleClose} title={title} centered>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <Stack gap="sm">
           <TextInput
             label="Nama Lengkap"
             withAsterisk
-            error={errors.fullName?.message}
-            {...register("fullName")}
+            error={errors.name?.message}
+            {...register("name")}
           />
-
-          {isNewUser && (
-            <TextInput
-              label="Username"
-              withAsterisk
-              error={errors.username?.message}
-              {...register("username")}
-            />
-          )}
           <TextInput
-            label="Email"
+            label="Username"
             withAsterisk
-            error={errors.email?.message}
-            {...register("email")}
+            error={errors.username?.message}
+            {...register("username")}
+            disabled={!isNewUser} // Biasanya username tidak bisa diubah setelah dibuat
           />
           {isNewUser && (
             <>
@@ -121,28 +98,39 @@ export default function StaffFormModal({
               />
             </>
           )}
-          <Select
-            label="Role"
-            withAsterisk
-            data={roles.map((r) => ({ value: r.id, label: r.name }))}
-            value={role}
-            onChange={(val) =>
-              setValue("role", val as any, { shouldValidate: true })
-            }
-            error={errors.role?.message}
-            searchable
-            nothingFoundMessage="Role tidak tersedia"
+
+          <Controller
+            name="role"
+            control={control}
+            render={({ field }) => (
+              <Select
+                {...field}
+                label="Role"
+                withAsterisk
+                data={roles.map((r) => ({ value: r.id, label: r.name }))}
+                error={errors.role?.message}
+                searchable
+                nothingFoundMessage="Role tidak tersedia"
+              />
+            )}
           />
-          <Switch
-            label="Aktif"
-            checked={active}
-            onChange={(e) =>
-              setValue("active", e.currentTarget.checked, {
-                shouldValidate: true,
-              })
-            }
+
+          <Controller
+            name="isActive"
+            control={control}
+            render={({ field }) => (
+              <Switch
+                label="Aktif"
+                checked={field.value}
+                onChange={(event) =>
+                  field.onChange(event.currentTarget.checked)
+                }
+                mt="xs"
+              />
+            )}
           />
-          <Group justify="end">
+
+          <Group justify="end" mt="md">
             <Button variant="default" onClick={handleClose}>
               Batal
             </Button>

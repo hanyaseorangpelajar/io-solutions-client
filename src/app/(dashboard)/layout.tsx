@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { AppShellLayout, defaultNav } from "@/features/shell";
-import { LoadingOverlay } from "@mantine/core";
+import { Center, Loader } from "@mantine/core";
 import { useAuth } from "@/features/auth/AuthContext";
 
 export default function DashboardLayout({
@@ -22,7 +22,11 @@ export default function DashboardLayout({
   }, [user, isLoading, router, pathname]);
 
   if (isLoading) {
-    return <LoadingOverlay visible={true} />;
+    return (
+      <Center h="100vh">
+        <Loader size="md" />
+      </Center>
+    );
   }
 
   if (user) {

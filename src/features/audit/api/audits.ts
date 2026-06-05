@@ -1,6 +1,7 @@
 import apiClient from "@/lib/apiClient";
 import type { Paginated } from "@/features/tickets/api/tickets";
-import type { AuditRecord, AuditStatus, AuditLogItem } from "../model/types";
+import type { KBEntryDto } from "../model/types";
+import type { KBFormInput } from "../model/schema";
 
 type ServerPaginatedResponse<T> = {
   results: T[];
@@ -14,61 +15,53 @@ function qs(params: Record<string, any>): string {
   const q = Object.entries(params)
     .filter(([, v]) => v !== undefined && v !== null && v !== "" && v !== "all")
     .map(
-      ([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`
+      ([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`,
     )
     .join("&");
   return q ? `?${q}` : "";
 }
 
-type UpdateAuditInput = {
-  status?: AuditStatus;
-  score?: number;
-  notes?: string;
-  tags?: string[];
-  publish?: boolean;
-};
+export async function listKBSolutions(
+  params: Record<string, any>,
+): Promise<Paginated<KBEntryDto>> {
+  const endpoint = `/kb-entry${qs(params)}`;
 
-/**
- * Mengambil daftar audit records (paginasi).
- * Memanggil GET /api/v1/audits
- */
-export async function listAudits(
-  params: Record<string, any>
-): Promise<Paginated<AuditLogItem>> {
-  const endpoint = `/audits${qs(params)}`;
+  const response =
+    await apiClient.get<ServerPaginatedResponse<KBEntryDto>>(endpoint);
 
-  const response = await apiClient.get<ServerPaginatedResponse<AuditLogItem>>(
-    endpoint
-  );
   const serverData = response.data;
+  const results = serverData.results ?? [];
+  const total = serverData.totalResults ?? results.length;
 
   return {
-    data: serverData.results,
+    data: results,
     meta: {
-      page: serverData.page,
-      limit: serverData.limit,
-      total: serverData.totalResults,
-      totalPages: serverData.totalPages,
+      page: serverData.page || 1,
+      limit: serverData.limit || total,
+      total: total,
+      totalPages: serverData.totalPages || 1,
     },
   };
 }
 
-/**
- * Memperbarui audit record.
- */
-export async function updateAudit(
+export type KBEntryUpdateInput = KBFormInput;
+
+export async function updateKBEntry(
   id: string,
-  data: UpdateAuditInput
-): Promise<AuditLogItem> {
-  const endpoint = `/audits/${encodeURIComponent(id)}`;
-  const response = await apiClient.patch<AuditLogItem>(endpoint, data);
+  payload: KBEntryUpdateInput,
+): Promise<KBEntryDto> {
+  const response = await apiClient.patch<KBEntryDto>(
+    `/kb-entry/${id}`,
+    payload,
+  );
   return response.data;
 }
 
-/**
- * Menghapus audit record.
- */
-export async function deleteAudit(id: string): Promise<void> {
-  const endpoint = `/audits/${encodeURIComponent(id)}`;
-  await apiClient.delete<void>(endpoint);
+export async function deleteKBEntry(id: string): Promise<void> {
+  await apiClient.delete(`/kb-entry/${id}`);
+}
+
+export async function getKBEntry(id: string): Promise<KBEntryDto> {
+  const response = await apiClient.get<KBEntryDto>(`/kb-entry/${id}`);
+  return response.data;
 }

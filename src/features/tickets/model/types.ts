@@ -1,69 +1,70 @@
-export type Priority = "low" | "medium" | "high" | "urgent";
-export type TicketPriority = Priority;
+export const TICKET_PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const;
+export type TicketPriority = (typeof TICKET_PRIORITIES)[number];
 
-export type Status = "open" | "in_progress" | "resolved" | "closed";
-export type TicketStatus = Status;
+export const TICKET_STATUSES = [
+  "DIAGNOSIS",
+  "IN_PROGRESS",
+  "WAITING_PART",
+  "RESOLVED",
+  "CANCELLED",
+  "ARCHIVED",
+] as const;
+export type TicketStatus = (typeof TICKET_STATUSES)[number];
 
-export type CustomCost = {
-  label: string;
-  amount: number;
-};
+export interface StatusHistory {
+  timestamp: string;
+  newStatus: TicketStatus;
+  note: string;
+}
 
-export type TicketResolution = {
-  rootCause: string;
-  solution: string;
-  parts?: PartUsage[];
-  photos?: string[];
-  tags?: string[];
-  extraCosts?: CustomCost[];
-  resolvedBy: string;
-  resolvedAt: string;
-};
+export interface ReplacementItem {
+  componentName: string;
+  quantity: number;
+  note: string | null;
+}
 
-export type Ticket = {
-  id: string;
-  code: string;
-  subject: string;
-  requester: string;
-  priority: TicketPriority;
+export interface TicketCustomer {
+  customerId: string;
+  name: string;
+  phone: string | null;
+}
+
+export interface TicketDevice {
+  deviceId: string;
+  type: string | null;
+  brand: string | null;
+  model: string | null;
+  serialNumber: string | null;
+}
+
+export interface TicketTechnician {
+  technicianId: string;
+  name: string | null;
+}
+
+export interface ServiceTicketDto {
+  ticketId: string;
+  ticketNumber: string;
   status: TicketStatus;
-  assignee: string | null;
-  description: string;
-  resolution: TicketResolution | null;
-  createdBy: string;
+  priority: TicketPriority;
+  initialComplaint: string;
   createdAt: string;
   updatedAt: string;
-  diagnostics?: Diagnostic[];
-  actions?: Action[];
-};
+  resolvedAt: string | null;
 
-export const TICKET_PRIORITIES: Priority[] = [
-  "low",
-  "medium",
-  "high",
-  "urgent",
-];
-export const TICKET_STATUSES: Status[] = [
-  "open",
-  "in_progress",
-  "resolved",
-  "closed",
-];
+  technicianDiagnosis: string | null;
+  technicianSolution: string | null;
 
-export type PartUsage = {
+  customer: TicketCustomer | string;
+  device: TicketDevice | string;
+  technician: TicketTechnician | string | null;
+
+  statusHistory: StatusHistory[];
+  replacementItems: ReplacementItem[];
+}
+
+export interface PartUsage {
   partId: string;
   name: string;
   qty: number;
-};
-
-export type Diagnostic = {
-  symptom: string;
-  diagnosis: string;
-  timestamp: string;
-};
-
-export type Action = {
-  actionTaken: string;
-  partsUsed: PartUsage[];
-  timestamp: string;
-};
+}

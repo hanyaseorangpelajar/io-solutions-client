@@ -1,20 +1,21 @@
 "use client";
 
 import { Badge } from "@mantine/core";
-import type { TicketStatus } from "../model/types";
+import { TicketStatus } from "../model/types";
 
-export default function TicketStatusBadge({
-  status,
-}: {
-  status: TicketStatus;
-}) {
-  const map: Record<TicketStatus, { color: string; label: string }> = {
-    open: { color: "blue", label: "Open" },
-    in_progress: { color: "yellow", label: "In progress" },
-    resolved: { color: "green", label: "Resolved" },
-    closed: { color: "gray", label: "Closed" },
+export default function TicketStatusBadge({ status }: { status?: string }) {
+  const map: Record<string, { color: string; label: string }> = {
+    DIAGNOSIS: { color: "blue", label: "Diagnosis" },
+    IN_PROGRESS: { color: "yellow", label: "Dalam Proses" },
+    WAITING_PART: { color: "orange", label: "Menunggu Sparepart" },
+    RESOLVED: { color: "green", label: "Selesai" },
+    CANCELLED: { color: "red", label: "Dibatalkan" },
+    ARCHIVED: { color: "gray", label: "Diarsipkan" },
   };
-  const v = map[status];
+
+  const key = status || "DIAGNOSIS";
+  const v = map[key] ?? { color: "gray", label: key };
+
   return (
     <Badge color={v.color} variant="light" radius="sm">
       {v.label}

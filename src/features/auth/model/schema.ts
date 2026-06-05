@@ -11,7 +11,7 @@ export const IdentifierSchema = z
       }
       return v.length >= 3;
     },
-    { message: "Gunakan email valid atau username (≥ 3 karakter)" }
+    { message: "Gunakan username (≥ 3 karakter)" }
   );
 
 export const SignInSchema = z.object({
@@ -23,21 +23,3 @@ export const SignInSchema = z.object({
 export const ForgotPasswordSchema = z.object({
   email: z.string().min(1, "Wajib diisi").email("Email tidak valid"),
 });
-
-/** Sign-up */
-export const SignUpSchema = z
-  .object({
-    name: z.string().min(2, "Minimal 2 karakter"),
-    username: z.string().min(3, "Username minimal 3 karakter"),
-    email: z.string().min(1, "Wajib diisi").email("Email tidak valid"),
-    password: z.string().min(8, "Minimal 8 karakter"),
-    confirmPassword: z.string().min(1, "Wajib diisi"),
-    // Penting: gunakan boolean + refine (bukan z.literal(true))
-    acceptTerms: z.boolean().refine((v) => v === true, {
-      message: "Kamu harus menyetujui Syarat & Ketentuan",
-    }),
-  })
-  .refine((v) => v.password === v.confirmPassword, {
-    message: "Kata sandi tidak cocok",
-    path: ["confirmPassword"],
-  });

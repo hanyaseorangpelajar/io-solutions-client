@@ -1,10 +1,12 @@
 "use client";
 
-import { listParts, type Part } from "@/features/inventory/api/parts";
-import type { Staff } from "@/features/staff/model/types";
-import { getStaffList } from "@/features/staff/api/staff";
 import { useMemo } from "react";
-import type { Ticket, PartUsage } from "@/features/tickets/model/types";
+import type {
+  ServiceTicketDto,
+  ReplacementItem,
+  TicketCustomer,
+  TicketTechnician,
+} from "@/features/tickets/model/types";
 import { getTicket } from "@/features/tickets/api/tickets";
 import { formatDateTime } from "@/features/tickets/utils/format";
 import {
@@ -17,61 +19,34 @@ import {
   Table,
   Text,
   Title,
+  Box,
+  rem,
 } from "@mantine/core";
-import { IconInfoCircle } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
 
 type Props = {
   ticketId: string;
 };
 
-const formatCurrency = (amount: number | null | undefined): string => {
-  if (amount == null) return "-";
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(amount);
+const safeFormatDateTime = (dateString?: string) => {
+  if (!dateString) return "-";
+  try {
+    return formatDateTime(dateString);
+  } catch (e) {
+    return dateString;
+  }
 };
 
 export default function TicketNote({ ticketId }: Props) {
   const {
     data: ticket,
-    isLoading: isLoadingTicket,
-    error: ticketError,
-  } = useQuery<Ticket>({
+    isLoading,
+    error,
+  } = useQuery<ServiceTicketDto>({
     queryKey: ["tickets", ticketId, "detailForNote"],
     queryFn: () => getTicket(ticketId),
     enabled: !!ticketId,
   });
-
-  const { data: parts = [], isLoading: isLoadingParts } = useQuery<Part[]>({
-    queryKey: ["parts", "list", "forNote"],
-    queryFn: listParts,
-    enabled: !!ticketId,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: users = [], isLoading: isLoadingUsers } = useQuery<Staff[]>({
-    queryKey: ["staff", "list", "forNote"],
-    queryFn: getStaffList,
-    enabled: !!ticketId,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const partPriceMap = useMemo(
-    () => new Map(parts.map((p) => [p.id, p.price ?? 0])),
-    [parts]
-  );
-
-  const userNameMap = useMemo(
-    () => new Map(users.map((u) => [u.id, u.name])),
-    [users]
-  );
-
-  const isLoading = isLoadingTicket || isLoadingParts || isLoadingUsers;
-  const error = ticketError;
 
   if (isLoading) {
     return (
@@ -92,29 +67,30 @@ export default function TicketNote({ ticketId }: Props) {
     );
   }
 
-  const { code, createdAt, requester, assignee, description, resolution } =
-    ticket;
-  const resolvedAt = resolution?.resolvedAt;
+  const {
+    ticketNumber,
+    createdAt,
+    customer,
+    technician,
+    initialComplaint,
+    resolvedAt,
+  } = ticket;
+
+  const customerObj = customer as TicketCustomer;
+  const technicianObj = technician as TicketTechnician;
+
+  const customerName = typeof customer === "object" ? customerObj?.name : "N/A";
   const assigneeName =
-    (assignee ? userNameMap.get(assignee) : null) ?? "Tidak Ditugaskan";
+    typeof technician === "object"
+      ? (technicianObj?.name ?? "Tidak Ditugaskan")
+      : "Tidak Ditugaskan";
 
-  let totalPartsCost = 0;
-  let totalExtraCost = 0;
   const partRows =
-    resolution?.parts?.map((p: PartUsage) => {
-      const unitPrice = partPriceMap.get(p.partId) ?? 0;
-      const subtotal = p.qty * unitPrice;
-      totalPartsCost += subtotal;
-      return { name: p.name, qty: p.qty, unitPrice, subtotal };
-    }) ?? [];
-
-  const extraCostRows =
-    resolution?.extraCosts?.map((ec) => {
-      totalExtraCost += ec.amount;
-      return { label: ec.label, amount: ec.amount };
-    }) ?? [];
-
-  const totalCost = totalPartsCost + totalExtraCost;
+    ticket.replacementItems?.map((p: ReplacementItem) => ({
+      name: p.componentName,
+      qty: p.quantity,
+      note: p.note ?? "-",
+    })) ?? [];
 
   return (
     <Paper shadow="sm" radius="md" p="xl" withBorder>
@@ -125,14 +101,14 @@ export default function TicketNote({ ticketId }: Props) {
           </Title>
           <Group justify="space-between">
             <Text size="sm">
-              No: <strong>{code}</strong>
+              No: <strong>{ticketNumber}</strong>
             </Text>
-            <Text size="sm">Tanggal: {formatDateTime(createdAt)}</Text>
+            <Text size="sm">Tanggal: {safeFormatDateTime(createdAt)}</Text>
           </Group>
           {resolvedAt && (
             <Group justify="end">
               <Text size="sm" c="dimmed">
-                Selesai: {formatDateTime(resolvedAt)}
+                Selesai: {safeFormatDateTime(resolvedAt)}
               </Text>
             </Group>
           )}
@@ -143,9 +119,9 @@ export default function TicketNote({ ticketId }: Props) {
         <Group grow>
           <Stack gap={4}>
             <Text size="xs" c="dimmed">
-              Pemohon:
+              Pelanggan:
             </Text>
-            <Text fw={500}>{requester}</Text>
+            <Text fw={500}>{customerName}</Text>
           </Stack>
           <Stack gap={4}>
             <Text size="xs" c="dimmed">
@@ -160,121 +136,59 @@ export default function TicketNote({ ticketId }: Props) {
             Deskripsi Masalah:
           </Text>
           <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>
-            {description || "-"}
+            {initialComplaint || "-"}
           </Text>
         </Stack>
 
-        {resolution && (
+        {partRows.length > 0 && (
           <>
             <Divider my="sm" />
             <Stack gap="md">
-              <Title order={5}>Detail Penyelesaian</Title>
-              <Stack gap={4}>
-                <Text size="xs" c="dimmed">
-                  Akar Masalah:
-                </Text>
-                <Text size="sm">{resolution.rootCause}</Text>
-              </Stack>
-              <Stack gap={4}>
-                <Text size="xs" c="dimmed">
-                  Solusi:
-                </Text>
-                <Text size="sm">{resolution.solution}</Text>
+              <Title order={5}>Item Pengganti</Title>
+              <Stack gap="xs">
+                <Table striped withRowBorders={false}>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>Nama Part</Table.Th>
+                      <Table.Th ta="right">Qty</Table.Th>
+                      <Table.Th>Keterangan</Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {partRows.map((row, i) => (
+                      <Table.Tr key={`part-${i}`}>
+                        <Table.Td>{row.name}</Table.Td>
+                        <Table.Td ta="right">{row.qty}</Table.Td>
+                        <Table.Td>{row.note}</Table.Td>
+                      </Table.Tr>
+                    ))}
+                  </Table.Tbody>
+                </Table>
               </Stack>
             </Stack>
           </>
         )}
 
-        {resolution && (partRows.length > 0 || extraCostRows.length > 0) && (
-          <>
-            <Divider my="sm" />
-            <Stack gap="md">
-              <Title order={5}>Rincian Biaya</Title>
-              {partRows.length > 0 && (
-                <Stack gap="xs">
-                  <Text size="sm" fw={500}>
-                    Suku Cadang Digunakan:
-                  </Text>
-                  <Table striped withRowBorders={false}>
-                    <Table.Thead>
-                      <Table.Tr>
-                        <Table.Th>Nama Part</Table.Th>
-                        <Table.Th ta="right">Qty</Table.Th>
-                        <Table.Th ta="right">Harga Satuan</Table.Th>
-                        <Table.Th ta="right">Subtotal</Table.Th>
-                      </Table.Tr>
-                    </Table.Thead>
-                    <Table.Tbody>
-                      {partRows.map((row, i) => (
-                        <Table.Tr key={`part-${i}`}>
-                          <Table.Td>{row.name}</Table.Td>
-                          <Table.Td ta="right">{row.qty}</Table.Td>
-                          <Table.Td ta="right">
-                            {formatCurrency(row.unitPrice)}
-                          </Table.Td>
-                          <Table.Td ta="right">
-                            {formatCurrency(row.subtotal)}
-                          </Table.Td>
-                        </Table.Tr>
-                      ))}
-                      <Table.Tr>
-                        <Table.Td colSpan={3} ta="right" fw={700}>
-                          Total Suku Cadang
-                        </Table.Td>
-                        <Table.Td ta="right" fw={700}>
-                          {formatCurrency(totalPartsCost)}
-                        </Table.Td>
-                      </Table.Tr>
-                    </Table.Tbody>
-                  </Table>
-                </Stack>
-              )}
-
-              {extraCostRows.length > 0 && (
-                <Stack gap="xs">
-                  <Text size="sm" fw={500}>
-                    Biaya Tambahan:
-                  </Text>
-                  <Table striped withRowBorders={false}>
-                    <Table.Thead>
-                      <Table.Tr>
-                        <Table.Th>Keterangan</Table.Th>
-                        <Table.Th ta="right">Jumlah</Table.Th>
-                      </Table.Tr>
-                    </Table.Thead>
-                    <Table.Tbody>
-                      {extraCostRows.map((row, i) => (
-                        <Table.Tr key={`extra-${i}`}>
-                          <Table.Td>{row.label}</Table.Td>
-                          <Table.Td ta="right">
-                            {formatCurrency(row.amount)}
-                          </Table.Td>
-                        </Table.Tr>
-                      ))}
-                      <Table.Tr>
-                        <Table.Td ta="right" fw={700}>
-                          Total Biaya Tambahan
-                        </Table.Td>
-                        <Table.Td ta="right" fw={700}>
-                          {formatCurrency(totalExtraCost)}
-                        </Table.Td>
-                      </Table.Tr>
-                    </Table.Tbody>
-                  </Table>
-                </Stack>
-              )}
-
-              <Group justify="flex-end" mt="sm">
-                <Text size="lg" fw={700}>
-                  Total Biaya:
-                </Text>
-                <Text size="lg" fw={700}>
-                  {formatCurrency(totalCost)}
-                </Text>
-              </Group>
-            </Stack>
-          </>
-        )}
+        <Stack
+          gap="xs"
+          mt="xl"
+          pt="xl"
+          style={{ borderTop: "1px dashed #ced4da" }}
+        >
+          <Text size="sm" ta="center">
+            Tanda Terima Pelanggan:
+          </Text>
+          <Box
+            style={{
+              height: rem(70),
+              width: rem(200),
+              alignSelf: "center",
+            }}
+          />
+          <Text ta="center" fw={500}>
+            ( {customerName} )
+          </Text>
+        </Stack>
       </Stack>
     </Paper>
   );
