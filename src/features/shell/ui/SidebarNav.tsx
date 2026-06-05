@@ -25,7 +25,7 @@ type SidebarNavProps = {
 
 function collectHrefs(
   nodes: NavItem[] | undefined | null,
-  acc: string[] = []
+  acc: string[] = [],
 ): string[] {
   if (!Array.isArray(nodes)) return acc;
   for (const n of nodes) {
@@ -34,93 +34,79 @@ function collectHrefs(
   }
   return acc;
 }
+
 function findActiveHref(
   items: NavItem[] | undefined | null,
-  pathname: string
+  pathname: string,
 ): string | null {
   const hrefs = collectHrefs(items, []);
   const candidates = hrefs.filter(
-    (h) => pathname === h || pathname.startsWith(h + "/")
+    (h) => pathname === h || pathname.startsWith(`${h}/`),
   );
   candidates.sort((a, b) => b.length - a.length);
-  return candidates[0] ?? null;
+  return candidates.length > 0 ? candidates[0] : null;
 }
 
-export default function SidebarNav({ items, onNavigate }: SidebarNavProps) {
-  const list = Array.isArray(items) ? items : [];
-  const { logout } = useAuth();
+export default function SidebarNav({
+  items = [],
+  onNavigate,
+}: SidebarNavProps) {
+  const pathname = usePathname();
+  const { user, logout } = useAuth();
   const modals = useModals();
 
-  const pathname = usePathname();
+  const [open, setOpen] = useState<Record<string, boolean>>({});
+
+  const toggle = (k: string) => setOpen((prev) => ({ ...prev, [k]: !prev[k] }));
+
   const activeHref = useMemo(
-    () => findActiveHref(list, pathname),
-    [list, pathname]
+    () => findActiveHref(items, pathname),
+    [items, pathname],
   );
 
-  const groupKeys = useMemo(
-    () => list.filter((i) => i.group && i.children?.length).map((g) => g.label),
-    [list]
-  );
-  const [open, setOpen] = useState<Record<string, boolean>>(
-    Object.fromEntries(groupKeys.map((k) => [k, false]))
-  );
-  const toggle = (k: string) => setOpen((p) => ({ ...p, [k]: !p[k] }));
-
-  const openLogoutModal = () => {
+  const confirmLogout = () => {
     modals.openConfirmModal({
       title: "Konfirmasi Logout",
       centered: true,
       children: (
-        <Text size="sm">Apakah Anda yakin ingin keluar dari sesi ini?</Text>
+        <Text size="sm">Apakah Anda yakin ingin keluar dari sistem?</Text>
       ),
       labels: { confirm: "Logout", cancel: "Batal" },
       confirmProps: { color: "red" },
-      onConfirm: logout,
+      onConfirm: () => logout(),
     });
   };
 
-  const renderLink = (item: NavItem) => {
-    const active = !!item.href && item.href === activeHref;
-    const hasChildren =
-      Array.isArray(item.children) && item.children.length > 0;
-
-    let icon: React.ReactNode = undefined;
-    if (item.href === "/views/settings/account") {
-      icon = <IconUser size={16} />;
+  const renderLink = (child: NavItem) => {
+    if (child.roles && user?.role && !child.roles.includes(user.role)) {
+      return null;
     }
 
-    if (item.id === "logout") {
-      return (
-        <NavLink
-          key={item.label}
-          label={item.label}
-          color="red"
-          onClick={openLogoutModal}
-          leftSection={<IconLogout size={16} />}
-          childrenOffset={12}
-          variant="light"
-        />
-      );
-    }
+    const isActive = activeHref === child.href;
 
     return (
       <NavLink
-        key={item.href ?? item.label}
-        active={active}
-        label={item.label}
-        component={item.href ? (Link as any) : undefined}
-        href={item.href as any}
+        key={child.label}
+        component={Link}
+        href={child.href || "#"}
+        label={child.label}
+        active={isActive}
         onClick={onNavigate}
-        leftSection={icon}
-        childrenOffset={12}
         variant="light"
+        style={{ borderRadius: rem(6) }}
       >
-        {hasChildren ? item.children!.map((child) => renderLink(child)) : null}
+        {child.children?.length
+          ? child.children.map((sub) => renderLink(sub))
+          : null}
       </NavLink>
     );
   };
 
   const renderGroup = (group: NavItem) => {
+    if (group.roles && user?.role && !group.roles.includes(user.role)) {
+      return null;
+    }
+
     const k = group.label;
     const opened = open[k] ?? true;
 
@@ -164,12 +150,35 @@ export default function SidebarNav({ items, onNavigate }: SidebarNavProps) {
   };
 
   return (
-    <Stack gap={4} h="100%">
-      <ScrollArea style={{ flex: 1 }} type="auto">
-        <Stack gap={4} p="xs">
-          {list.map((it) => (it.group ? renderGroup(it) : renderLink(it)))}
+    <Stack h="100%" justify="space-between" pb="md">
+      <ScrollArea style={{ flex: 1 }} type="hover">
+        <Stack gap="xs" px="sm" pt="md">
+          {items.map((item) =>
+            item.group ? renderGroup(item) : renderLink(item),
+          )}
         </Stack>
       </ScrollArea>
+
+      <Stack px="sm" gap={4}>
+        <NavLink
+          component={Link}
+          href="/views/settings/account"
+          label={user?.name || "Profil"}
+          description={user?.role || "Akses Pengaturan"}
+          leftSection={<IconUser size={20} stroke={1.5} />}
+          onClick={onNavigate}
+          style={{ borderRadius: rem(6) }}
+        />
+        <NavLink
+          label="Logout"
+          leftSection={<IconLogout size={20} stroke={1.5} />}
+          onClick={confirmLogout}
+          color="red"
+          variant="light"
+          active
+          style={{ borderRadius: rem(6) }}
+        />
+      </Stack>
     </Stack>
   );
 }

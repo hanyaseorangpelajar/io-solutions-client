@@ -1,3 +1,11 @@
+/**
+ *
+ * DOKUMENTASI KOMPONEN
+ * Menggunakan UserDto terbaru (dengan properti name, role UPPERCASE, isActive).
+ * Memastikan seluruh tree React menggunakan objek User yang Type-Safe.
+ *
+ */
+
 "use client";
 
 import {
@@ -10,7 +18,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import apiClient from "@/lib/apiClient";
-import { User } from "./model/types";
+import type { UserDto } from "./model/types";
 
 function setCookie(name: string, value: string, days: number) {
   let expires = "";
@@ -28,9 +36,12 @@ function deleteCookie(name: string) {
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  user: User | null;
+  user: UserDto | null;
   isLoading: boolean;
-  login: (credentials: { email: string; password: string }) => Promise<void>;
+  login: (credentials: {
+    identifier: string;
+    password: string;
+  }) => Promise<void>;
   logout: () => Promise<void>;
   refetchUser: () => Promise<void>;
 }
@@ -38,58 +49,47 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserDto | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const router = useRouter();
 
-  const checkUser = useCallback(async () => {
-    const token = localStorage.getItem("authToken");
-    if (token) {
-      try {
-        const response = await apiClient.get<{ user: User }>("/auth/me");
-        setUser(response.data.user);
-        setIsAuthenticated(true);
-      } catch (error) {
-        localStorage.removeItem("authToken");
-        deleteCookie("authToken");
-        setIsAuthenticated(false);
-        setUser(null);
-      }
+  const refetchUser = useCallback(async () => {
+    try {
+      const response = await apiClient.get<UserDto>("/auth/me");
+      setUser(response.data);
+      setIsAuthenticated(true);
+    } catch (error) {
+      setIsAuthenticated(false);
+      setUser(null);
     }
-    setIsLoading(false);
   }, []);
 
   useEffect(() => {
-    checkUser();
-  }, [checkUser]);
-
-  const refetchUser = useCallback(async () => {
-    setIsLoading(true);
-    await checkUser();
-    setIsLoading(false);
-  }, [checkUser]);
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
+    if (token) {
+      refetchUser().finally(() => setIsLoading(false));
+    } else {
+      setIsLoading(false);
+    }
+  }, [refetchUser]);
 
   const login = useCallback(
-    async (credentials: { email: string; password: string }) => {
-      const apiCredentials = {
-        username: credentials.email,
-        password: credentials.password,
-      };
-
+    async (credentials: { identifier: string; password: string }) => {
       try {
-        const response = await apiClient.post<{ user: User; token: string }>(
+        const response = await apiClient.post<{ user: UserDto; token: string }>(
           "/auth/login",
-          apiCredentials
+          credentials,
         );
-        const { user, token } = response.data;
+        const { user: userData, token } = response.data;
 
         if (token) {
           localStorage.setItem("authToken", token);
           setCookie("authToken", token, 1);
 
           setIsAuthenticated(true);
-          setUser(user);
+          setUser(userData);
         }
       } catch (error: any) {
         console.error("Login failed:", error.response?.data || error.message);
@@ -100,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw error;
       }
     },
-    []
+    [],
   );
 
   const logout = useCallback(async () => {

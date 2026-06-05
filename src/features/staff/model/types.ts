@@ -1,12 +1,12 @@
-export const ROLES = ["Teknisi", "Admin", "SysAdmin"] as const;
+export const ROLES = ["TEKNISI", "ADMIN", "SYSADMIN"] as const;
 export type StaffRole = (typeof ROLES)[number];
 
-export type Staff = {
-  id: string;
-  nama: string;
+export interface StaffDto {
+  userId: string;
+  name: string;
   username: string;
-  statusAktif: boolean;
+  isActive: boolean;
   role: StaffRole;
-  dibuatPada: string;
-  diperbaruiPada: string;
-};
+  createdAt: string;
+  updatedAt: string;
+}

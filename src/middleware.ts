@@ -12,13 +12,20 @@ export function middleware(req: NextRequest) {
     pathname.startsWith("/api") ||
     pathname.match(/\.[a-zA-Z0-9]+$/);
   const isRoot = pathname === "/";
-  const isProtected = pathname.startsWith("/dashboard");
+  const isProtected =
+    pathname.startsWith("/dashboard") || pathname.startsWith("/views");
 
   if (isPublicAsset) return NextResponse.next();
 
+  if (isRoot) {
+    const url = req.nextUrl.clone();
+    url.pathname = token ? "/views/tickets/works" : "/sign-in";
+    return NextResponse.redirect(url);
+  }
+
   if (isAuthPage && token) {
     const url = req.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = "/views/tickets/works";
     return NextResponse.redirect(url);
   }
 
