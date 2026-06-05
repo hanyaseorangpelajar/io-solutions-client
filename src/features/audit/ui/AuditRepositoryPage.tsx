@@ -1,10 +1,10 @@
 "use client";
 
-import { useAuth } from "@/features/auth";
+import { useAuth } from "@/features/auth/AuthContext";
 import { useModals } from "@mantine/modals";
 import type { Paginated } from "@/features/tickets/api/tickets";
 import { formatDateTime } from "@/features/tickets/utils/format";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import TextField from "@/shared/ui/inputs/TextField";
 import {
   Button,
@@ -19,16 +19,15 @@ import {
 } from "@mantine/core";
 import { useDebouncedValue } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 
 import {
   listKBSolutions,
   updateKBEntry,
   deleteKBEntry,
-  type KBEntryBackend,
   type KBEntryUpdateInput,
 } from "../api/audits";
+import type { KBEntryDto } from "../model/types";
 
 import RepositoryCard, { type RepositoryCardData } from "./RepositoryCard";
 import KBEntryEditModal from "./KBEntryEditModal";
@@ -55,7 +54,7 @@ export default function AuditRepositoryPage() {
 
   const PAGE_SIZE = 9;
   const [page, setPage] = useState(1);
-  const [editingEntry, setEditingEntry] = useState<KBEntryBackend | null>(null);
+  const [editingEntry, setEditingEntry] = useState<KBEntryDto | null>(null);
 
   const [viewingEntryData, setViewingEntryData] =
     useState<RepositoryCardData | null>(null);
@@ -65,7 +64,7 @@ export default function AuditRepositoryPage() {
     isLoading,
     error,
     refetch,
-  } = useQuery<Paginated<KBEntryBackend>>({
+  } = useQuery<Paginated<KBEntryDto>>({
     queryKey: ["kb-entry", "list"],
     queryFn: () => listKBSolutions({}),
   });
@@ -80,27 +79,23 @@ export default function AuditRepositoryPage() {
     }
   }, [error]);
 
-  const allEntries: KBEntryBackend[] = kbData?.data ?? [];
+  const allEntries: KBEntryDto[] = kbData?.data ?? [];
 
   const mappedCardData = useMemo(() => {
     const cardDataMap = new Map<string, RepositoryCardData>();
     for (const kb of allEntries) {
-      const allTags = (kb.tags ?? []).map((t) => t.nama);
-      cardDataMap.set(kb.id, {
-        code: kb.sourceTicketId.nomorTiket,
-        subject: kb.gejala,
+      const allTags = (kb.tags ?? []).map((t) => t.name);
+      cardDataMap.set(kb.kbId, {
+        code: kb.sourceTicket?.ticketNumber || "-",
+        subject: kb.symptom,
         deviceType: inferDeviceFromTags(allTags),
-        resolvedAt: formatDateTime(kb.dibuatPada),
+        resolvedAt: formatDateTime(kb.createdAt),
         tags: allTags,
         rootCause: kb.diagnosis,
-        solution: kb.solusi,
+        solution: kb.solution,
         imageUrl: kb.imageUrl ?? undefined,
-        deviceModel: kb.modelPerangkat,
-        ticketId:
-          typeof kb.sourceTicketId === "object"
-            ? ((kb.sourceTicketId as any)?.id ??
-              (kb.sourceTicketId as any)?._id)
-            : kb.sourceTicketId,
+        deviceModel: kb.deviceModel,
+        ticketId: kb.sourceTicket?.ticketId || null,
       });
     }
     return cardDataMap;
@@ -134,7 +129,7 @@ export default function AuditRepositoryPage() {
 
   const filteredEntries = useMemo(() => {
     return allEntries.filter((kb) => {
-      const cardData = mappedCardData.get(kb.id);
+      const cardData = mappedCardData.get(kb.kbId);
       if (!cardData) return false;
 
       const byDevice = device === "all" || cardData.deviceType === device;
@@ -200,19 +195,19 @@ export default function AuditRepositoryPage() {
     },
   });
 
-  const openDeleteModal = (entry: KBEntryBackend) => {
+  const openDeleteModal = (entry: KBEntryDto) => {
     modals.openConfirmModal({
       title: "Hapus Entri KB",
       centered: true,
       children: (
         <Text size="sm">
           Apakah Anda yakin ingin menghapus entri untuk:{" "}
-          <strong>{entry.gejala}</strong>? Tindakan ini tidak dapat dibatalkan.
+          <strong>{entry.symptom}</strong>? Tindakan ini tidak dapat dibatalkan.
         </Text>
       ),
       labels: { confirm: "Hapus", cancel: "Batal" },
       confirmProps: { color: "red", loading: deleteMutation.isPending },
-      onConfirm: () => deleteMutation.mutate(entry.id),
+      onConfirm: () => deleteMutation.mutate(entry.kbId),
     });
   };
 
@@ -264,15 +259,15 @@ export default function AuditRepositoryPage() {
 
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
         {visibleEntries.map((kb) => {
-          const cardData = mappedCardData.get(kb.id);
+          const cardData = mappedCardData.get(kb.kbId);
           if (!cardData) return null;
 
           return (
             <RepositoryCard
-              key={kb.id}
+              key={kb.kbId}
               data={cardData}
               currentUser={user}
-              sourceTeknisiId={kb.sourceTicketId?.teknisiId}
+              sourceTechnicianId={kb.sourceTicket?.technicianId}
               onViewDetails={() => setViewingEntryData(cardData)}
               onEdit={() => setEditingEntry(kb)}
               onDelete={() => openDeleteModal(kb)}
@@ -305,7 +300,7 @@ export default function AuditRepositoryPage() {
         isSubmitting={updateMutation.isPending}
         onSubmit={async (data) => {
           if (editingEntry) {
-            await updateMutation.mutateAsync({ id: editingEntry.id, data });
+            await updateMutation.mutateAsync({ id: editingEntry.kbId, data });
           }
         }}
       />

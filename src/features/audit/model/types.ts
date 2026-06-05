@@ -25,3 +25,27 @@ export type AuditLogItem = {
   tags?: string[];
   partUnit?: string;
 };
+
+export interface KBEntryDto {
+  kbId: string;
+  symptom: string;
+  deviceModel: string;
+  diagnosis: string;
+  solution: string;
+  imageUrl: string | null;
+  sourceTicket: {
+    ticketId: string;
+    ticketNumber: string;
+    technicianId?: string;
+  } | null;
+  tags: {
+    tagId: string;
+    name: string;
+  }[];
+  createdAt: string;
+  createdBy: {
+    userId: string;
+    name: string;
+  } | null;
+  updatedAt: string;
+}

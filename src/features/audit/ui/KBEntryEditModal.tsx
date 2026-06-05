@@ -15,12 +15,11 @@ import {
   FileInput,
   Image,
   Text,
-  Alert,
   rem,
 } from "@mantine/core";
 import { IconX, IconUpload } from "@tabler/icons-react";
-import { z } from "zod";
-import type { KBEntryBackend, KBEntryUpdateInput } from "../api/audits";
+import type { KBEntryUpdateInput } from "../api/audits";
+import type { KBEntryDto } from "../model/types";
 import { useForm, zodResolver } from "@mantine/form";
 import { kbSchema } from "../model/schema";
 import { uploadImage } from "../api/upload";
@@ -29,7 +28,7 @@ import { notifications } from "@mantine/notifications";
 type Props = {
   opened: boolean;
   onClose: () => void;
-  entry: KBEntryBackend | null;
+  entry: KBEntryDto | null;
   onSubmit: (data: KBEntryUpdateInput) => Promise<void>;
   isSubmitting: boolean;
 };
@@ -44,10 +43,10 @@ export default function KBEntryEditModal({
   const form = useForm({
     validate: zodResolver(kbSchema),
     initialValues: {
-      gejala: "",
-      modelPerangkat: "",
+      symptom: "",
+      deviceModel: "",
       diagnosis: "",
-      solusi: "",
+      solution: "",
       tags: [] as string[],
       imageUrl: null as string | null,
     },
@@ -60,17 +59,17 @@ export default function KBEntryEditModal({
   useEffect(() => {
     if (entry) {
       form.setValues({
-        gejala: entry.gejala,
-        modelPerangkat: entry.modelPerangkat,
+        symptom: entry.symptom,
+        deviceModel: entry.deviceModel,
         diagnosis: entry.diagnosis,
-        solusi: entry.solusi,
-        tags: entry.tags ? entry.tags.map((t) => t.nama) : [],
+        solution: entry.solution,
+        tags: entry.tags ? entry.tags.map((t) => t.name) : [],
         imageUrl: entry.imageUrl || null,
       });
       setTagData(
         entry.tags
-          ? entry.tags.map((t) => ({ value: t.nama, label: t.nama }))
-          : []
+          ? entry.tags.map((t) => ({ value: t.name, label: t.name }))
+          : [],
       );
     } else {
       form.reset();
@@ -122,12 +121,12 @@ export default function KBEntryEditModal({
           <TextInput
             label="Gejala (Keluhan Awal)"
             withAsterisk
-            {...form.getInputProps("gejala")}
+            {...form.getInputProps("symptom")}
           />
           <TextInput
             label="Model Perangkat"
             withAsterisk
-            {...form.getInputProps("modelPerangkat")}
+            {...form.getInputProps("deviceModel")}
           />
           <Textarea
             label="Diagnosis"
@@ -139,7 +138,7 @@ export default function KBEntryEditModal({
             label="Solusi"
             minRows={4}
             withAsterisk
-            {...form.getInputProps("solusi")}
+            {...form.getInputProps("solution")}
           />
 
           <Stack gap={4}>

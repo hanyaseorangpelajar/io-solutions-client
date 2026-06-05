@@ -13,7 +13,6 @@ import {
   Menu,
   ActionIcon,
   rem,
-  Anchor,
   Box,
   Button,
 } from "@mantine/core";
@@ -26,7 +25,7 @@ import {
   IconTrash,
   IconEye,
 } from "@tabler/icons-react";
-import type { User } from "@/features/auth";
+import type { UserDto } from "@/features/auth/model/types";
 
 export type RepositoryCardData = {
   imageUrl?: string;
@@ -44,8 +43,8 @@ export type RepositoryCardData = {
 
 type Props = {
   data: RepositoryCardData;
-  currentUser: User | null;
-  sourceTeknisiId?: string;
+  currentUser: UserDto | null;
+  sourceTechnicianId?: string;
   onEdit: () => void;
   onDelete: () => void;
   onViewDetails: () => void;
@@ -54,7 +53,7 @@ type Props = {
 export default function RepositoryCard({
   data,
   currentUser,
-  sourceTeknisiId,
+  sourceTechnicianId,
   onEdit,
   onDelete,
   onViewDetails,
@@ -72,9 +71,11 @@ export default function RepositoryCard({
   } = data;
 
   const isAdmin =
-    currentUser?.role === "Admin" || currentUser?.role === "SysAdmin";
+    currentUser?.role === "ADMIN" || currentUser?.role === "SYSADMIN";
   const isOwner =
-    !!currentUser && !!sourceTeknisiId && currentUser.id === sourceTeknisiId;
+    !!currentUser &&
+    !!sourceTechnicianId &&
+    currentUser.userId === sourceTechnicianId;
   const canManage = isAdmin || isOwner;
 
   const CardContent = (
@@ -157,7 +158,11 @@ export default function RepositoryCard({
           <Group justify="space-between" mt="md" align="center">
             <Button
               component={Link}
-              href={`/views/tickets/${encodeURIComponent(ticketId!)}`}
+              href={
+                ticketId
+                  ? `/views/tickets/${encodeURIComponent(ticketId)}`
+                  : "#"
+              }
               passHref
               size="xs"
               variant="light"

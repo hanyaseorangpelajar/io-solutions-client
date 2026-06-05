@@ -9,7 +9,6 @@ import {
   Group,
   Badge,
   ScrollArea,
-  rem,
   Image,
 } from "@mantine/core";
 import { IconCalendar, IconDeviceDesktop, IconHash } from "@tabler/icons-react";
@@ -36,16 +35,20 @@ export default function RepositoryDetailModal({
       title={
         <Text fw={500} size="md">
           Detail solusi:{" "}
-          <Link
-            href={`/views/tickets/${encodeURIComponent((data as any).ticketId)}`}
-            style={{
-              fontWeight: 700,
-              color: "var(--mantine-color-blue-6)",
-              textDecoration: "underline",
-            }}
-          >
-            {data.code}
-          </Link>
+          {data.ticketId ? (
+            <Link
+              href={`/views/tickets/${encodeURIComponent(data.ticketId)}`}
+              style={{
+                fontWeight: 700,
+                color: "var(--mantine-color-blue-6)",
+                textDecoration: "underline",
+              }}
+            >
+              {data.code}
+            </Link>
+          ) : (
+            <span style={{ fontWeight: 700 }}>{data.code}</span>
+          )}
         </Text>
       }
       size="lg"
@@ -109,8 +112,7 @@ export default function RepositoryDetailModal({
             Model Perangkat
           </Text>
           <Text size="sm" lh={1.5} style={{ whiteSpace: "pre-wrap" }}>
-            {/* Cek deviceModel (mapping custom) atau modelPerangkat (raw dari backend) */}
-            {(data as any).deviceModel || (data as any).modelPerangkat || "-"}
+            {data.deviceModel || "-"}
           </Text>
         </Stack>
       </Stack>
