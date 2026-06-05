@@ -22,13 +22,13 @@ import {
   updateCustomer,
   type Paginated,
 } from "../api/customers";
-import type { Customer } from "../model/types";
+import type { CustomerDto } from "../model/types";
 import { notifications } from "@mantine/notifications";
 import CustomerEditModal from "./CustomerEditModal";
 import type { CustomerFormInput } from "../model/schema";
 import CustomerDetailModal from "./CustomerDetailModal";
 
-type Row = Customer;
+type Row = CustomerDto;
 
 const safeFormatDateTime = (dateString?: string) => {
   if (!dateString) return "-";
@@ -45,14 +45,18 @@ export default function CustomerListPage() {
   const [page, setPage] = useState(1);
   const PAGE_LIMIT = 10;
 
-  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
-  const [viewingCustomer, setViewingCustomer] = useState<Customer | null>(null);
+  const [editingCustomer, setEditingCustomer] = useState<CustomerDto | null>(
+    null,
+  );
+  const [viewingCustomer, setViewingCustomer] = useState<CustomerDto | null>(
+    null,
+  );
 
   useEffect(() => {
     setPage(1);
   }, [q]);
 
-  const { data, isLoading, error } = useQuery<Paginated<Customer>>({
+  const { data, isLoading, error } = useQuery<Paginated<CustomerDto>>({
     queryKey: ["customers", "list", { q, page, PAGE_LIMIT }],
     queryFn: () =>
       listCustomers({
@@ -79,7 +83,7 @@ export default function CustomerListPage() {
     onSuccess: (updatedData) => {
       notifications.show({
         title: "Sukses",
-        message: `Data pelanggan '${updatedData.nama}' berhasil diperbarui.`,
+        message: `Data pelanggan '${updatedData.name}' berhasil diperbarui.`,
         color: "green",
       });
       setEditingCustomer(null);
@@ -100,7 +104,7 @@ export default function CustomerListPage() {
 
   const columns: Column<Row>[] = [
     {
-      key: "nama",
+      key: "name",
       header: "Nama",
       cell: (r) => (
         <Anchor
@@ -108,27 +112,27 @@ export default function CustomerListPage() {
           size="sm"
           onClick={() => setViewingCustomer(r)}
         >
-          {r.nama}
+          {r.name}
         </Anchor>
       ),
     },
     {
-      key: "noHp",
+      key: "phone",
       header: "Nomor HP",
       width: 180,
-      cell: (r) => r.noHp,
+      cell: (r) => r.phone,
     },
     {
-      key: "dibuatPada",
+      key: "createdAt",
       header: "Dibuat",
       width: 190,
-      cell: (r) => safeFormatDateTime(r.dibuatPada),
+      cell: (r) => safeFormatDateTime(r.createdAt),
     },
     {
-      key: "diperbaruiPada",
+      key: "updatedAt",
       header: "Diperbarui",
       width: 190,
-      cell: (r) => safeFormatDateTime(r.diperbaruiPada),
+      cell: (r) => safeFormatDateTime(r.updatedAt),
     },
     {
       key: "actions",
@@ -198,7 +202,7 @@ export default function CustomerListPage() {
         isSubmitting={updateMutation.isPending}
         onSubmit={async (data) => {
           if (editingCustomer) {
-            updateMutation.mutate({ id: editingCustomer.id, data });
+            updateMutation.mutate({ id: editingCustomer.customerId, data });
           }
         }}
       />

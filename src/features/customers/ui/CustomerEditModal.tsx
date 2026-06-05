@@ -1,3 +1,11 @@
+/**
+ *
+ * DOKUMENTASI KOMPONEN
+ * Binding properti disesuaikan dengan `CustomerDto` (name, phone, address, note).
+ * Default values pada React Hook Form di-reset menggunakan properti camelCase.
+ *
+ */
+
 "use client";
 
 import { useEffect } from "react";
@@ -13,13 +21,13 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CustomerFormSchema, type CustomerFormInput } from "../model/schema";
-import type { Customer } from "../model/types";
+import type { CustomerDto } from "../model/types";
 
 type Props = {
   opened: boolean;
   onClose: () => void;
   onSubmit: (data: CustomerFormInput) => Promise<void>;
-  customer: Customer | null;
+  customer: CustomerDto | null;
   isSubmitting: boolean;
 };
 
@@ -43,13 +51,13 @@ export default function CustomerEditModal({
   useEffect(() => {
     if (customer && opened) {
       reset({
-        nama: customer.nama,
-        noHp: customer.noHp,
-        alamat: (customer as any).alamat || "",
-        catatan: (customer as any).catatan || "",
+        name: customer.name,
+        phone: customer.phone,
+        address: customer.address || "",
+        note: customer.note || "",
       });
     } else if (!opened) {
-      reset(); // Kosongkan form saat ditutup
+      reset();
     }
   }, [customer, opened, reset]);
 
@@ -57,7 +65,7 @@ export default function CustomerEditModal({
     <Modal
       opened={opened}
       onClose={onClose}
-      title={`Edit Pelanggan: ${customer?.nama || ""}`}
+      title={`Edit Pelanggan: ${customer?.name || ""}`}
       centered
     >
       <form onSubmit={handleSubmit(onSubmit)}>
@@ -66,26 +74,26 @@ export default function CustomerEditModal({
           <TextInput
             label="Nama Pelanggan"
             withAsterisk
-            error={errors.nama?.message}
-            {...register("nama")}
+            error={errors.name?.message}
+            {...register("name")}
           />
           <TextInput
             label="Nomor HP"
             withAsterisk
-            error={errors.noHp?.message}
-            {...register("noHp")}
+            error={errors.phone?.message}
+            {...register("phone")}
           />
           <Textarea
             label="Alamat (Opsional)"
-            error={errors.alamat?.message}
-            {...register("alamat")}
+            error={errors.address?.message}
+            {...register("address")}
             minRows={3}
           />
           <Textarea
             label="Catatan (Opsional)"
             placeholder="Catatan internal..."
-            error={errors.catatan?.message}
-            {...register("catatan")}
+            error={errors.note?.message}
+            {...register("note")}
             minRows={2}
           />
           <Group justify="end" mt="md">

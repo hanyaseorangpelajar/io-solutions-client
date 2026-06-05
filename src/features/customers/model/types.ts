@@ -1,10 +1,9 @@
-export type Customer = {
-  id: string;
-  _id: string;
-  nama: string;
-  noHp: string;
-  dibuatPada: string;
-  diperbaruiPada: string;
-  alamat?: string;
-  catatan?: string;
-};
+export interface CustomerDto {
+  customerId: string;
+  name: string;
+  phone: string;
+  createdAt: string;
+  updatedAt: string;
+  address: string | null;
+  note: string | null;
+}

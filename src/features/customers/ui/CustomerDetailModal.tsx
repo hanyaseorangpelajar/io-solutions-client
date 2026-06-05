@@ -11,18 +11,18 @@ import {
   Card,
   Loader,
 } from "@mantine/core";
-import type { Customer } from "../model/types";
+import type { CustomerDto } from "../model/types";
 import { formatDateTime } from "@/features/tickets/utils/format";
 import { useQuery } from "@tanstack/react-query";
 import { listTickets } from "@/features/tickets/api/tickets";
 import TicketStatusBadge from "@/features/tickets/ui/TicketStatusBadge";
 import Link from "next/link";
-import type { Ticket } from "@/features/tickets/model/types";
+import type { ServiceTicketDto } from "@/features/tickets/model/types";
 
 type Props = {
   opened: boolean;
   onClose: () => void;
-  data: Customer | null;
+  data: CustomerDto | null;
 };
 
 const safeFormatDateTime = (dateString?: string) => {
@@ -35,15 +35,16 @@ const safeFormatDateTime = (dateString?: string) => {
 };
 
 export default function CustomerDetailModal({ opened, onClose, data }: Props) {
-  const customerId = data?.id ?? (data as any)?._id;
+  const customerId = data?.customerId;
+
   const { data: ticketsData, isLoading } = useQuery({
     queryKey: ["tickets", "customer", customerId],
     queryFn: () => listTickets({ customerId, limit: 10 }),
     enabled: !!customerId,
   });
 
-  const tickets: Ticket[] =
-    (ticketsData as any)?.results ?? (ticketsData as any)?.data ?? [];
+  // Fetcher listTickets sekarang mengembalikan properti 'data' (bukan 'results')
+  const tickets: ServiceTicketDto[] = ticketsData?.data ?? [];
 
   if (!data) return null;
 
@@ -59,8 +60,8 @@ export default function CustomerDetailModal({ opened, onClose, data }: Props) {
         <Grid.Col span={{ base: 12, md: 6 }}>
           <Stack gap="md" pb="md">
             <Stack gap={4}>
-              <Title order={4}>{data.nama}</Title>
-              <Text c="dimmed">{data.noHp}</Text>
+              <Title order={4}>{data.name}</Title>
+              <Text c="dimmed">{data.phone}</Text>
             </Stack>
 
             <Group grow>
@@ -68,13 +69,13 @@ export default function CustomerDetailModal({ opened, onClose, data }: Props) {
                 <Text size="xs" c="dimmed">
                   Dibuat Pada
                 </Text>
-                <Text size="sm">{safeFormatDateTime(data.dibuatPada)}</Text>
+                <Text size="sm">{safeFormatDateTime(data.createdAt)}</Text>
               </Stack>
               <Stack gap={4}>
                 <Text size="xs" c="dimmed">
                   Diperbarui Pada
                 </Text>
-                <Text size="sm">{safeFormatDateTime(data.diperbaruiPada)}</Text>
+                <Text size="sm">{safeFormatDateTime(data.updatedAt)}</Text>
               </Stack>
             </Group>
 
@@ -85,7 +86,7 @@ export default function CustomerDetailModal({ opened, onClose, data }: Props) {
                 Alamat
               </Text>
               <Text size="sm" lh={1.5} style={{ whiteSpace: "pre-wrap" }}>
-                {data.alamat || "-"}
+                {data.address || "-"}
               </Text>
             </Stack>
 
@@ -94,7 +95,7 @@ export default function CustomerDetailModal({ opened, onClose, data }: Props) {
                 Catatan
               </Text>
               <Text size="sm" lh={1.5} style={{ whiteSpace: "pre-wrap" }}>
-                {data.catatan || "-"}
+                {data.note || "-"}
               </Text>
             </Stack>
           </Stack>
@@ -115,9 +116,9 @@ export default function CustomerDetailModal({ opened, onClose, data }: Props) {
               <Stack gap="xs">
                 {tickets.map((ticket) => (
                   <Card
-                    key={ticket.id}
+                    key={ticket.ticketId}
                     component={Link}
-                    href={`/views/tickets/${ticket.id}`}
+                    href={`/views/tickets/${ticket.ticketId}`}
                     withBorder
                     shadow="sm"
                     radius="md"
@@ -126,12 +127,12 @@ export default function CustomerDetailModal({ opened, onClose, data }: Props) {
                   >
                     <Group justify="space-between" mb={4} wrap="nowrap">
                       <Text fw={600} size="sm" c="blue" truncate>
-                        {ticket.nomorTiket}
+                        {ticket.ticketNumber}
                       </Text>
                       <TicketStatusBadge status={ticket.status} />
                     </Group>
                     <Text size="xs" c="dimmed" lineClamp={2}>
-                      {ticket.keluhanAwal}
+                      {ticket.initialComplaint}
                     </Text>
                   </Card>
                 ))}
