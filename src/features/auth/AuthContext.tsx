@@ -1,11 +1,3 @@
-/**
- *
- * DOKUMENTASI KOMPONEN
- * Menggunakan UserDto terbaru (dengan properti name, role UPPERCASE, isActive).
- * Memastikan seluruh tree React menggunakan objek User yang Type-Safe.
- *
- */
-
 "use client";
 
 import {
@@ -78,9 +70,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (credentials: { identifier: string; password: string }) => {
       try {
+        /**
+         * Mapping 'identifier' dari form UI menjadi 'username'
+         * agar sesuai dengan skema validasi backend.
+         */
+        const apiPayload = {
+          username: credentials.identifier,
+          password: credentials.password,
+        };
+
         const response = await apiClient.post<{ user: UserDto; token: string }>(
           "/auth/login",
-          credentials,
+          apiPayload,
         );
         const { user: userData, token } = response.data;
 
