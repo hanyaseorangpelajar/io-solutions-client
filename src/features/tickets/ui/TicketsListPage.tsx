@@ -51,7 +51,8 @@ import {
 } from "../api/tickets";
 import { useAuth } from "@/features/auth";
 import { getStaffList } from "@/features/staff/api/staff";
-import type { Staff } from "@/features/staff";
+
+import type { StaffDto } from "@/features/staff/model/types";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 
 type RangeValue = [Date | null, Date | null];
@@ -80,7 +81,8 @@ export function TicketsListPage() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const userRole = user?.role;
-  const currentUserId = user?.id;
+
+  const currentUserId = user?.userId;
 
   const [page, setPage] = useState(1);
   const PAGE_LIMIT = 10;
@@ -93,7 +95,7 @@ export function TicketsListPage() {
   );
   const [range, setRange] = useState<RangeValue>([null, null]);
 
-  const [users, setUsers] = useState<Staff[]>([]);
+  const [users, setUsers] = useState<StaffDto[]>([]);
   const [formOpen, setFormOpen] = useState(false);
   const [reviewFor, setReviewFor] = useState<null | ServiceTicketDto>(null);
   const [assignFor, setAssignFor] = useState<ServiceTicketDto | null>(null);
@@ -117,8 +119,8 @@ export function TicketsListPage() {
   useEffect(() => {
     async function fetchUsers() {
       try {
-        const usersData = await getStaffList();
-        setUsers(usersData ?? []);
+        const usersData = await getStaffList({ limit: 500 });
+        setUsers(usersData?.results ?? []);
       } catch (e: any) {
         notifications.show({
           color: "red",
@@ -173,9 +175,9 @@ export function TicketsListPage() {
       { value: "all", label: "Semua teknisi" },
       { value: "unassigned", label: "Tidak ditetapkan" },
       ...users
-        .filter((u) => u.role === "Teknisi" || u.role === "Admin")
-        .sort((a, b) => a.nama.localeCompare(b.nama))
-        .map((u) => ({ value: u.id, label: u.nama })),
+        .filter((u) => u.role === "TEKNISI" || u.role === "ADMIN")
+        .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+        .map((u) => ({ value: u.userId, label: u.name || "-" })),
     ];
   }, [users]);
 
@@ -281,8 +283,9 @@ export function TicketsListPage() {
           const techObj = r.technician as TicketTechnician;
           const hasAssignee = !!techObj?.technicianId;
           const isAssignedToMe = currentUserId === techObj?.technicianId;
-          const isAdmin = userRole === "Admin" || userRole === "SysAdmin";
-          const isTechnician = userRole === "Teknisi";
+
+          const isAdmin = userRole === "ADMIN" || userRole === "SYSADMIN";
+          const isTechnician = userRole === "TEKNISI";
 
           const isReviewable =
             isAdmin && (r.status === "RESOLVED" || r.status === "CANCELLED");
@@ -384,7 +387,6 @@ export function TicketsListPage() {
 
   return (
     <Stack gap="md">
-      {/* ... (Header dan Group Filter tetap sama, properti komponen akan di handle Mapped object) */}
       <Group justify="space-between" align="center">
         <Title order={3}>Tickets</Title>
         <Group gap="xs" wrap="nowrap">
@@ -468,7 +470,7 @@ export function TicketsListPage() {
       <TicketFormModal
         opened={formOpen}
         onClose={() => setFormOpen(false)}
-        users={users}
+        users={users as any}
         onSubmit={async (v) => {
           await createMutation.mutateAsync(v as any);
         }}
@@ -505,9 +507,9 @@ export function TicketsListPage() {
             label="Teknisi"
             placeholder="Ketik untuk mencari…"
             data={users
-              .filter((u) => (u.role ?? "").toLowerCase() === "teknisi")
-              .sort((a, b) => a.nama.localeCompare(b.nama))
-              .map((u) => ({ value: u.id, label: u.nama }))}
+              .filter((u) => (u.role ?? "").toUpperCase() === "TEKNISI")
+              .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+              .map((u) => ({ value: u.userId, label: u.name || "-" }))}
             value={selectedAssigneeId}
             onChange={(v) => setSelectedAssigneeId(v)}
             nothingFoundMessage="Tidak ditemukan"

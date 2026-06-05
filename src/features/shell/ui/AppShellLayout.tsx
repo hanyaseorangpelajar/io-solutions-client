@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { AppShell } from "@mantine/core";
+import { AppShell, Center, Loader } from "@mantine/core";
 import SidebarNav from "./SidebarNav";
 import HeaderBar from "./HeaderBar";
 import { MASTER_NAV, filterNavItemsByRole, type UserRole } from "../model/nav";
@@ -20,7 +20,7 @@ export default function AppShellLayout({
 }) {
   const [opened, setOpened] = useState(false);
 
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const userRole = user?.role as UserRole | undefined;
 
   const accessibleNavItems = useMemo(() => {
@@ -29,6 +29,14 @@ export default function AppShellLayout({
     }
     return filterNavItemsByRole(MASTER_NAV, userRole);
   }, [userRole]);
+
+  if (isLoading) {
+    return (
+      <Center h="100vh" w="100vw">
+        <Loader size="md" />
+      </Center>
+    );
+  }
 
   return (
     <AppShell

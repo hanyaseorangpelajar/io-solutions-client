@@ -1,20 +1,20 @@
 "use client";
 
 import { useState, useEffect, FormEvent } from "react";
-import { Alert, Button, Stack } from "@mantine/core";
+import { Alert, Button, Stack, Box, Paper } from "@mantine/core";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import AuthLayout from "./AuthLayout";
 import FormHeader from "./FormHeader";
 import { TextField, PasswordField } from "@/shared/ui";
 import { useAuth } from "../AuthContext";
-import Image from "next/image";
 import logo from "../../../../public/logo.jpeg";
-import { Box, Paper } from "@mantine/core";
 
 export function SignInForm() {
   const { login, user, isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
-  const [email, setEmail] = useState("");
+
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,13 +25,13 @@ export function SignInForm() {
     setError(null);
 
     try {
-      await login({ email, password });
+      await login({ identifier, password });
     } catch (err: any) {
       const apiErrorMessage = err.response?.data?.message;
       setError(
         apiErrorMessage ||
           err.message ||
-          "Gagal masuk. Periksa username/email & kata sandi.",
+          "Gagal masuk. Periksa username & kata sandi.",
       );
     } finally {
       setIsSubmitting(false);
@@ -84,10 +84,10 @@ export function SignInForm() {
           <Stack gap="sm">
             <TextField
               label="Username"
-              placeholder="username anda"
+              placeholder="Username anda"
               autoComplete="username"
-              value={email}
-              onChange={(e) => setEmail(e.currentTarget.value)}
+              value={identifier}
+              onChange={(e) => setIdentifier(e.currentTarget.value)}
             />
 
             <PasswordField
