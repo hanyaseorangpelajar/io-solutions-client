@@ -78,14 +78,6 @@ export default function SidebarNav({
   };
 
   const renderLink = (child: NavItem) => {
-    if (child.roles && user?.role) {
-      const userRoleUpper = user.role.toUpperCase();
-      const hasAccess = child.roles.some(
-        (r) => r.toUpperCase() === userRoleUpper,
-      );
-      if (!hasAccess) return null;
-    }
-
     const isActive = activeHref === child.href;
 
     return (
@@ -107,14 +99,6 @@ export default function SidebarNav({
   };
 
   const renderGroup = (group: NavItem) => {
-    if (group.roles && user?.role) {
-      const userRoleUpper = user.role.toUpperCase();
-      const hasAccess = group.roles.some(
-        (r) => r.toUpperCase() === userRoleUpper,
-      );
-      if (!hasAccess) return null;
-    }
-
     const k = group.label;
     const opened = open[k] ?? true;
 

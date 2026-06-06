@@ -58,14 +58,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
-    if (token) {
-      refetchUser().finally(() => setIsLoading(false));
-    } else {
-      setIsLoading(false);
-    }
-  }, [refetchUser]);
+    const checkSession = async () => {
+      try {
+      } catch (error) {
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkSession();
+  }, []);
 
   const login = useCallback(
     async (credentials: { identifier: string; password: string }) => {
