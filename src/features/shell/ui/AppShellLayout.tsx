@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { AppShell, Center, Loader } from "@mantine/core";
 import SidebarNav from "./SidebarNav";
 import HeaderBar from "./HeaderBar";
-import { type NavItem } from "../model/nav"; // filterNavItemsByRole dihapus dari import
+import { type NavItem } from "../model/nav";
 import { useAuth } from "@/features/auth";
 
 export default function AppShellLayout({
@@ -21,14 +21,29 @@ export default function AppShellLayout({
   navItems?: NavItem[];
 }) {
   const [opened, setOpened] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const { user, isLoading } = useAuth();
 
+  if (isLoading) {
+    return (
+      <Center h="100vh" w="100vw">
+        <Loader size="md" />
+      </Center>
+    );
+  }
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const accessibleNavItems = useMemo(() => {
-    if (!user?.role || !navItems.length) return [];
+    if (!navItems || !navItems.length) return [];
+
+    // Fallback: Bypass filter jika role sedang kosong saat transisi refresh
+    if (!user?.role) return navItems;
 
     const userRoleUpper = user.role.toUpperCase();
 
-    // Fungsi filter rekursif Case-Insensitive
     const filterItems = (items: NavItem[]): NavItem[] => {
       return items
         .filter((item) => {
@@ -38,13 +53,16 @@ export default function AppShellLayout({
         .map((item) => ({
           ...item,
           children: item.children ? filterItems(item.children) : undefined,
-        }));
+        }))
+        .filter(
+          (item) => !item.group || (item.children && item.children.length > 0),
+        );
     };
 
     return filterItems(navItems);
   }, [user?.role, navItems]);
 
-  if (isLoading) {
+  if (!isMounted || isLoading) {
     return (
       <Center h="100vh" w="100vw">
         <Loader size="md" />
@@ -58,7 +76,7 @@ export default function AppShellLayout({
       navbar={{
         width: 280,
         breakpoint: "sm",
-        collapsed: { mobile: !opened },
+        collapsed: { desktop: false, mobile: !opened },
       }}
       padding="md"
     >
