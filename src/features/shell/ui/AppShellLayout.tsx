@@ -11,12 +11,10 @@ export default function AppShellLayout({
   children,
   headerTitle,
   headerTagline,
-  headerHref,
 }: {
   children: React.ReactNode;
   headerTitle?: string;
   headerTagline?: string;
-  headerHref?: string;
 }) {
   const [opened, setOpened] = useState(false);
 
@@ -46,7 +44,6 @@ export default function AppShellLayout({
           setOpened={setOpened}
           title={headerTitle}
           tagline={headerTagline}
-          href={headerHref}
         />
       </AppShell.Header>
 

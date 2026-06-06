@@ -12,6 +12,20 @@ import { useRouter } from "next/navigation";
 import apiClient from "@/lib/apiClient";
 import { User } from "./model/types";
 
+function setCookie(name: string, value: string, days: number) {
+  let expires = "";
+  if (days) {
+    const date = new Date();
+    date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+    expires = "; expires=" + date.toUTCString();
+  }
+  document.cookie = name + "=" + (value || "") + expires + "; path=/";
+}
+
+function deleteCookie(name: string) {
+  document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+}
+
 interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
@@ -34,11 +48,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (token) {
         try {
           const response = await apiClient.get<{ user: User }>("/auth/me");
-
           setUser(response.data.user);
           setIsAuthenticated(true);
         } catch (error) {
           localStorage.removeItem("authToken");
+          deleteCookie("authToken");
           setIsAuthenticated(false);
           setUser(null);
         }
@@ -59,12 +73,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const response = await apiClient.post<{ user: User; token: string }>(
           "/auth/login",
-          apiCredentials
+          apiCredentials,
         );
         const { user, token } = response.data;
 
         if (token) {
           localStorage.setItem("authToken", token);
+          setCookie("authToken", token, 1);
+
           setIsAuthenticated(true);
           setUser(user);
           const rolePath = (user.role || "user").toLowerCase();
@@ -72,11 +88,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (error: any) {
         console.error("Login failed:", error.response?.data || error.message);
-
         throw error;
       }
     },
-    [router]
+    [router],
   );
 
   const logout = useCallback(async () => {
@@ -87,7 +102,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsAuthenticated(false);
       setUser(null);
+
       localStorage.removeItem("authToken");
+      deleteCookie("authToken");
+
       router.push("/sign-in");
     }
   }, [router]);

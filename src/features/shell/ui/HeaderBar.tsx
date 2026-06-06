@@ -1,27 +1,19 @@
 "use client";
 
+import Image from "next/image";
 import {
   ActionIcon,
-  Avatar,
   Box,
   Burger,
   Group,
-  Indicator,
-  Menu,
   Text,
   Tooltip,
   rem,
   useMantineTheme,
 } from "@mantine/core";
 import { useComputedColorScheme, useMantineColorScheme } from "@mantine/core";
-import {
-  IconBell,
-  IconLogout,
-  IconMoon,
-  IconSun,
-  IconUser,
-} from "@tabler/icons-react";
-import { useAuth } from "@/features/auth/AuthContext";
+import { IconMoon, IconSun } from "@tabler/icons-react";
+import logo from "../../../../public/logo.jpeg";
 
 type HeaderBarProps = {
   opened: boolean;
@@ -52,7 +44,7 @@ function ThemeToggle() {
 
 function BrandBar({
   title = "I/O SOLUTIONS",
-  tagline = "Oleh Golden Service Tembalang",
+  tagline = "Dari | Untuk | Oleh : Golden Service",
 }: {
   title?: string;
   tagline?: string;
@@ -60,30 +52,17 @@ function BrandBar({
   const theme = useMantineTheme();
   return (
     <Group gap={12} wrap="nowrap">
-      <Box
-        aria-label="Brand Logo"
+      <Image
+        src={logo}
+        alt="Golden Service Logo"
         style={{
-          display: "grid",
-          placeItems: "center",
-          width: rem(28),
-          height: rem(28),
-          border: `1px solid ${theme.colors.gray[4]}`,
+          height: rem(36),
+          width: "auto",
+          display: "block",
           borderRadius: rem(6),
-          textDecoration: "none",
-          cursor: "default",
         }}
-      >
-        <Text
-          component="span"
-          ff={theme.fontFamilyMonospace}
-          fw={800}
-          fz={10}
-          lh={1}
-          style={{ letterSpacing: rem(0.5) }}
-        >
-          I<span style={{ padding: "0 1px" }}>/</span>O
-        </Text>
-      </Box>
+        priority
+      />
 
       <Box style={{ lineHeight: 1.1, overflow: "hidden" }}>
         <Text
@@ -126,8 +105,6 @@ export default function HeaderBar({
   title,
   tagline,
 }: HeaderBarProps) {
-  const { logout } = useAuth();
-
   return (
     <Group h="100%" px="md" justify="space-between" wrap="nowrap">
       <Group gap="sm" wrap="nowrap">
@@ -141,36 +118,6 @@ export default function HeaderBar({
 
       <Group gap="sm" wrap="nowrap">
         <ThemeToggle />
-
-        <Menu shadow="md" width={200}>
-          <Menu.Target>
-            <Indicator size={8} color="red" offset={4} processing>
-              <ActionIcon variant="subtle" aria-label="Notifikasi">
-                <IconBell size={18} />
-              </ActionIcon>
-            </Indicator>
-          </Menu.Target>
-          <Menu.Dropdown>
-            <Menu.Label>Notifikasi</Menu.Label>
-            <Menu.Item>Kamu tidak punya notifikasi baru</Menu.Item>
-          </Menu.Dropdown>
-        </Menu>
-
-        <Menu shadow="md" width={220}>
-          <Menu.Target>
-            <Avatar radius="xl" size={30} variant="filled" />
-          </Menu.Target>
-          <Menu.Dropdown>
-            <Menu.Item leftSection={<IconUser size={16} />}>Profil</Menu.Item>
-            <Menu.Item
-              leftSection={<IconLogout size={16} />}
-              color="red"
-              onClick={logout}
-            >
-              Keluar
-            </Menu.Item>
-          </Menu.Dropdown>
-        </Menu>
       </Group>
     </Group>
   );
