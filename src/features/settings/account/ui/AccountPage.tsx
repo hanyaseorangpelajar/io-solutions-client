@@ -1,196 +1,317 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import LoginHistoryTable from "./LoginHistoryTable";
+import { useEffect, useState } from "react";
+import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/features/auth/AuthContext";
 import {
   Tabs,
   Paper,
   Stack,
   Group,
   Title,
-  Text,
   TextInput,
   PasswordInput,
-  Switch,
   Button,
   Divider,
-  FileInput,
-  Table,
+  LoadingOverlay,
   Badge,
+  Pagination,
+  Box,
 } from "@mantine/core";
 import apiClient from "@/lib/apiClient";
 import { notifications } from "@mantine/notifications";
-import type { AccountProfile, SecuritySettings } from "../model/types";
+import { SimpleTable, type Column } from "@/shared/ui/table/SimpleTable";
+import { formatDateTime } from "@/features/tickets/utils/format";
+
+type ProfileFormData = {
+  name: string;
+  username: string;
+};
+
+type LoginAttempt = {
+  id: string;
+  ip?: string;
+  userAgent?: string;
+  success: boolean;
+  createdAt: string;
+};
+
+type Paginated<T> = {
+  results: T[];
+  page: number;
+  limit: number;
+  totalResults: number;
+  totalPages: number;
+};
+
+const formatTanggal = (dateString?: string) => {
+  if (!dateString) return "-";
+  try {
+    return formatDateTime(dateString);
+  } catch (e) {
+    return "-";
+  }
+};
 
 export default function AccountPage() {
-  const [profile, setProfile] = useState<AccountProfile>({
-    name: "Sysadmin",
-    email: "sysadmin@example.com",
-    phone: "0812-0000-0000",
-    department: "IT Operations",
+  const queryClient = useQueryClient();
+  const { user, refetchUser, isLoading } = useAuth();
+
+  const [profile, setProfile] = useState<ProfileFormData>({
+    name: "",
+    username: "",
   });
 
-  const [security, setSecurity] = useState<SecuritySettings>({
-    twoFactorEnabled: false,
-    recoveryEmail: "sysadmin.recovery@example.com",
-  });
-  const done = () => {
-    console.log("Saved settings");
-  };
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const handleChangePassword = async () => {
-    if (newPassword !== confirmPassword) {
-      notifications.show({
-        title: "Gagal",
-        message: "Konfirmasi password baru tidak cocok.",
-        color: "red",
-      });
-      return;
-    }
-    if (!currentPassword || !newPassword) {
-      notifications.show({
-        title: "Gagal",
-        message: "Semua field password wajib diisi.",
-        color: "red",
-      });
-      return;
-    }
+  const [historyPage, setHistoryPage] = useState(1);
+  const HISTORY_PAGE_LIMIT = 5;
 
-    try {
-      await apiClient.patch("/users/me/password", {
-        currentPassword,
-        newPassword,
+  useEffect(() => {
+    if (user) {
+      setProfile({
+        name: user.name || "",
+        username: user.username || "",
       });
+    }
+  }, [user]);
 
+  const { mutate: updateProfile, isPending: isUpdatingProfile } = useMutation({
+    mutationFn: async (data: ProfileFormData) => {
+      const response = await apiClient.patch("/users/me", { name: data.name });
+      return response.data;
+    },
+    onSuccess: () => {
       notifications.show({
-        title: "Sukses",
-        message: "Password berhasil diperbarui.",
+        title: "Berhasil",
+        message: "Informasi akun berhasil diperbarui.",
         color: "green",
       });
-
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-    } catch (error: any) {
-      const message =
-        error.response?.data?.message ||
-        "Password lama salah atau terjadi error";
+      if (refetchUser) refetchUser();
+    },
+    onError: (error: any) => {
       notifications.show({
         title: "Gagal",
-        message: message,
+        message:
+          error?.response?.data?.message || "Gagal memperbarui informasi.",
         color: "red",
       });
-    }
-  };
+    },
+  });
+
+  const { mutate: changePassword, isPending: isChangingPassword } = useMutation(
+    {
+      mutationFn: async () => {
+        if (newPassword !== confirmPassword) {
+          throw new Error("Konfirmasi password baru tidak cocok.");
+        }
+        if (!currentPassword || !newPassword) {
+          throw new Error("Semua field password wajib diisi.");
+        }
+
+        await apiClient.patch("/users/me/password", {
+          currentPassword,
+          newPassword,
+        });
+      },
+      onSuccess: () => {
+        notifications.show({
+          title: "Berhasil",
+          message: "Password berhasil diubah.",
+          color: "green",
+        });
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      },
+      onError: (error: any) => {
+        notifications.show({
+          title: "Gagal",
+          message:
+            error?.response?.data?.message ||
+            error.message ||
+            "Gagal mengubah password.",
+          color: "red",
+        });
+      },
+    },
+  );
+
+  const { data: historyData, isLoading: isLoadingHistory } = useQuery<
+    Paginated<LoginAttempt>
+  >({
+    queryKey: [
+      "users",
+      "me",
+      "login-history",
+      { page: historyPage, limit: HISTORY_PAGE_LIMIT },
+    ],
+    queryFn: async () => {
+      const res = await apiClient.get("/users/me/login-history", {
+        params: {
+          page: historyPage,
+          limit: HISTORY_PAGE_LIMIT,
+        },
+      });
+      return res.data;
+    },
+    enabled: !!user,
+  });
+
+  const historyColumns: Column<LoginAttempt>[] = [
+    {
+      key: "status",
+      header: "Status",
+      align: "center",
+      width: 100,
+      cell: (r) => (
+        <Badge color={r.success ? "green" : "red"} variant="light" radius="sm">
+          {r.success ? "Berhasil" : "Gagal"}
+        </Badge>
+      ),
+    },
+    {
+      key: "time",
+      header: "Waktu",
+      width: 180,
+      cell: (r) => formatTanggal(r.createdAt),
+    },
+    {
+      key: "ip",
+      header: "Alamat IP",
+      width: 140,
+      cell: (r) => r.ip ?? "-",
+    },
+    {
+      key: "userAgent",
+      header: "Perangkat",
+      cell: (r) => r.userAgent ?? "-",
+    },
+  ];
+
+  const handleProfileSave = () => updateProfile(profile);
+  const handlePasswordSave = () => changePassword();
+
+  if (isLoading) return <LoadingOverlay visible />;
+  if (!user) return null;
+
+  const historyRows = historyData?.results ?? [];
+  const historyTotalPages = historyData?.totalPages ?? 1;
 
   return (
     <Stack gap="md">
-      <Group justify="space-between" align="center">
-        <div>
-          <Title order={3} style={{ lineHeight: 1.2 }}>
-            Pengaturan Akun
-          </Title>
-          <Text c="dimmed">Kelola profil dan keamanan.</Text>
-        </div>
-      </Group>
-      <Paper withBorder radius="md" p="md">
-        <Tabs defaultValue="info" keepMounted={false}>
+      <Title order={3}>Pengaturan Akun</Title>
+      <Paper withBorder p="lg" radius="md">
+        <Tabs defaultValue="profile">
           <Tabs.List>
-            <Tabs.Tab value="info">Informasi Akun</Tabs.Tab>
+            <Tabs.Tab value="profile">Informasi Akun</Tabs.Tab>
             <Tabs.Tab value="security">Keamanan</Tabs.Tab>
           </Tabs.List>
-          <Tabs.Panel value="info" pt="md">
-            <Stack gap="md">
-              <Group grow>
-                <TextInput
-                  label="Nama"
-                  value={profile.name}
-                  onChange={(e) =>
-                    setProfile({ ...profile, name: e.currentTarget.value })
-                  }
-                  withAsterisk
-                />
-                <TextInput
-                  label="Email"
-                  value={profile.email}
-                  onChange={(e) =>
-                    setProfile({ ...profile, email: e.currentTarget.value })
-                  }
-                  withAsterisk
-                />
-              </Group>
 
-              <Group grow>
-                <TextInput
-                  label="Telepon"
-                  value={profile.phone ?? ""}
-                  onChange={(e) =>
-                    setProfile({ ...profile, phone: e.currentTarget.value })
-                  }
-                />
-                <TextInput
-                  label="Departemen"
-                  value={profile.department ?? ""}
-                  onChange={(e) =>
-                    setProfile({
-                      ...profile,
-                      department: e.currentTarget.value,
-                    })
-                  }
-                />
-              </Group>
+          <Tabs.Panel value="profile" pt="md">
+            <Stack gap="md" pos="relative">
+              <LoadingOverlay visible={isUpdatingProfile} />
+              <Title order={5}>Profil Anda</Title>
 
-              <Group grow>
-                <FileInput
-                  label="Foto profil"
-                  placeholder="Pilih file..."
-                  accept="image/*"
-                />
-              </Group>
+              <TextInput
+                label="Nama Lengkap"
+                withAsterisk
+                value={profile.name}
+                onChange={(e) => {
+                  const newValue = e.currentTarget.value;
+                  setProfile((p) => ({ ...p, name: newValue }));
+                }}
+              />
+              <TextInput
+                label="Username"
+                withAsterisk
+                value={profile.username}
+                description="Username tidak dapat diubah."
+                readOnly
+                disabled
+              />
+              <TextInput
+                label="Role"
+                value={user.role}
+                readOnly
+                disabled
+                description="Role tidak dapat diubah."
+              />
+              <TextInput
+                label="Terakhir Diperbarui"
+                value={formatTanggal(user.updatedAt)}
+                readOnly
+                disabled
+              />
 
-              <Group justify="end">
-                <Button variant="default">Batalkan</Button>
-                <Button onClick={done}>Simpan</Button>
+              <Group justify="end" mt="md">
+                <Button onClick={handleProfileSave} loading={isUpdatingProfile}>
+                  Simpan Perubahan
+                </Button>
               </Group>
             </Stack>
           </Tabs.Panel>
 
           <Tabs.Panel value="security" pt="md">
-            <Stack gap="md">
+            <Stack gap="md" pos="relative">
+              <LoadingOverlay visible={isChangingPassword} />
               <Title order={5}>Ubah Password</Title>
-              <Group grow>
-                <PasswordInput
-                  label="Password saat ini"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.currentTarget.value)}
-                  withAsterisk
-                />
-                <PasswordInput
-                  label="Password baru"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.currentTarget.value)}
-                  withAsterisk
-                />
-                <PasswordInput
-                  label="Konfirmasi password baru"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.currentTarget.value)}
-                  withAsterisk
-                />
+
+              <PasswordInput
+                label="Password saat ini"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.currentTarget.value)}
+                withAsterisk
+              />
+              <PasswordInput
+                label="Password baru"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.currentTarget.value)}
+                withAsterisk
+              />
+              <PasswordInput
+                label="Konfirmasi password baru"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.currentTarget.value)}
+                withAsterisk
+              />
+
+              <Group justify="end" mt="md">
+                <Button
+                  onClick={handlePasswordSave}
+                  loading={isChangingPassword}
+                >
+                  Simpan Password
+                </Button>
               </Group>
-              <Group justify="end" mb="sm">
-                <Button onClick={handleChangePassword}>Simpan password</Button>
-              </Group>
-              <Divider />
-              <Title order={5}>Riwayat Login</Title>
-              <LoginHistoryTable />
             </Stack>
           </Tabs.Panel>
         </Tabs>
+
+        <Divider my="xl" />
+
+        <Stack gap="md">
+          <Title order={5}>Riwayat Login</Title>
+          <Box pos="relative">
+            <LoadingOverlay visible={isLoadingHistory} />
+            <SimpleTable
+              columns={historyColumns}
+              data={historyRows}
+              emptyText="Tidak ada riwayat login"
+              maxHeight={300}
+            />
+          </Box>
+          <Group justify="end">
+            <Pagination
+              total={historyTotalPages}
+              value={historyPage}
+              onChange={setHistoryPage}
+              disabled={historyTotalPages <= 1}
+            />
+          </Group>
+        </Stack>
       </Paper>
     </Stack>
   );

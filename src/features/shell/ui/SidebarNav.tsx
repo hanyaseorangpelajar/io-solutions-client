@@ -9,20 +9,23 @@ import {
   Stack,
   ActionIcon,
   Group,
+  rem,
+  Text,
 } from "@mantine/core";
-import { IconChevronDown } from "@tabler/icons-react";
+import { useModals } from "@mantine/modals";
+import { IconChevronDown, IconUser, IconLogout } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
 import type { NavItem } from "../model/nav";
+import { useAuth } from "@/features/auth/AuthContext";
 
 type SidebarNavProps = {
-  items?: NavItem[]; // boleh undefined: defensif
+  items?: NavItem[];
   onNavigate?: () => void;
 };
 
-// Kumpulkan semua href dari pohon nav (aman bila nodes bukan array)
 function collectHrefs(
   nodes: NavItem[] | undefined | null,
-  acc: string[] = []
+  acc: string[] = [],
 ): string[] {
   if (!Array.isArray(nodes)) return acc;
   for (const n of nodes) {
@@ -32,55 +35,65 @@ function collectHrefs(
   return acc;
 }
 
-// Temukan href terpanjang yang cocok dengan pathname saat ini
 function findActiveHref(
   items: NavItem[] | undefined | null,
-  pathname: string
+  pathname: string,
 ): string | null {
   const hrefs = collectHrefs(items, []);
   const candidates = hrefs.filter(
-    (h) => pathname === h || pathname.startsWith(h + "/")
+    (h) => pathname === h || pathname.startsWith(`${h}/`),
   );
-  candidates.sort((a, b) => b.length - a.length); // longest first
-  return candidates[0] ?? null;
+  candidates.sort((a, b) => b.length - a.length);
+  return candidates.length > 0 ? candidates[0] : null;
 }
 
-export default function SidebarNav({ items, onNavigate }: SidebarNavProps) {
-  const list = Array.isArray(items) ? items : [];
-
+export default function SidebarNav({
+  items = [],
+  onNavigate,
+}: SidebarNavProps) {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
+  const modals = useModals();
+
+  const [open, setOpen] = useState<Record<string, boolean>>({});
+
+  const toggle = (k: string) => setOpen((prev) => ({ ...prev, [k]: !prev[k] }));
+
   const activeHref = useMemo(
-    () => findActiveHref(list, pathname),
-    [list, pathname]
+    () => findActiveHref(items, pathname),
+    [items, pathname],
   );
 
-  // inisialisasi state open per-group (default: open)
-  const groupKeys = useMemo(
-    () => list.filter((i) => i.group && i.children?.length).map((g) => g.label),
-    [list]
-  );
-  const [open, setOpen] = useState<Record<string, boolean>>(
-    Object.fromEntries(groupKeys.map((k) => [k, false]))
-  );
-  const toggle = (k: string) => setOpen((p) => ({ ...p, [k]: !p[k] }));
+  const confirmLogout = () => {
+    modals.openConfirmModal({
+      title: "Konfirmasi Logout",
+      centered: true,
+      children: (
+        <Text size="sm">Apakah Anda yakin ingin keluar dari sistem?</Text>
+      ),
+      labels: { confirm: "Logout", cancel: "Batal" },
+      confirmProps: { color: "red" },
+      onConfirm: () => logout(),
+    });
+  };
 
-  const renderLink = (item: NavItem) => {
-    const active = !!item.href && item.href === activeHref;
-    const hasChildren =
-      Array.isArray(item.children) && item.children.length > 0;
+  const renderLink = (child: NavItem) => {
+    const isActive = activeHref === child.href;
 
     return (
       <NavLink
-        key={item.href ?? item.label}
-        active={active}
-        label={item.label}
-        component={item.href ? (Link as any) : undefined}
-        href={item.href as any}
+        key={child.label}
+        component={Link}
+        href={child.href || "#"}
+        label={child.label}
+        active={isActive}
         onClick={onNavigate}
-        childrenOffset={12}
         variant="light"
+        style={{ borderRadius: rem(6) }}
       >
-        {hasChildren ? item.children!.map((child) => renderLink(child)) : null}
+        {child.children?.length
+          ? child.children.map((sub) => renderLink(sub))
+          : null}
       </NavLink>
     );
   };
@@ -91,15 +104,14 @@ export default function SidebarNav({ items, onNavigate }: SidebarNavProps) {
 
     return (
       <Box key={`group-${k}`}>
-        <Group px="md" py={6} justify="space-between">
-          {/* Hanya header group, tanpa teks "Navigasi" global */}
+        <Group px="md" py={rem(6)} justify="space-between">
           <span
             style={{
-              fontSize: 12,
+              fontSize: rem(12),
               fontWeight: 600,
               color: "var(--mantine-color-dimmed)",
               textTransform: "uppercase",
-              letterSpacing: 0.5,
+              letterSpacing: rem(0.5),
             }}
           >
             {group.label}
@@ -130,12 +142,35 @@ export default function SidebarNav({ items, onNavigate }: SidebarNavProps) {
   };
 
   return (
-    <Stack gap={4} h="100%">
-      <ScrollArea style={{ flex: 1 }} type="auto">
-        <Stack gap={4} p="xs">
-          {list.map((it) => (it.group ? renderGroup(it) : renderLink(it)))}
+    <Stack h="100%" justify="space-between" pb="md">
+      <ScrollArea style={{ flex: 1 }} type="hover">
+        <Stack gap="xs" px="sm" pt="md">
+          {items.map((item) =>
+            item.group ? renderGroup(item) : renderLink(item),
+          )}
         </Stack>
       </ScrollArea>
+
+      <Stack px="sm" gap={4}>
+        <NavLink
+          component={Link}
+          href="/views/settings/account"
+          label={user?.name || "Profil"}
+          description={user?.role || "Akses Pengaturan"}
+          leftSection={<IconUser size={20} stroke={1.5} />}
+          onClick={onNavigate}
+          style={{ borderRadius: rem(6) }}
+        />
+        <NavLink
+          label="Logout"
+          leftSection={<IconLogout size={20} stroke={1.5} />}
+          onClick={confirmLogout}
+          color="red"
+          variant="light"
+          active
+          style={{ borderRadius: rem(6) }}
+        />
+      </Stack>
     </Stack>
   );
 }

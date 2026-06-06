@@ -1,10 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import TextField from "@/shared/ui/inputs/TextField";
 import { SimpleTable, type Column } from "@/shared/ui/table/SimpleTable";
 import {
   Button,
-  Checkbox,
   Group,
   Select,
   Stack,
@@ -13,11 +13,13 @@ import {
   LoadingOverlay,
   Menu,
   ActionIcon,
+  Modal,
+  Pagination,
 } from "@mantine/core";
 import { DatePickerInput } from "@mantine/dates";
 import { notifications } from "@mantine/notifications";
 import {
-  IconCircleCheck,
+  IconArchive,
   IconEye,
   IconPlus,
   IconUser,
@@ -25,66 +27,80 @@ import {
   IconArrowsExchange,
   IconDots,
 } from "@tabler/icons-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { TicketResolutionInput } from "../model/schema";
-import type { Ticket, TicketPriority, TicketStatus } from "../model/types";
+import { useEffect, useMemo, useState } from "react";
+import type { CompleteTicketInput } from "../api/tickets";
+import type {
+  ServiceTicketDto,
+  TicketPriority,
+  TicketStatus,
+  TicketCustomer,
+  TicketTechnician,
+} from "../model/types";
 import { formatDateTime } from "../utils/format";
-import ResolveTicketModal from "./ResolveTicketModal";
+import ReviewTicketModal from "./ReviewTicketModal";
 import TicketFormModal from "./TicketFormModal";
 import TicketPriorityBadge from "./TicketPriorityBadge";
 import TicketStatusBadge from "./TicketStatusBadge";
-import { Modal } from "@mantine/core";
 import {
   createTicket,
   listTickets,
-  resolveTicket,
+  completeTicketAndCreateKB,
   assignTicket,
   updateTicketStatus,
+  type Paginated,
 } from "../api/tickets";
-
+import { useAuth } from "@/features/auth";
 import { getStaffList } from "@/features/staff/api/staff";
-import type { Staff } from "@/features/staff/model/types";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+
+import type { StaffDto } from "@/features/staff/model/types";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 
 type RangeValue = [Date | null, Date | null];
 
 const STATUS_OPTIONS = [
   { value: "all", label: "Semua" },
-  { value: "open", label: "Open" },
-  { value: "in_progress", label: "In progress" },
-  { value: "resolved", label: "Resolved" },
-  { value: "closed", label: "Closed" },
+  { value: "DIAGNOSIS", label: "Diagnosis" },
+  { value: "IN_PROGRESS", label: "Dalam Proses" },
+  { value: "WAITING_PART", label: "Menunggu Sparepart" },
+  { value: "RESOLVED", label: "Selesai (Menunggu Review)" },
+  { value: "ARCHIVED", label: "Diarsipkan" },
+  { value: "CANCELLED", label: "Dibatalkan" },
 ];
+
 const PRIORITY_OPTIONS = [
   { value: "all", label: "Semua" },
-  { value: "low", label: "Low" },
-  { value: "medium", label: "Medium" },
-  { value: "high", label: "High" },
-  { value: "urgent", label: "Urgent" },
+  { value: "LOW", label: "Low" },
+  { value: "MEDIUM", label: "Medium" },
+  { value: "HIGH", label: "High" },
+  { value: "URGENT", label: "Urgent" },
 ];
 
 const statusLabelMap = new Map(STATUS_OPTIONS.map((s) => [s.value, s.label]));
 
 export function TicketsListPage() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const userRole = user?.role;
+
+  const currentUserId = user?.userId;
+
+  const [page, setPage] = useState(1);
+  const PAGE_LIMIT = 10;
 
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<TicketStatus | "all">("all");
   const [priority, setPriority] = useState<TicketPriority | "all">("all");
   const [assignee, setAssignee] = useState<string | "all" | "unassigned">(
-    "all"
+    "all",
   );
   const [range, setRange] = useState<RangeValue>([null, null]);
 
-  const [rows, setRows] = useState<Ticket[]>([]);
-  const [users, setUsers] = useState<Staff[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<StaffDto[]>([]);
   const [formOpen, setFormOpen] = useState(false);
-  const [resolveFor, setResolveFor] = useState<null | "bulk" | Ticket>(null);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [assignFor, setAssignFor] = useState<Ticket | null>(null);
+  const [reviewFor, setReviewFor] = useState<null | ServiceTicketDto>(null);
+  const [assignFor, setAssignFor] = useState<ServiceTicketDto | null>(null);
   const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(
-    null
+    null,
   );
 
   const clearFilters = () => {
@@ -93,109 +109,87 @@ export function TicketsListPage() {
     setPriority("all");
     setAssignee("all");
     setRange([null, null]);
+    setPage(1);
   };
 
-  const fetchRows = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [from, to] = range;
-
-      const fromISO = from ? new Date(from).toISOString() : undefined;
-      const toISO = to ? new Date(to).toISOString() : undefined;
-
-      const res = await listTickets({
-        q: q || undefined,
-        status: status === "all" ? undefined : status,
-        priority: priority === "all" ? undefined : priority,
-        assignee: assignee,
-        from: fromISO,
-        to: toISO,
-        sortBy: "updatedAt",
-        order: "desc",
-        page: 1,
-        limit: 100,
-      });
-      const data = res.data ?? [];
-      setRows(data);
-      queryClient.setQueryData(["tickets", "list"], data);
-    } catch (e: any) {
-      notifications.show({
-        color: "red",
-        title: "Gagal memuat tiket",
-        message: e.message,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [q, status, priority, assignee, range, queryClient]);
+  useEffect(() => {
+    setPage(1);
+  }, [q, status, priority, assignee, range]);
 
   useEffect(() => {
-    async function fetchInitialData() {
-      setLoading(true);
+    async function fetchUsers() {
       try {
-        const userRes = await getStaffList();
-        const usersData = userRes ?? [];
-        setUsers(usersData);
-        queryClient.setQueryData(["staff", "list"], usersData);
-        await fetchRows();
+        const usersData = await getStaffList({ limit: 500 });
+        setUsers(usersData?.results ?? []);
       } catch (e: any) {
         notifications.show({
           color: "red",
-          title: "Gagal memuat data",
+          title: "Gagal memuat data staff",
           message: e.message,
         });
-      } finally {
-        setLoading(false);
       }
     }
-    fetchInitialData();
-  }, [fetchRows, queryClient]);
+    fetchUsers();
+  }, []);
+
+  const { data: ticketData, isLoading } = useQuery<Paginated<ServiceTicketDto>>(
+    {
+      queryKey: [
+        "tickets",
+        "list",
+        { q, status, priority, assignee, range, page, PAGE_LIMIT },
+      ],
+      queryFn: async () => {
+        const [from, to] = range;
+        const fromISO = from ? new Date(from).toISOString() : undefined;
+        let toISO: string | undefined = undefined;
+        if (to) {
+          const toDate = new Date(to);
+          toDate.setHours(23, 59, 59, 999);
+          toISO = toDate.toISOString();
+        }
+
+        return await listTickets({
+          q: q || undefined,
+          status: status === "all" ? undefined : status,
+          priority: priority === "all" ? undefined : priority,
+          assignee,
+          from: fromISO,
+          to: toISO,
+          sortBy: "updatedAt",
+          order: "desc",
+          page,
+          limit: PAGE_LIMIT,
+        });
+      },
+      placeholderData: (prev) => prev,
+    },
+  );
+
+  const rows = ticketData?.data ?? [];
+  const totalResults = ticketData?.meta?.total ?? 0;
+  const totalPages = Math.ceil(totalResults / PAGE_LIMIT) || 1;
 
   const assigneeOptions = useMemo(() => {
     return [
       { value: "all", label: "Semua teknisi" },
       { value: "unassigned", label: "Tidak ditetapkan" },
       ...users
-        .filter((u) => u.role === "Teknisi" || u.role === "Admin")
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .map((u) => ({ value: u.id, label: u.name })),
+        .filter((u) => u.role === "TEKNISI" || u.role === "ADMIN")
+        .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+        .map((u) => ({ value: u.userId, label: u.name || "-" })),
     ];
   }, [users]);
-
-  const userNameMap = useMemo(
-    () => new Map(users.map((u) => [u.id, u.name])),
-    [users]
-  );
-
-  const filteredIds = rows.map((r) => r.id);
-  const allSelectedInFiltered =
-    filteredIds.length > 0 && filteredIds.every((id) => selected.has(id));
-  const someSelectedInFiltered =
-    filteredIds.some((id) => selected.has(id)) && !allSelectedInFiltered;
-
-  const toggleRow = (id: string, checked: boolean) => {
-    setSelected((prev) => {
-      const s = new Set(prev);
-      if (checked) s.add(id);
-      else s.delete(id);
-      return s;
-    });
-  };
-  const toggleSelectedFiltered = (checked: boolean) => {
-    setSelected((prev) => {
-      const s = new Set(prev);
-      if (checked) filteredIds.forEach((id) => s.add(id));
-      else filteredIds.forEach((id) => s.delete(id));
-      return s;
-    });
-  };
 
   const createMutation = useMutation({
     mutationFn: createTicket,
     onSuccess: (newTicket) => {
-      notifications.show({ title: "Tiket dibuat", message: newTicket.subject });
+      notifications.show({
+        title: "Tiket dibuat",
+        message: newTicket.ticketNumber,
+      });
       setFormOpen(false);
-      fetchRows();
+      queryClient.invalidateQueries({ queryKey: ["tickets", "list"] });
     },
     onError: (e: any) => {
       notifications.show({
@@ -206,24 +200,16 @@ export function TicketsListPage() {
     },
   });
 
-  const resolveMutation = useMutation({
-    mutationFn: (vars: { id: string; payload: TicketResolutionInput }) =>
-      resolveTicket(vars.id, vars.payload),
+  const reviewMutation = useMutation({
+    mutationFn: (vars: { id: string; payload: CompleteTicketInput }) =>
+      completeTicketAndCreateKB(vars.id, vars.payload),
     onSuccess: () => {
       notifications.show({
-        title: "Ticket resolved",
-        message: "Perubahan tersimpan",
+        title: "Tiket Diarsipkan",
+        message: "Tiket telah di-review.",
       });
-      setSelected(new Set());
-      closeResolve();
-      fetchRows();
-    },
-    onError: (e: any) => {
-      notifications.show({
-        color: "red",
-        title: "Gagal resolve",
-        message: e.message,
-      });
+      setReviewFor(null);
+      queryClient.invalidateQueries({ queryKey: ["tickets", "list"] });
     },
   });
 
@@ -233,21 +219,9 @@ export function TicketsListPage() {
     onSuccess: (updatedTicket) => {
       notifications.show({
         title: "Teknisi diubah",
-        message: `Tiket #${updatedTicket.code} ditugaskan.`,
+        message: `Tiket #${updatedTicket.ticketNumber} ditugaskan.`,
       });
-      setRows((prevRows) =>
-        prevRows.map((t) => (t.id === updatedTicket.id ? updatedTicket : t))
-      );
-      queryClient.setQueryData(["tickets", "list"], (old: Ticket[] = []) =>
-        old.map((t) => (t.id === updatedTicket.id ? updatedTicket : t))
-      );
-    },
-    onError: (e: any) => {
-      notifications.show({
-        color: "red",
-        title: "Gagal assign",
-        message: e.message,
-      });
+      queryClient.invalidateQueries({ queryKey: ["tickets", "list"] });
     },
   });
 
@@ -257,60 +231,29 @@ export function TicketsListPage() {
     onSuccess: (updatedTicket) => {
       notifications.show({
         title: "Status diubah",
-        message: `Tiket #${updatedTicket.code} menjadi ${statusLabelMap.get(
-          updatedTicket.status
-        )}.`,
+        message: `Tiket #${updatedTicket.ticketNumber} menjadi ${statusLabelMap.get(updatedTicket.status)}.`,
       });
-      setRows((prevRows) =>
-        prevRows.map((t) => (t.id === updatedTicket.id ? updatedTicket : t))
-      );
-      queryClient.setQueryData(["tickets", "list"], (old: Ticket[] = []) =>
-        old.map((t) => (t.id === updatedTicket.id ? updatedTicket : t))
-      );
-    },
-    onError: (e: any) => {
-      notifications.show({
-        color: "red",
-        title: "Gagal ubah status",
-        message: e.message,
-      });
+      queryClient.invalidateQueries({ queryKey: ["tickets", "list"] });
     },
   });
 
-  const columns: Column<Ticket>[] = useMemo(
+  const columns: Column<ServiceTicketDto>[] = useMemo(
     () => [
       {
-        key: "select",
-        header: (
-          <Checkbox
-            aria-label="Pilih semua"
-            checked={allSelectedInFiltered}
-            indeterminate={someSelectedInFiltered}
-            onChange={(e) => toggleSelectedFiltered(e.currentTarget.checked)}
-          />
-        ),
-        cell: (r) => (
-          <Checkbox
-            aria-label={`Pilih ${r.code}`}
-            checked={selected.has(r.id)}
-            onChange={(e) => toggleRow(r.id, e.currentTarget.checked)}
-          />
-        ),
-        width: 40,
-        align: "center",
+        key: "code",
+        header: "Kode",
+        cell: (r) => r.ticketNumber,
+        width: 140,
       },
-      { key: "code", header: "Kode", cell: (r) => r.code, width: 140 },
       {
-        key: "subject",
-        header: "Subjek",
-        cell: (r) => r.subject,
-        width: "26%",
+        key: "requester",
+        header: "Pelanggan",
+        cell: (r) => (r.customer as TicketCustomer)?.name ?? "-",
       },
-      { key: "requester", header: "Pemohon", cell: (r) => r.requester },
       {
         key: "assignee",
         header: "Teknisi",
-        cell: (r) => (r.assignee ? userNameMap.get(r.assignee) : null) ?? "-",
+        cell: (r) => (r.technician as TicketTechnician)?.name ?? "-",
         align: "center",
       },
       {
@@ -337,7 +280,19 @@ export function TicketsListPage() {
         width: 56,
         align: "right",
         cell: (r) => {
-          const hasAssignee = !!r.assignee;
+          const techObj = r.technician as TicketTechnician;
+          const hasAssignee = !!techObj?.technicianId;
+          const isAssignedToMe = currentUserId === techObj?.technicianId;
+
+          const isAdmin = userRole === "ADMIN" || userRole === "SYSADMIN";
+          const isTechnician = userRole === "TEKNISI";
+
+          const isReviewable =
+            isAdmin && (r.status === "RESOLVED" || r.status === "CANCELLED");
+          const isFinal =
+            r.status === "ARCHIVED" ||
+            (isTechnician &&
+              (r.status === "RESOLVED" || r.status === "CANCELLED"));
 
           return (
             <Menu withinPortal position="bottom-end" shadow="sm">
@@ -349,55 +304,49 @@ export function TicketsListPage() {
               <Menu.Dropdown>
                 <Menu.Item
                   leftSection={<IconEye size={14} />}
-                  component="a"
-                  href={`/views/tickets/${encodeURIComponent(r.id)}`}
+                  component={Link}
+                  href={`/views/tickets/${encodeURIComponent(r.ticketId)}`}
                 >
                   Lihat detail
                 </Menu.Item>
-
-                <Menu
-                  withinPortal
-                  position="left-start"
-                  withArrow
-                  shadow="sm"
-                  trigger="hover"
+                <Menu.Item
+                  leftSection={<IconUser size={14} />}
+                  onClick={() => {
+                    setAssignFor(r);
+                    setSelectedAssigneeId(techObj?.technicianId ?? null);
+                  }}
                 >
-                  <Menu.Target>
-                    <Menu.Item
-                      leftSection={<IconUser size={14} />}
-                      onClick={() => {
-                        setAssignFor(r);
-                        setSelectedAssigneeId(r.assignee ?? null);
-                      }}
-                    >
-                      {hasAssignee ? "Ubah Penugasan" : "Tugaskan Teknisi"}
-                    </Menu.Item>
-                  </Menu.Target>
-                </Menu>
-
-                <Menu
-                  withinPortal
-                  position="left-start"
-                  withArrow
-                  shadow="sm"
-                  trigger="hover"
-                >
-                  <Menu.Target>
-                    <Menu.Item
-                      leftSection={<IconArrowsExchange size={14} />}
-                      rightSection={<IconChevronRight size={14} />}
-                    >
-                      Ubah Status
-                    </Menu.Item>
-                  </Menu.Target>
-                  <Menu.Dropdown>
-                    {STATUS_OPTIONS.filter((s) => s.value !== "all").map(
-                      (opt) => (
+                  {hasAssignee ? "Ubah Penugasan" : "Tugaskan Teknisi"}
+                </Menu.Item>
+                {isTechnician && isAssignedToMe && (
+                  <Menu
+                    withinPortal
+                    position="left-start"
+                    withArrow
+                    shadow="sm"
+                    trigger="hover"
+                  >
+                    <Menu.Target>
+                      <Menu.Item
+                        leftSection={<IconArrowsExchange size={14} />}
+                        rightSection={<IconChevronRight size={14} />}
+                        disabled={isFinal}
+                      >
+                        Ubah Status
+                      </Menu.Item>
+                    </Menu.Target>
+                    <Menu.Dropdown>
+                      {STATUS_OPTIONS.filter(
+                        (s) =>
+                          s.value !== "all" &&
+                          s.value !== "ARCHIVED" &&
+                          s.value !== "RESOLVED",
+                      ).map((opt) => (
                         <Menu.Item
                           key={opt.value}
                           onClick={() =>
                             statusMutation.mutate({
-                              ticketId: r.id,
+                              ticketId: r.ticketId,
                               status: opt.value as TicketStatus,
                             })
                           }
@@ -407,23 +356,18 @@ export function TicketsListPage() {
                         >
                           {opt.label}
                         </Menu.Item>
-                      )
-                    )}
-                  </Menu.Dropdown>
-                </Menu>
-
+                      ))}
+                    </Menu.Dropdown>
+                  </Menu>
+                )}
                 <Menu.Divider />
-
                 <Menu.Item
-                  leftSection={<IconCircleCheck size={14} />}
-                  onClick={() => setResolveFor(r)}
-                  disabled={
-                    r.status === "resolved" ||
-                    r.status === "closed" ||
-                    resolveMutation.isPending
-                  }
+                  leftSection={<IconArchive size={14} />}
+                  onClick={() => setReviewFor(r)}
+                  disabled={!isReviewable || reviewMutation.isPending}
+                  hidden={!isAdmin}
                 >
-                  Tandai selesai
+                  Review & Arsipkan
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>
@@ -432,46 +376,19 @@ export function TicketsListPage() {
       },
     ],
     [
-      allSelectedInFiltered,
-      someSelectedInFiltered,
-      selected,
-      userNameMap,
       users,
       assignMutation,
       statusMutation,
-      resolveMutation,
-    ]
+      reviewMutation,
+      userRole,
+      currentUserId,
+    ],
   );
-
-  const resolveOpen = resolveFor !== null;
-  const closeResolve = () => setResolveFor(null);
-
-  const handleResolveSubmit = async (payload: TicketResolutionInput) => {
-    if (!resolveFor) return;
-    try {
-      if (resolveFor === "bulk") {
-        await Promise.all(
-          Array.from(selected).map((id) =>
-            resolveMutation.mutateAsync({ id, payload })
-          )
-        );
-      } else {
-        await resolveMutation.mutateAsync({ id: resolveFor.id, payload });
-      }
-    } catch (e) {}
-  };
-
-  const isMutating =
-    createMutation.isPending ||
-    resolveMutation.isPending ||
-    assignMutation.isPending ||
-    statusMutation.isPending;
 
   return (
     <Stack gap="md">
       <Group justify="space-between" align="center">
         <Title order={3}>Tickets</Title>
-
         <Group gap="xs" wrap="nowrap">
           <Button
             leftSection={<IconPlus size={16} />}
@@ -485,26 +402,23 @@ export function TicketsListPage() {
       <Group align="end" wrap="wrap" gap="sm">
         <TextField
           label="Cari"
-          placeholder="Kode / Subjek / Pemohon"
+          placeholder="Kode / Subjek / Pelanggan"
           value={q}
           onChange={(e) => setQ(e.currentTarget.value)}
           style={{ minWidth: 260 }}
         />
-
         <Select
           label="Status"
           data={STATUS_OPTIONS}
           value={status}
           onChange={(v) => setStatus((v as any) ?? "all")}
         />
-
         <Select
           label="Prioritas"
           data={PRIORITY_OPTIONS}
           value={priority}
           onChange={(v) => setPriority((v as any) ?? "all")}
         />
-
         <Select
           searchable
           clearable={false}
@@ -514,7 +428,6 @@ export function TicketsListPage() {
           onChange={(v) => setAssignee((v as any) ?? "all")}
           style={{ minWidth: 200 }}
         />
-
         <DatePickerInput
           type="range"
           label="Rentang tanggal (dibuat)"
@@ -524,34 +437,14 @@ export function TicketsListPage() {
           style={{ minWidth: 260 }}
           popoverProps={{ withinPortal: true }}
         />
-
         <Button variant="light" onClick={clearFilters}>
           Bersihkan Filter
         </Button>
       </Group>
 
-      {selected.size > 0 && (
-        <Group justify="space-between">
-          <Text size="sm" c="dimmed">
-            {selected.size} tiket dipilih
-          </Text>
-          <Group gap="xs">
-            <Button
-              leftSection={<IconCircleCheck size={16} />}
-              onClick={() => setResolveFor("bulk")}
-            >
-              Tandai selesai
-            </Button>
-            <Button variant="subtle" onClick={() => setSelected(new Set())}>
-              Batalkan pilihan
-            </Button>
-          </Group>
-        </Group>
-      )}
-
       <div style={{ position: "relative" }}>
-        <LoadingOverlay visible={loading || isMutating} />
-        <SimpleTable<Ticket>
+        <LoadingOverlay visible={isLoading} />
+        <SimpleTable<ServiceTicketDto>
           dense="sm"
           zebra
           stickyHeader
@@ -562,20 +455,39 @@ export function TicketsListPage() {
         />
       </div>
 
+      <Group justify="space-between" align="center" mt="md">
+        <Text size="sm" c="dimmed">
+          Menampilkan {rows.length} dari {totalResults} tiket
+        </Text>
+        <Pagination
+          total={totalPages}
+          value={page}
+          onChange={setPage}
+          disabled={totalPages <= 1}
+        />
+      </Group>
+
       <TicketFormModal
         opened={formOpen}
         onClose={() => setFormOpen(false)}
-        users={users}
+        users={users as any}
         onSubmit={async (v) => {
-          await createMutation.mutateAsync(v);
+          await createMutation.mutateAsync(v as any);
         }}
+        userRole={userRole}
       />
 
-      <ResolveTicketModal
-        opened={resolveOpen}
-        onClose={closeResolve}
-        onSubmit={handleResolveSubmit}
-        ticket={resolveFor === "bulk" ? null : resolveFor}
+      <ReviewTicketModal
+        opened={!!reviewFor}
+        onClose={() => setReviewFor(null)}
+        onSubmit={async (p) => {
+          if (reviewFor)
+            await reviewMutation.mutateAsync({
+              id: reviewFor.ticketId,
+              payload: p,
+            });
+        }}
+        ticket={reviewFor as any}
       />
 
       <Modal
@@ -583,7 +495,7 @@ export function TicketsListPage() {
         onClose={() => setAssignFor(null)}
         title={
           assignFor
-            ? `Tentukan teknisi untuk #${assignFor.code}`
+            ? `Tentukan teknisi untuk #${assignFor.ticketNumber}`
             : "Tentukan teknisi"
         }
         withinPortal
@@ -595,16 +507,15 @@ export function TicketsListPage() {
             label="Teknisi"
             placeholder="Ketik untuk mencari…"
             data={users
-              .filter((u) => (u.role ?? "").toLowerCase() === "teknisi")
-              .sort((a, b) => a.name.localeCompare(b.name))
-              .map((u) => ({ value: u.id, label: u.name }))}
+              .filter((u) => (u.role ?? "").toUpperCase() === "TEKNISI")
+              .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+              .map((u) => ({ value: u.userId, label: u.name || "-" }))}
             value={selectedAssigneeId}
             onChange={(v) => setSelectedAssigneeId(v)}
             nothingFoundMessage="Tidak ditemukan"
             maxDropdownHeight={300}
             withCheckIcon={false}
           />
-
           <Group justify="space-between">
             <Button variant="subtle" onClick={() => setAssignFor(null)}>
               Batal
@@ -614,7 +525,7 @@ export function TicketsListPage() {
               onClick={() => {
                 if (!assignFor) return;
                 assignMutation.mutate({
-                  ticketId: assignFor.id,
+                  ticketId: assignFor.ticketId,
                   userId: selectedAssigneeId ?? null,
                 });
                 setAssignFor(null);

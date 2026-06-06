@@ -10,7 +10,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import apiClient from "@/lib/apiClient";
-import { User } from "./model/types";
+import type { UserDto } from "./model/types";
 
 function setCookie(name: string, value: string, days: number) {
   let expires = "";
@@ -28,70 +28,82 @@ function deleteCookie(name: string) {
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  user: User | null;
+  user: UserDto | null;
   isLoading: boolean;
-  login: (credentials: { email: string; password: string }) => Promise<void>;
+  login: (credentials: {
+    identifier: string;
+    password: string;
+  }) => Promise<void>;
   logout: () => Promise<void>;
+  refetchUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserDto | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const router = useRouter();
+
+  const refetchUser = useCallback(async () => {
+    try {
+      const response = await apiClient.get<UserDto>("/auth/me");
+      setUser(response.data);
+      setIsAuthenticated(true);
+    } catch (error) {
+      setIsAuthenticated(false);
+      setUser(null);
+    }
+  }, []);
 
   useEffect(() => {
-    const checkUser = async () => {
-      const token = localStorage.getItem("authToken");
-      if (token) {
-        try {
-          const response = await apiClient.get<{ user: User }>("/auth/me");
-          setUser(response.data.user);
-          setIsAuthenticated(true);
-        } catch (error) {
-          localStorage.removeItem("authToken");
-          deleteCookie("authToken");
-          setIsAuthenticated(false);
-          setUser(null);
-        }
+    const checkSession = async () => {
+      try {
+      } catch (error) {
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
-    checkUser();
+    checkSession();
   }, []);
 
   const login = useCallback(
-    async (credentials: { email: string; password: string }) => {
-      const apiCredentials = {
-        identifier: credentials.email,
-        password: credentials.password,
-      };
-
+    async (credentials: { identifier: string; password: string }) => {
       try {
-        const response = await apiClient.post<{ user: User; token: string }>(
+        /**
+         * Mapping 'identifier' dari form UI menjadi 'username'
+         * agar sesuai dengan skema validasi backend.
+         */
+        const apiPayload = {
+          username: credentials.identifier,
+          password: credentials.password,
+        };
+
+        const response = await apiClient.post<{ user: UserDto; token: string }>(
           "/auth/login",
-          apiCredentials,
+          apiPayload,
         );
-        const { user, token } = response.data;
+        const { user: userData, token } = response.data;
 
         if (token) {
           localStorage.setItem("authToken", token);
           setCookie("authToken", token, 1);
 
           setIsAuthenticated(true);
-          setUser(user);
-          const rolePath = (user.role || "user").toLowerCase();
-          router.push(`/${rolePath}`);
+          setUser(userData);
         }
       } catch (error: any) {
         console.error("Login failed:", error.response?.data || error.message);
+        localStorage.removeItem("authToken");
+        deleteCookie("authToken");
+        setIsAuthenticated(false);
+        setUser(null);
         throw error;
       }
     },
-    [router],
+    [],
   );
 
   const logout = useCallback(async () => {
@@ -100,19 +112,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Logout API call failed:", error);
     } finally {
-      setIsAuthenticated(false);
-      setUser(null);
-
       localStorage.removeItem("authToken");
       deleteCookie("authToken");
 
+      setIsAuthenticated(false);
+      setUser(null);
       router.push("/sign-in");
     }
   }, [router]);
 
   return (
     <AuthContext.Provider
-      value={{ isAuthenticated, user, isLoading, login, logout }}
+      value={{
+        isAuthenticated,
+        user,
+        isLoading,
+        login,
+        logout,
+        refetchUser,
+      }}
     >
       {children}
     </AuthContext.Provider>

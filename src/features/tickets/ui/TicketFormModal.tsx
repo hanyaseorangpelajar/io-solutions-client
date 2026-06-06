@@ -2,22 +2,34 @@
 
 import { useEffect, useMemo } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button, Group, Modal, Select, Stack, Textarea } from "@mantine/core";
+import {
+  Button,
+  Group,
+  Modal,
+  Select,
+  Stack,
+  Textarea,
+  SimpleGrid,
+} from "@mantine/core";
 import { useForm, Controller } from "react-hook-form";
 import TextField from "@/shared/ui/inputs/TextField";
 import { TicketFormSchema, type TicketFormInput } from "../model/schema";
-import type { Staff } from "@/features/staff/model/types";
+import type { Staff } from "@/features/staff";
 
 export default function TicketFormModal({
   opened,
   onClose,
   onSubmit,
   users,
+  defaultAssigneeId,
+  userRole,
 }: {
   opened: boolean;
   onClose: () => void;
   onSubmit: (data: TicketFormInput) => Promise<void> | void;
-  users: Pick<Staff, "id" | "name" | "role">[];
+  users: Pick<Staff, "id" | "nama" | "role">[];
+  defaultAssigneeId?: string;
+  userRole?: string;
 }) {
   const {
     register,
@@ -28,29 +40,37 @@ export default function TicketFormModal({
   } = useForm<TicketFormInput>({
     resolver: zodResolver(TicketFormSchema),
     mode: "onChange",
-    defaultValues: {
-      subject: "",
-      requester: "",
-      priority: "medium",
-      assignee: "",
-      description: "",
-    },
   });
+
+  const isTechnician = userRole === "Teknisi";
 
   useEffect(() => {
     if (opened) {
-      reset();
+      reset({
+        initialComplaint: "",
+        customer: {
+          name: "",
+          phone: "",
+        },
+        device: {
+          model: "",
+          brand: "",
+          serialNumber: "",
+        },
+        priority: "MEDIUM",
+        assignee: defaultAssigneeId ?? "",
+      });
     }
-  }, [opened, reset]);
+  }, [opened, reset, defaultAssigneeId]);
 
   const technicianOptions = useMemo(() => {
     return [
-      { value: "", label: "Unassigned" }, // Opsi unassigned
+      { value: "", label: "Unassigned" },
       ...users
-        .filter((user) => user.role === "Teknisi") // <-- LOGIKA FILTER UTAMA
+        .filter((user) => user.role === "Teknisi")
         .map((user) => ({
           value: user.id,
-          label: user.name,
+          label: user.nama,
         })),
     ];
   }, [users]);
@@ -72,20 +92,54 @@ export default function TicketFormModal({
         noValidate
       >
         <Stack gap="sm">
-          <TextField
-            label="Subjek"
-            placeholder="Masalah yang ingin dilaporkan"
-            error={errors.subject?.message}
+          <Textarea
+            label="Keluhan Awal"
+            placeholder="Jelaskan keluhan pelanggan atau masalah perangkat"
+            error={errors.initialComplaint?.message}
             autoFocus
-            {...register("subject")}
+            withAsterisk
+            minRows={3}
+            {...register("initialComplaint")}
           />
 
-          <TextField
-            label="Pemohon"
-            placeholder="Nama pemohon"
-            error={errors.requester?.message}
-            {...register("requester")}
-          />
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
+            <TextField
+              label="Nama Pelanggan"
+              placeholder="Nama pelanggan"
+              error={errors.customer?.name?.message}
+              withAsterisk
+              {...register("customer.name")}
+            />
+            <TextField
+              label="No. HP Pelanggan"
+              placeholder="0812..."
+              error={errors.customer?.phone?.message}
+              withAsterisk
+              {...register("customer.phone")}
+            />
+          </SimpleGrid>
+
+          <SimpleGrid cols={{ base: 1, sm: 3 }}>
+            <TextField
+              label="Model Perangkat"
+              placeholder="Mis: Laptop, Printer, PC"
+              error={errors.device?.model?.message}
+              withAsterisk
+              {...register("device.model")}
+            />
+            <TextField
+              label="Brand (Opsional)"
+              placeholder="Mis: HP, Asus, Canon"
+              error={errors.device?.brand?.message}
+              {...register("device.brand")}
+            />
+            <TextField
+              label="Serial No. (Opsional)"
+              placeholder="S/N jika ada"
+              error={errors.device?.serialNumber?.message}
+              {...register("device.serialNumber")}
+            />
+          </SimpleGrid>
 
           <Group grow>
             <Controller
@@ -96,39 +150,32 @@ export default function TicketFormModal({
                   {...field}
                   label="Prioritas"
                   data={[
-                    { value: "low", label: "Low" },
-                    { value: "medium", label: "Medium" },
-                    { value: "high", label: "High" },
-                    { value: "urgent", label: "Urgent" },
+                    { value: "LOW", label: "Low" },
+                    { value: "MEDIUM", label: "Medium" },
+                    { value: "HIGH", label: "High" },
+                    { value: "URGENT", label: "Urgent" },
                   ]}
                   error={errors.priority?.message}
                 />
               )}
             />
+            <Controller
+              name="assignee"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  {...field}
+                  label={isTechnician ? "Ditugaskan Ke" : "Teknisi (opsional)"}
+                  placeholder="Pilih teknisi..."
+                  data={technicianOptions}
+                  error={errors.assignee?.message}
+                  searchable
+                  clearable={!isTechnician}
+                  readOnly={isTechnician}
+                />
+              )}
+            />
           </Group>
-
-          <Controller
-            name="assignee"
-            control={control}
-            render={({ field }) => (
-              <Select
-                {...field}
-                label="Teknisi (opsional)"
-                placeholder="Pilih teknisi..."
-                data={technicianOptions}
-                error={errors.assignee?.message}
-                searchable
-                clearable
-              />
-            )}
-          />
-
-          <Textarea
-            label="Deskripsi"
-            minRows={3}
-            autosize
-            {...register("description")}
-          />
 
           <Group justify="end" mt="xs">
             <Button variant="default" onClick={onClose}>

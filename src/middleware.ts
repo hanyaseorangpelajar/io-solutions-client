@@ -6,19 +6,26 @@ export function middleware(req: NextRequest) {
   const token = req.cookies.get("authToken")?.value;
 
   const isAuthPage =
-    pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up");
+    pathname.startsWith("/sign-in") || pathname.startsWith("/forgot-password");
   const isPublicAsset =
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
     pathname.match(/\.[a-zA-Z0-9]+$/);
   const isRoot = pathname === "/";
-  const isProtected = pathname.startsWith("/dashboard");
+  const isProtected =
+    pathname.startsWith("/dashboard") || pathname.startsWith("/views");
 
   if (isPublicAsset) return NextResponse.next();
 
+  if (isRoot) {
+    const url = req.nextUrl.clone();
+    url.pathname = token ? "/views/tickets/works" : "/sign-in";
+    return NextResponse.redirect(url);
+  }
+
   if (isAuthPage && token) {
     const url = req.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = "/views/tickets/works";
     return NextResponse.redirect(url);
   }
 

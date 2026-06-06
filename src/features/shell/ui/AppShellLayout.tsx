@@ -1,32 +1,74 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { AppShell } from "@mantine/core";
+import { useState, useMemo, useEffect } from "react";
+import { AppShell, Center, Loader } from "@mantine/core";
 import SidebarNav from "./SidebarNav";
 import HeaderBar from "./HeaderBar";
-import { MASTER_NAV, filterNavItemsByRole, type UserRole } from "../model/nav";
+import { type NavItem } from "../model/nav";
 import { useAuth } from "@/features/auth";
 
 export default function AppShellLayout({
   children,
   headerTitle,
   headerTagline,
+  headerHref,
+  navItems = [],
 }: {
   children: React.ReactNode;
   headerTitle?: string;
   headerTagline?: string;
+  headerHref?: string;
+  navItems?: NavItem[];
 }) {
   const [opened, setOpened] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const { user, isLoading } = useAuth();
 
-  const { user } = useAuth();
-  const userRole = user?.role as UserRole | undefined;
+  if (isLoading) {
+    return (
+      <Center h="100vh" w="100vw">
+        <Loader size="md" />
+      </Center>
+    );
+  }
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const accessibleNavItems = useMemo(() => {
-    if (!userRole) {
-      return [];
-    }
-    return filterNavItemsByRole(MASTER_NAV, userRole);
-  }, [userRole]);
+    if (!navItems || !navItems.length) return [];
+
+    // Fallback: Bypass filter jika role sedang kosong saat transisi refresh
+    if (!user?.role) return navItems;
+
+    const userRoleUpper = user.role.toUpperCase();
+
+    const filterItems = (items: NavItem[]): NavItem[] => {
+      return items
+        .filter((item) => {
+          if (!item.roles || item.roles.length === 0) return true;
+          return item.roles.some((r) => r.toUpperCase() === userRoleUpper);
+        })
+        .map((item) => ({
+          ...item,
+          children: item.children ? filterItems(item.children) : undefined,
+        }))
+        .filter(
+          (item) => !item.group || (item.children && item.children.length > 0),
+        );
+    };
+
+    return filterItems(navItems);
+  }, [user?.role, navItems]);
+
+  if (!isMounted || isLoading) {
+    return (
+      <Center h="100vh" w="100vw">
+        <Loader size="md" />
+      </Center>
+    );
+  }
 
   return (
     <AppShell
@@ -34,7 +76,7 @@ export default function AppShellLayout({
       navbar={{
         width: 280,
         breakpoint: "sm",
-        collapsed: { mobile: !opened },
+        collapsed: { desktop: false, mobile: !opened },
       }}
       padding="md"
     >

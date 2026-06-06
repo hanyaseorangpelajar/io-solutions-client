@@ -1,4 +1,6 @@
-export type UserRole = "Teknisi" | "Admin" | "SysAdmin";
+import type { AuthRole } from "@/features/auth/model/types";
+
+export type UserRole = AuthRole;
 
 export type NavItem = {
   label: string;
@@ -6,58 +8,88 @@ export type NavItem = {
   group?: boolean;
   children?: NavItem[];
   roles?: UserRole[];
+  id?: string;
 };
 
 export function isGroup(
-  item: NavItem
+  item: NavItem,
 ): item is NavItem & { group: true; children: NavItem[] } {
   return !!item.group && Array.isArray(item.children);
 }
 
 export const MASTER_NAV: NavItem[] = [
-  { label: "Dashboard", href: "/sysadmin", roles: ["SysAdmin"] },
-  { label: "Dashboard", href: "/admin", roles: ["Admin"] },
-  { label: "Dashboard", href: "/teknisi", roles: ["Teknisi"] },
-
-  { label: "Staff", href: "/views/access/staff", roles: ["Admin"] },
+  { label: "Dashboard", href: "/sysadmin", roles: ["SYSADMIN"] },
+  { label: "Dashboard", href: "/admin", roles: ["ADMIN"] },
+  { label: "Dashboard", href: "/teknisi", roles: ["TEKNISI"] },
   {
-    label: "Daftar Ticket",
-    href: "/views/tickets/list",
-    roles: ["Admin"],
+    group: true,
+    label: "Pusat Akun",
+    roles: ["ADMIN"],
+    children: [
+      { label: "Daftar Staff", href: "/views/access/staff", roles: ["ADMIN"] },
+    ],
   },
   {
-    label: "Review Ticket Quality",
-    href: "/views/audit/quality",
-    roles: ["Admin"],
+    group: true,
+    label: "Pusat Tiket",
+    roles: ["ADMIN", "TEKNISI"],
+    children: [
+      {
+        label: "Daftar Tiket",
+        href: "/views/tickets/list",
+        roles: ["ADMIN"],
+      },
+      {
+        label: "Pekerjaan Saya",
+        href: "/views/tickets/works",
+        roles: ["TEKNISI"],
+      },
+      {
+        label: "Log Ticket",
+        href: "/views/tickets/history",
+        roles: ["ADMIN", "TEKNISI"],
+      },
+    ],
   },
   {
-    label: "Pekerjaan Saya",
-    href: "/views/tickets/works",
-    roles: ["Teknisi"],
+    group: true,
+    label: "Pusat Pustaka",
+    roles: ["ADMIN", "TEKNISI"],
+    children: [
+      {
+        label: "Pustaka Solusi Ticket",
+        href: "/views/audit/repository",
+        roles: ["ADMIN", "TEKNISI"],
+      },
+      {
+        label: "Daftar Pelanggan",
+        href: "/views/customers/list",
+        roles: ["ADMIN", "TEKNISI"],
+      },
+    ],
   },
   {
-    label: "Pustaka Solusi Ticket",
-    href: "/views/audit/repository",
-    roles: ["Admin", "Teknisi"],
-  },
-  {
-    label: "Log Aktivitas Ticket",
-    href: "/views/tickets/history",
-    roles: ["Admin", "Teknisi"],
-  },
-  {
-    label: "Profile",
-    href: "/views/settings/account",
-    roles: ["Teknisi", "Admin"],
+    group: true,
+    label: "Pengaturan Akun",
+    roles: ["ADMIN", "TEKNISI"],
+    children: [
+      {
+        label: "Profile",
+        href: "/views/settings/account",
+        roles: ["TEKNISI", "ADMIN"],
+      },
+      {
+        label: "Logout",
+        id: "logout",
+        roles: ["TEKNISI", "ADMIN", "SYSADMIN"],
+      },
+    ],
   },
 ];
 
-/**
- * Helper rekursif untuk memfilter item navigasi berdasarkan peran pengguna.
- */
 export function filterNavItemsByRole(
   items: NavItem[],
-  userRole: UserRole
+  userRole: UserRole,
 ): NavItem[] {
   if (!Array.isArray(items)) return [];
 

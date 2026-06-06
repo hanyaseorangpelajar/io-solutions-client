@@ -1,24 +1,22 @@
 import { z } from "zod";
-import { ForgotPasswordSchema, SignInSchema, SignUpSchema } from "./schema";
+import { ForgotPasswordSchema, SignInSchema } from "./schema";
 
-// --- Tipe Input Form ---
 export type SignInInput = z.infer<typeof SignInSchema>;
 export type ForgotPasswordInput = z.infer<typeof ForgotPasswordSchema>;
-export type SignUpInput = z.infer<typeof SignUpSchema>;
 
-// --- Tipe Data Model & API ---
+export type AuthRole = "TEKNISI" | "ADMIN" | "SYSADMIN";
 
-/**
- * Representasi data pengguna yang disimpan di client-side.
- */
-export type User = {
-  _id: string;
+export interface UserDto {
+  userId: string;
   username: string;
-  fullName: string;
-  role: string;
-};
+  name: string;
+  role: AuthRole;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
-export type LoginResponse = {
-  user: User;
+export interface LoginResponse {
+  user: UserDto;
   token: string;
-};
+}

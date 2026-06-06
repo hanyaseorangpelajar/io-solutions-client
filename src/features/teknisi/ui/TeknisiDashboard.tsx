@@ -4,7 +4,6 @@ import { useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   Anchor,
-  Badge,
   Button,
   Group,
   Paper,
@@ -18,8 +17,11 @@ import {
 
 import { useQuery } from "@tanstack/react-query";
 import { listTickets } from "@/features/tickets/api/tickets";
-import type { Ticket } from "@/features/tickets";
-import { useAuth, type User } from "@/features/auth";
+import type {
+  ServiceTicketDto,
+  TicketTechnician,
+} from "@/features/tickets/model/types";
+import { useAuth } from "@/features/auth";
 import { notifications } from "@mantine/notifications";
 
 import { formatDateTime } from "@/features/tickets/utils/format";
@@ -28,19 +30,19 @@ import TicketStatusBadge from "@/features/tickets/ui/TicketStatusBadge";
 
 export default function TechnicianDashboardPage() {
   const { user } = useAuth();
-  const userId = (user as User & { id: string })?.id;
-  const userName = (user as User & { name: string })?.name ?? "Teknisi";
+  const userId = user?.userId;
+  const userName = user?.name ?? "Teknisi";
 
   const {
     data: queryResult,
     isLoading,
     error,
-  } = useQuery<Ticket[]>({
+  } = useQuery<ServiceTicketDto[]>({
     queryKey: ["tickets", "list", { assignee: userId }],
     queryFn: async () => {
       if (!userId) return [];
       const res = await listTickets({
-        assignee: userId,
+        technicianId: userId,
         limit: 500,
       });
       return res.data ?? [];
@@ -58,23 +60,24 @@ export default function TechnicianDashboardPage() {
     }
   }, [error]);
 
-  const allMyTickets: Ticket[] = queryResult ?? [];
+  const allMyTickets: ServiceTicketDto[] = queryResult ?? [];
 
   const myOpen = useMemo(
-    () => allMyTickets.filter((t: Ticket) => t.status === "open"),
-    [allMyTickets]
+    () => allMyTickets.filter((t) => t.status === "DIAGNOSIS"),
+    [allMyTickets],
   );
   const myInProgress = useMemo(
-    () => allMyTickets.filter((t: Ticket) => t.status === "in_progress"),
-    [allMyTickets]
+    () => allMyTickets.filter((t) => t.status === "IN_PROGRESS"),
+    [allMyTickets],
   );
   const myResolved = useMemo(
     () =>
       allMyTickets.filter(
-        (t: Ticket) =>
-          t.status === "resolved" && t.resolution?.resolvedBy === userId
+        (t) =>
+          t.status === "RESOLVED" &&
+          (t.technician as TicketTechnician)?.technicianId === userId,
       ),
-    [allMyTickets, userId]
+    [allMyTickets, userId],
   );
   const totalAssigned = allMyTickets.length;
 
@@ -82,23 +85,23 @@ export default function TechnicianDashboardPage() {
     () =>
       [...myOpen, ...myInProgress]
         .sort(
-          (a: Ticket, b: Ticket) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         )
         .slice(0, 8),
-    [myOpen, myInProgress]
+    [myOpen, myInProgress],
   );
 
   const recentResolved = useMemo(
     () =>
       myResolved
         .sort(
-          (a: Ticket, b: Ticket) =>
-            new Date(b.resolution?.resolvedAt ?? 0).getTime() -
-            new Date(a.resolution?.resolvedAt ?? 0).getTime()
+          (a, b) =>
+            new Date(b.resolvedAt ?? 0).getTime() -
+            new Date(a.resolvedAt ?? 0).getTime(),
         )
         .slice(0, 8),
-    [myResolved]
+    [myResolved],
   );
 
   return (
@@ -114,14 +117,14 @@ export default function TechnicianDashboardPage() {
         </Stack>
         <Group gap="xs" wrap="wrap">
           <Button component={Link} href="/views/tickets/works" variant="light">
-            Lihat My Work
+            Pekerjaan Saya
           </Button>
           <Button
             component={Link}
             href="/views/tickets/history"
             variant="light"
           >
-            Riwayat Audit
+            Riwayat Tiket
           </Button>
         </Group>
       </Group>
@@ -142,7 +145,7 @@ export default function TechnicianDashboardPage() {
           </Text>
           <Title order={2}>{myInProgress.length}</Title>
           <Text size="xs" c="dimmed">
-            Status in progress
+            Status 'Dalam Proses'
           </Text>
         </Paper>
         <Paper withBorder radius="md" p="md">
@@ -151,7 +154,7 @@ export default function TechnicianDashboardPage() {
           </Text>
           <Title order={2}>{myResolved.length}</Title>
           <Text size="xs" c="dimmed">
-            Ticket yang kamu resolve
+            Ticket yang kamu 'Selesaikan'
           </Text>
         </Paper>
       </SimpleGrid>
@@ -173,7 +176,7 @@ export default function TechnicianDashboardPage() {
           <Table.Thead>
             <Table.Tr>
               <Table.Th>Kode</Table.Th>
-              <Table.Th>Judul</Table.Th>
+              <Table.Th>Keluhan</Table.Th>
               <Table.Th>Prioritas</Table.Th>
               <Table.Th>Status</Table.Th>
               <Table.Th>Dibuat</Table.Th>
@@ -181,13 +184,16 @@ export default function TechnicianDashboardPage() {
           </Table.Thead>
           <Table.Tbody>
             {recentAssigned.map((t) => (
-              <Table.Tr key={t.id}>
+              <Table.Tr key={t.ticketId}>
                 <Table.Td>
-                  <Anchor component={Link} href={`/views/tickets/${t.id}`}>
-                    {t.code}
+                  <Anchor
+                    component={Link}
+                    href={`/views/tickets/${t.ticketId}`}
+                  >
+                    {t.ticketNumber}
                   </Anchor>
                 </Table.Td>
-                <Table.Td>{t.subject}</Table.Td>
+                <Table.Td>{t.initialComplaint}</Table.Td>
                 <Table.Td>
                   <TicketPriorityBadge priority={t.priority} />
                 </Table.Td>
@@ -215,7 +221,7 @@ export default function TechnicianDashboardPage() {
           <Text fw={600}>Riwayat Penyelesaian Saya</Text>
           <Anchor
             component={Link}
-            href="/views/tickets/list?status=resolved"
+            href="/views/tickets/list?status=RESOLVED"
             size="sm"
           >
             Lihat semua
@@ -231,25 +237,28 @@ export default function TechnicianDashboardPage() {
           <Table.Thead>
             <Table.Tr>
               <Table.Th>Kode</Table.Th>
-              <Table.Th>Judul</Table.Th>
+              <Table.Th>Keluhan</Table.Th>
               <Table.Th>Prioritas</Table.Th>
               <Table.Th>Diselesaikan</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
             {recentResolved.map((t) => (
-              <Table.Tr key={t.id}>
+              <Table.Tr key={t.ticketId}>
                 <Table.Td>
-                  <Anchor component={Link} href={`/views/tickets/${t.id}`}>
-                    {t.code}
+                  <Anchor
+                    component={Link}
+                    href={`/views/tickets/${t.ticketId}`}
+                  >
+                    {t.ticketNumber}
                   </Anchor>
                 </Table.Td>
-                <Table.Td>{t.subject}</Table.Td>
+                <Table.Td>{t.initialComplaint}</Table.Td>
                 <Table.Td>
                   <TicketPriorityBadge priority={t.priority} />
                 </Table.Td>
                 <Table.Td>
-                  {formatDateTime(t.resolution?.resolvedAt ?? t.updatedAt)}
+                  {formatDateTime(t.resolvedAt ?? t.updatedAt)}
                 </Table.Td>
               </Table.Tr>
             ))}

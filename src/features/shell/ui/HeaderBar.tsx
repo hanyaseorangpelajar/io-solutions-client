@@ -20,6 +20,7 @@ type HeaderBarProps = {
   setOpened: (v: boolean) => void;
   title?: string;
   tagline?: string;
+  href?: string;
 };
 
 function ThemeToggle() {
@@ -104,6 +105,7 @@ export default function HeaderBar({
   setOpened,
   title,
   tagline,
+  href,
 }: HeaderBarProps) {
   return (
     <Group h="100%" px="md" justify="space-between" wrap="nowrap">

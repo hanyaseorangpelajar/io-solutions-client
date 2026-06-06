@@ -3,7 +3,6 @@
 import Link from "next/link";
 import {
   Badge,
-  Button,
   Card,
   Divider,
   Group,
@@ -11,26 +10,54 @@ import {
   Stack,
   Text,
   Title,
+  Menu,
+  ActionIcon,
+  rem,
+  Box,
+  Button,
 } from "@mantine/core";
-import { IconCalendar, IconHash, IconDeviceDesktop } from "@tabler/icons-react";
+import {
+  IconCalendar,
+  IconHash,
+  IconDeviceDesktop,
+  IconDots,
+  IconPencil,
+  IconTrash,
+  IconEye,
+} from "@tabler/icons-react";
+import type { UserDto } from "@/features/auth/model/types";
 
 export type RepositoryCardData = {
+  imageUrl?: string;
   code: string;
-  ticketId: string;
+  ticketId: string | null;
   subject: string;
   deviceType?: string;
-  resolvedAt?: string; // formatted text
+  resolvedAt?: string;
   tags: string[];
   rootCause: string;
   solution: string;
-  cover?: string; // optional image url
+  cover?: string;
+  deviceModel?: string;
 };
 
 type Props = {
   data: RepositoryCardData;
+  currentUser: UserDto | null;
+  sourceTechnicianId?: string;
+  onEdit: () => void;
+  onDelete: () => void;
+  onViewDetails: () => void;
 };
 
-export default function RepositoryCard({ data }: Props) {
+export default function RepositoryCard({
+  data,
+  currentUser,
+  sourceTechnicianId,
+  onEdit,
+  onDelete,
+  onViewDetails,
+}: Props) {
   const {
     code,
     ticketId,
@@ -43,82 +70,154 @@ export default function RepositoryCard({ data }: Props) {
     cover,
   } = data;
 
+  const isAdmin =
+    currentUser?.role === "ADMIN" || currentUser?.role === "SYSADMIN";
+  const isOwner =
+    !!currentUser &&
+    !!sourceTechnicianId &&
+    currentUser.userId === sourceTechnicianId;
+  const canManage = isAdmin || isOwner;
+
+  const CardContent = (
+    <Stack gap="sm">
+      {cover ? (
+        <Image
+          src={cover}
+          alt={subject}
+          height={140}
+          radius="sm"
+          fit="cover"
+          fallbackSrc="data:image/gif;base64,R0lGODlhAQABAAAAACw="
+        />
+      ) : null}
+
+      <Stack gap={2}>
+        <Title order={5} lineClamp={2}>
+          {subject}
+        </Title>
+        <Text size="sm" c="dimmed">
+          {code}
+        </Text>
+      </Stack>
+
+      <Group gap="xs" wrap="wrap">
+        {deviceType ? (
+          <Badge leftSection={<IconDeviceDesktop size={14} />} variant="light">
+            {deviceType}
+          </Badge>
+        ) : null}
+        {resolvedAt ? (
+          <Badge leftSection={<IconCalendar size={14} />} variant="light">
+            {resolvedAt}
+          </Badge>
+        ) : null}
+        {tags.map((t) => (
+          <Badge key={t} leftSection={<IconHash size={12} />} variant="light">
+            {t}
+          </Badge>
+        ))}
+      </Group>
+
+      <Divider />
+
+      <Stack gap={6}>
+        <Text size="xs" c="dimmed" fw={600}>
+          Akar Masalah
+        </Text>
+        <Text size="sm" lh={1.5} lineClamp={3} title={rootCause}>
+          {rootCause}
+        </Text>
+      </Stack>
+
+      <Stack gap={6}>
+        <Text size="xs" c="dimmed" fw={600}>
+          Solusi / Troubleshoot
+        </Text>
+        <Text size="sm" lh={1.5} lineClamp={4} title={solution}>
+          {solution}
+        </Text>
+      </Stack>
+    </Stack>
+  );
+
   return (
     <Card withBorder radius="md" p="md">
-      <Stack gap="sm">
-        {/* Cover optional */}
-        {cover ? (
-          <Image
-            src={cover}
-            alt={subject}
-            height={140}
-            radius="sm"
-            fit="cover"
-            fallbackSrc="data:image/gif;base64,R0lGODlhAQABAAAAACw="
-          />
-        ) : null}
+      <Box
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          height: "100%",
+        }}
+      >
+        <Box style={{ flexGrow: 1, cursor: "pointer" }} onClick={onViewDetails}>
+          {CardContent}
+        </Box>
 
-        <Stack gap={2}>
-          <Title order={5} lineClamp={2}>
-            {subject}
-          </Title>
-          <Text size="sm" c="dimmed">
-            {code}
-          </Text>
-        </Stack>
-
-        <Group gap="xs" wrap="wrap">
-          {deviceType ? (
-            <Badge
-              leftSection={<IconDeviceDesktop size={14} />}
+        {(ticketId || canManage) && (
+          <Group justify="space-between" mt="md" align="center">
+            <Button
+              component={Link}
+              href={
+                ticketId
+                  ? `/views/tickets/${encodeURIComponent(ticketId)}`
+                  : "#"
+              }
+              passHref
+              size="xs"
               variant="light"
+              leftSection={<IconEye size={14} />}
+              disabled={!ticketId}
+              style={{ visibility: ticketId ? "visible" : "hidden" }}
+              onClick={(e) => e.stopPropagation()}
             >
-              {deviceType}
-            </Badge>
-          ) : null}
-          {resolvedAt ? (
-            <Badge leftSection={<IconCalendar size={14} />} variant="light">
-              {resolvedAt}
-            </Badge>
-          ) : null}
-          {tags.map((t) => (
-            <Badge key={t} leftSection={<IconHash size={12} />} variant="light">
-              {t}
-            </Badge>
-          ))}
-        </Group>
+              Lihat Tiket
+            </Button>
 
-        <Divider />
-
-        <Stack gap={6}>
-          <Text size="xs" c="dimmed" fw={600}>
-            Akar Masalah
-          </Text>
-          <Text size="sm" lh={1.5} lineClamp={3} title={rootCause}>
-            {rootCause}
-          </Text>
-        </Stack>
-
-        <Stack gap={6}>
-          <Text size="xs" c="dimmed" fw={600}>
-            Solusi / Troubleshoot
-          </Text>
-          <Text size="sm" lh={1.5} lineClamp={4} title={solution}>
-            {solution}
-          </Text>
-        </Stack>
-
-        <Group justify="end" mt="xs">
-          <Button
-            component={Link}
-            href={`/views/tickets/${encodeURIComponent(ticketId)}`}
-            variant="light"
-            size="xs"
-          >
-            Lihat Ticket
-          </Button>
-        </Group>
-      </Stack>
+            {canManage ? (
+              <Menu shadow="md" width={160} withinPortal position="bottom-end">
+                <Menu.Target>
+                  <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    aria-label="Aksi KB"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <IconDots style={{ width: rem(18), height: rem(18) }} />
+                  </ActionIcon>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Item
+                    leftSection={
+                      <IconPencil style={{ width: rem(14), height: rem(14) }} />
+                    }
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit();
+                    }}
+                  >
+                    Edit
+                  </Menu.Item>
+                  <Menu.Item
+                    color="red"
+                    leftSection={
+                      <IconTrash style={{ width: rem(14), height: rem(14) }} />
+                    }
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete();
+                    }}
+                  >
+                    Hapus
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            ) : (
+              <Box />
+            )}
+          </Group>
+        )}
+      </Box>
     </Card>
   );
 }
