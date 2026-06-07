@@ -82,7 +82,7 @@ export default function SidebarNav({
 
     return (
       <NavLink
-        key={child.label}
+        key={child.href || child.label}
         component={Link}
         href={child.href || "#"}
         label={child.label}

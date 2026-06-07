@@ -1,6 +1,6 @@
 import apiClient from "@/lib/apiClient";
 import type { StaffDto } from "../model/types";
-import type { StaffFormInput } from "../model/schema";
+import type { StaffFormInput } from "../ui/StaffFormModal";
 
 const ENDPOINT = "/users";
 
@@ -52,4 +52,18 @@ export async function updateStaffStatus(
     isActive,
   });
   return response.data;
+}
+
+export interface StaffDto {
+  id: string;
+  nama: string;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+  password: string;
+  confirmPassword: string;
+  token: string;
+  refreshToken: string;
 }

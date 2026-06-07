@@ -54,28 +54,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       setIsAuthenticated(false);
       setUser(null);
+      throw error;
     }
   }, []);
 
+  /**
+   *
+   * Rehydrate state autentikasi pada saat inisialisasi awal (termasuk hard refresh).
+   * Blok try harus mengeksekusi refetchUser jika token terdeteksi di localStorage.
+   *
+   */
   useEffect(() => {
     const checkSession = async () => {
       try {
+        const token = localStorage.getItem("authToken");
+        if (token) {
+          await refetchUser();
+        }
       } catch (error) {
+        localStorage.removeItem("authToken");
+        deleteCookie("authToken");
       } finally {
         setIsLoading(false);
       }
     };
 
     checkSession();
-  }, []);
+  }, [refetchUser]);
 
   const login = useCallback(
     async (credentials: { identifier: string; password: string }) => {
       try {
-        /**
-         * Mapping 'identifier' dari form UI menjadi 'username'
-         * agar sesuai dengan skema validasi backend.
-         */
         const apiPayload = {
           username: credentials.identifier,
           password: credentials.password,

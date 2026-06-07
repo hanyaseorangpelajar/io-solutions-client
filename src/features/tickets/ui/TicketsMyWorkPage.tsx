@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useAuth, type User } from "@/features/auth";
+import { useAuth, type UserDto } from "@/features/auth";
+import type { StaffDto } from "@/features/staff/model/types";
 import {
   Group,
   Stack,
@@ -36,7 +37,6 @@ import {
 } from "../api/tickets";
 import { notifications } from "@mantine/notifications";
 import { getStaffList } from "@/features/staff/api/staff";
-import type { Staff } from "@/features/staff/model/types";
 import TeknisiCompleteModal from "./TeknisiCompleteModal";
 
 export default function TicketsMyWorkPage() {
@@ -44,12 +44,12 @@ export default function TicketsMyWorkPage() {
   const modals = useModals();
   const [q, setQ] = useState("");
   const [formOpen, setFormOpen] = useState(false);
-  const [users, setUsers] = useState<Staff[]>([]);
+  const [users, setUsers] = useState<StaffDto[]>([]);
   const [completingTicket, setCompletingTicket] =
     useState<ServiceTicketDto | null>(null);
 
   const { user } = useAuth();
-  const currentTechId = (user as User & { id: string })?.id;
+  const currentTechId = (user as UserDto & { id: string })?.id;
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["tickets", "list", { assignee: currentTechId, q }],
@@ -75,7 +75,7 @@ export default function TicketsMyWorkPage() {
   useEffect(() => {
     getStaffList()
       .then((staffData) => {
-        setUsers(staffData ?? []);
+        setUsers(staffData?.results ?? []);
       })
       .catch((e) => {
         console.error("Gagal mengambil daftar staff:", e.message);

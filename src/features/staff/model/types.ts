@@ -9,4 +9,10 @@ export interface StaffDto {
   role: StaffRole;
   createdAt: string;
   updatedAt: string;
+  deletedAt: string | null;
+  password: string;
+  confirmPassword: string;
+  token: string;
+  refreshToken: string;
+  id: string;
 }

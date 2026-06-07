@@ -24,23 +24,12 @@ export default function AppShellLayout({
   const [isMounted, setIsMounted] = useState(false);
   const { user, isLoading } = useAuth();
 
-  if (isLoading) {
-    return (
-      <Center h="100vh" w="100vw">
-        <Loader size="md" />
-      </Center>
-    );
-  }
-
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
   const accessibleNavItems = useMemo(() => {
-    if (!navItems || !navItems.length) return [];
-
-    // Fallback: Bypass filter jika role sedang kosong saat transisi refresh
-    if (!user?.role) return navItems;
+    if (!navItems || !navItems.length || !user?.role) return [];
 
     const userRoleUpper = user.role.toUpperCase();
 
@@ -62,6 +51,12 @@ export default function AppShellLayout({
     return filterItems(navItems);
   }, [user?.role, navItems]);
 
+  /**
+   *
+   * Early returns diletakkan di akhir setelah seluruh deklarasi Hooks (useEffect/useMemo).
+   * Mencegah inisialisasi hook tereksekusi secara kondisional.
+   *
+   */
   if (!isMounted || isLoading) {
     return (
       <Center h="100vh" w="100vw">

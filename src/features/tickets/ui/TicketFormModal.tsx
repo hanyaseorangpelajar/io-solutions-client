@@ -14,7 +14,7 @@ import {
 import { useForm, Controller } from "react-hook-form";
 import TextField from "@/shared/ui/inputs/TextField";
 import { TicketFormSchema, type TicketFormInput } from "../model/schema";
-import type { Staff } from "@/features/staff";
+import type { StaffDto } from "@/features/staff/model/types";
 
 export default function TicketFormModal({
   opened,
@@ -27,7 +27,7 @@ export default function TicketFormModal({
   opened: boolean;
   onClose: () => void;
   onSubmit: (data: TicketFormInput) => Promise<void> | void;
-  users: Pick<Staff, "id" | "nama" | "role">[];
+  users: Pick<StaffDto, "id" | "nama" | "role">[];
   defaultAssigneeId?: string;
   userRole?: string;
 }) {

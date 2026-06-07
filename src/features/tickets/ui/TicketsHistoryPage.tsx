@@ -24,6 +24,7 @@ import {
 import TicketStatusBadge from "./TicketStatusBadge";
 import { notifications } from "@mantine/notifications";
 import { useAuth } from "@/features/auth";
+import type { UserDto } from "@/features/auth";
 
 type Row = TicketHistoryEvent;
 type RangeValue = [Date | null, Date | null];
@@ -45,7 +46,13 @@ export default function TicketsHistoryPage() {
       "tickets",
       "history",
       "list",
-      { q, range, userId: user?.id, page, PAGE_LIMIT },
+      {
+        q,
+        range,
+        userId: (user as UserDto & { id: string })?.id,
+        page,
+        PAGE_LIMIT,
+      },
     ],
     queryFn: () => {
       const [from, to] = range;

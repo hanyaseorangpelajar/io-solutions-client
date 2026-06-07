@@ -49,7 +49,7 @@ import { notifications } from "@mantine/notifications";
 import UpdateStatusModal from "./UpdateStatusModal";
 import AddItemModal from "./AddItemModal";
 import { getStaffList } from "@/features/staff/api/staff";
-import type { Staff } from "@/features/staff/model/types";
+import type { StaffDto } from "@/features/staff/model/types";
 
 export default function TicketDetailPage() {
   const params = useParams<{ id: string }>();
@@ -58,7 +58,7 @@ export default function TicketDetailPage() {
   const id = String(params?.id ?? "");
 
   const [ticket, setTicket] = useState<ServiceTicketDto | null>(null);
-  const [users, setUsers] = useState<Staff[]>([]);
+  const [users, setUsers] = useState<StaffDto[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [statusModalOpen, setStatusModalOpen] = useState(false);
@@ -98,7 +98,7 @@ export default function TicketDetailPage() {
 
         if (active) {
           setTicket(ticketData);
-          setUsers(usersData);
+          setUsers(usersData.results ?? []);
         }
       } catch (e: any) {
         if (active) {
